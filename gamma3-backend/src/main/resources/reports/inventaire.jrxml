@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.21.3.final using JasperReports Library version 6.21.3  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="inventaire" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="a4f21051-fb1b-4d4b-91d1-72b15e21966a">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="One Empty Record"/>
+	<parameter name="REPORT_TITLE" class="java.lang.String"/>
+	<parameter name="REPORT_SUBTITLE" class="java.lang.String"/>
+	<parameter name="VALEUR_TOTALE_GLOBAL" class="java.lang.String"/>
+	<field name="nomenclature" class="java.lang.String"/>
+	<field name="designation" class="java.lang.String"/>
+	<field name="magasinCode" class="java.lang.String"/>
+	<field name="magasinNom" class="java.lang.String"/>
+	<field name="quantite" class="java.math.BigDecimal"/>
+	<field name="prixUnitaire" class="java.math.BigDecimal"/>
+	<field name="valeurTotale" class="java.math.BigDecimal"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="120" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="220" height="15" uuid="52a1215c-6b3a-4467-85e8-b80c102a0a20"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[RÉPUBLIQUE TUNISIENNE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="15" width="220" height="15" uuid="c2a0429f-3d6c-48c6-a67b-1cb8dc78b97d"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[MINISTÈRE DE LA DÉFENSE NATIONALE]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="30" width="220" height="15" uuid="192a6ca0-33b0-4dbb-b27a-e49eb72d8299"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="8" isItalic="true"/>
+				</textElement>
+				<text><![CDATA[Base Navale Principale de Bizerte]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="0" y="45" width="220" height="15" uuid="be908200-a612-42ea-a8c6-4740e53a382d"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="8" isItalic="true"/>
+				</textElement>
+				<text><![CDATA[Division Approvisionnement (DA)]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="120" y="70" width="320" height="25" uuid="7cf44558-75aa-43d9-95e2-2a210ff4aef5"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="14" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$Parameter{REPORT_TITLE}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="120" y="95" width="320" height="15" uuid="88514589-98ee-449e-ba78-7505877f884c"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="9" isItalic="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$Parameter{REPORT_SUBTITLE}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement x="0" y="115" width="555" height="1" uuid="887c1264-ebbd-4e92-bd88-bd98c36bfb10"/>
+				<graphicElement>
+					<pen lineWidth="1.5" lineStyle="Double"/>
+				</graphicElement>
+			</line>
+			<textField pattern="dd/MM/yyyy HH:mm">
+				<reportElement x="450" y="0" width="105" height="15" uuid="dcf1088a-ea62-42cc-a472-a9b09fa56dc5"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="370" y="0" width="80" height="15" uuid="bdf0f8da-90d2-43c3-88ee-1cd8a13a05c3"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="8" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Date d'édition:]]></text>
+			</staticText>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="25" splitType="Stretch">
+			<rectangle>
+				<reportElement x="0" y="0" width="555" height="25" backcolor="#EFEFEF" uuid="8bdf9f7d-ebbd-45e0-9efd-a19f9f8fbd88"/>
+				<graphicElement>
+					<pen lineWidth="1.0" lineColor="#CCCCCC"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="5" y="0" width="95" height="25" uuid="9c1bcfdf-e5cf-4dfb-88de-6da09a016f44"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="SansSerif" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Nomenclature]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="105" y="0" width="185" height="25" uuid="fbd08a0d-fa20-410a-ba54-20ad8d904724"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="SansSerif" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Désignation]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="295" y="0" width="85" height="25" uuid="3d21bcfd-efb9-44d4-ae46-4cb2990098df"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="SansSerif" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Soute/Magasin]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="385" y="0" width="50" height="25" uuid="7cf415b2-3bdc-4b5b-ad7e-e17f09f0df88"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Stock]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="440" y="0" width="55" height="25" uuid="bcfa0a0e-fd44-4cb0-a89c-5bf68da56bd2"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[P.U. (TND)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="500" y="0" width="50" height="25" uuid="e0fa80d2-43cf-42bb-b0c2-cdfd0da6fa28"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Val. (TND)]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="20" splitType="Stretch">
+			<line>
+				<reportElement x="0" y="19" width="555" height="1" forecolor="#E5E5E5" uuid="6c8e7bd2-3b0f-48ca-b6f7-41ebbd3c0f4f"/>
+			</line>
+			<textField>
+				<reportElement x="5" y="0" width="95" height="20" uuid="e24beedb-b2ef-4cb3-96b0-13a05c3c0ef2"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="SansSerif" size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{nomenclature}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="true">
+				<reportElement x="105" y="0" width="185" height="20" uuid="09efcf3d-5cfd-4fb3-a9c1-efef88d9fa64"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="SansSerif" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{designation}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="295" y="0" width="85" height="20" uuid="fcfcdba0-5ee1-4ad9-ac28-c119e7cfbd2b"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="SansSerif" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{magasinCode} != null ? $F{magasinCode} + " - " + $F{magasinNom} : "Non alloué"]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0">
+				<reportElement x="385" y="0" width="50" height="20" uuid="a7f80db2-1fc1-4d3b-85e8-580f8dbd8ca0"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{quantite}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.000">
+				<reportElement x="440" y="0" width="55" height="20" uuid="b5ff2082-cd28-4efd-b2b8-fbd8da8c88f2"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{prixUnitaire}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.000">
+				<reportElement x="500" y="0" width="50" height="20" uuid="d6f2820d-abef-45cc-a298-dcb99c85cf55"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{valeurTotale}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="20" splitType="Stretch">
+			<textField>
+				<reportElement x="380" y="0" width="130" height="20" uuid="e05ba8f0-1c0f-48d8-95ef-1de5e2f75960"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Page " + $V{PAGE_NUMBER} + " sur"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="515" y="0" width="40" height="20" uuid="52fd0d8a-9e20-4eef-a841-f6ef858a8a4f"/>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="0" width="250" height="20" uuid="ec5f128e-5fa8-4e89-bdc9-8dcb9282fa2c"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="SansSerif" size="7" isItalic="true"/>
+				</textElement>
+				<text><![CDATA[GAMMA 3.0 • Système Automatisé de Gestion de Stock de la Marine Nationale]]></text>
+			</staticText>
+		</band>
+	</pageFooter>
+	<summary>
+		<band height="140" splitType="Stretch">
+			<rectangle>
+				<reportElement x="0" y="10" width="555" height="30" backcolor="#F9F9F9" uuid="2bdf4d5b-ebfd-45d6-bdc0-bebfdc8fbd88"/>
+				<graphicElement>
+					<pen lineWidth="1.0" lineColor="#DDDDDD"/>
+				</graphicElement>
+			</rectangle>
+			<staticText>
+				<reportElement x="10" y="10" width="250" height="30" uuid="cdfb562c-da4b-4a5c-bd08-8e6cae8dca12"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="SansSerif" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[VALEUR FINANCIÈRE TOTALE DU STOCK :]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="280" y="10" width="265" height="30" forecolor="#006699" uuid="be89dfcd-ebfd-4e12-88f2-b88dc3bfa1e9"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="11" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$Parameter{VALEUR_TOTALE_GLOBAL} + " TND"]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="10" y="60" width="180" height="15" uuid="5dfdf8da-ebfd-46c5-aef5-2bf8dcdae909"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="9" isBold="true" isUnderline="true"/>
+				</textElement>
+				<text><![CDATA[Le Comptable des Matières]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="360" y="60" width="180" height="15" uuid="ddfd76db-ebfd-4aef-b209-bebf9a2e6f42"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="9" isBold="true" isUnderline="true"/>
+				</textElement>
+				<text><![CDATA[L'Officier Logistique - Chef DA]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="10" y="115" width="180" height="15" forecolor="#CCCCCC" uuid="9efdf8da-ebfd-46c5-aef5-e5f8dcdae909"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="8" isItalic="true"/>
+				</textElement>
+				<text><![CDATA[(Signature & Cachet)]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="360" y="115" width="180" height="15" forecolor="#CCCCCC" uuid="8efd76db-ebfd-4aef-b209-fdbf9a2e6f42"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="SansSerif" size="8" isItalic="true"/>
+				</textElement>
+				<text><![CDATA[(Signature & Cachet)]]></text>
+			</staticText>
+		</band>
+	</summary>
+</jasperReport>
