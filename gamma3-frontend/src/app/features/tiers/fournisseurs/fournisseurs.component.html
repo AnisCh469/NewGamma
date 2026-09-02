@@ -1,0 +1,169 @@
+<div class="min-h-screen bg-slate-50 p-8">
+
+  <!-- En-tête de page -->
+  <div class="mb-8 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+    <div>
+      <h1 class="text-3xl font-extrabold text-gamma-dark tracking-tight">Référentiel des Fournisseurs</h1>
+      <p class="text-slate-500 mt-1">
+        Gérez les fournisseurs et partenaires de la Marine
+        <span *ngIf="fournisseurs.length > 0" class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+          {{ fournisseurs.length | number }} fournisseurs
+        </span>
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+
+      <!-- ══ Barre de recherche premium (Code · Nom · Statut · Matricule) ══ -->
+      <div class="relative group">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <i class="pi pi-search text-slate-400 group-focus-within:text-blue-500 transition-colors duration-200"
+             style="font-size: 0.8rem"></i>
+        </div>
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="dt.filterGlobal($event, 'contains')"
+          placeholder="Code · Raison Sociale · Statut"
+          class="w-72 pl-9 pr-9 py-2 text-sm
+                 bg-slate-50 border border-slate-200 rounded-xl
+                 focus:outline-none focus:ring-2 focus:ring-blue-400/40 focus:border-blue-400
+                 focus:bg-white placeholder:text-slate-400 text-slate-700
+                 transition-all duration-200"
+          id="search-fournisseurs"
+        />
+        <button
+          *ngIf="searchTerm"
+          (click)="clearSearch(dt)"
+          class="absolute inset-y-0 right-0 pr-3 flex items-center
+                 text-slate-400 hover:text-slate-600 transition-colors duration-150"
+          title="Effacer la recherche" type="button">
+          <i class="pi pi-times" style="font-size: 0.75rem"></i>
+        </button>
+        <div *ngIf="!searchTerm"
+          class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
+          <span class="hidden sm:flex items-center gap-0.5">
+            <kbd class="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-400" style="font-size:10px">Ctrl</kbd>
+            <kbd class="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-400" style="font-size:10px">K</kbd>
+          </span>
+        </div>
+      </div>
+      <!-- ══ fin barre de recherche ══ -->
+
+      <p-button label="Nouveau Fournisseur" icon="pi pi-plus" (onClick)="openNew()"
+        styleClass="p-button-primary"></p-button>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+    <p-table #dt [value]="fournisseurs" [paginator]="true" [rows]="25"
+      [rowsPerPageOptions]="[25, 50, 100]" responsiveLayout="scroll"
+      [globalFilterFields]="['code','nom','statut','matriculeFiscal','contactNom','telephone']"
+      [tableStyle]="{'min-width': '50rem'}"
+      styleClass="p-datatable-striped p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr class="bg-slate-50 border-b border-slate-200">
+          <th pSortableColumn="code" class="font-semibold text-slate-700 py-1 px-4 text-xs">Code <p-sortIcon field="code"></p-sortIcon></th>
+          <th pSortableColumn="nom" class="font-semibold text-slate-700 py-1 px-4 text-xs">Raison Sociale <p-sortIcon field="nom"></p-sortIcon></th>
+          <th pSortableColumn="statut" class="font-semibold text-slate-700 py-1 px-4 text-xs">Statut <p-sortIcon field="statut"></p-sortIcon></th>
+          <th class="font-semibold text-slate-700 py-1 px-4 text-xs">Matricule Fiscal</th>
+          <th class="font-semibold text-slate-700 py-1 px-4 text-xs">Contact</th>
+          <th class="font-semibold text-slate-700 py-1 px-4 text-xs">Téléphone</th>
+          <th class="font-semibold text-slate-700 py-1 px-4 text-xs">Note (/10)</th>
+          <th class="font-semibold text-slate-700 py-1 px-4 text-xs text-center">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-fournisseur>
+        <tr class="hover:bg-blue-50 transition-colors duration-150 cursor-pointer border-b border-slate-100">
+          <td class="font-mono font-medium text-gamma-primary py-1 px-4 text-xs">
+            <a [routerLink]="['/fournisseurs', fournisseur.id]" class="hover:underline text-blue-600 font-semibold cursor-pointer">{{fournisseur.code}}</a>
+          </td>
+          <td class="font-medium text-slate-700 py-1 px-4 text-xs">{{fournisseur.nom}}</td>
+          <td class="py-1 px-4">
+            <p-tag [value]="fournisseur.statut || 'PROSPECT'"
+              [severity]="getStatutSeverity(fournisseur.statut)"></p-tag>
+          </td>
+          <td class="py-1 px-4 text-slate-600 text-xs">{{fournisseur.matriculeFiscal}}</td>
+          <td class="py-1 px-4 text-slate-700 text-xs">{{fournisseur.contactNom}}</td>
+          <td class="py-1 px-4 text-slate-700 text-xs">{{fournisseur.telephone}}</td>
+          <td class="py-1 px-4">
+            <span *ngIf="fournisseur.note" class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">{{fournisseur.note}}/10</span>
+            <span *ngIf="!fournisseur.note" class="text-slate-400 text-xs">—</span>
+          </td>
+          <td class="text-center py-1 px-4">
+            <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info p-button-sm mr-1 w-7 h-7 p-0"
+              (click)="editFournisseur(fournisseur)"></button>
+            <button pButton icon="pi pi-trash"
+              class="p-button-rounded p-button-text p-button-danger p-button-sm w-7 h-7 p-0"
+              (click)="deleteFournisseur(fournisseur)"></button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="8" class="text-center p-8 text-slate-500">
+            <i class="pi pi-inbox text-4xl mb-3 text-slate-300 block"></i>
+            Aucun fournisseur trouvé.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-dialog [(visible)]="displayDialog" [style]="{width: '500px'}" header="Détails du Fournisseur" [modal]="true"
+  class="p-fluid">
+  <ng-template pTemplate="content">
+    <div class="field mb-4">
+      <label for="code" class="block font-medium mb-2">Code Fournisseur *</label>
+      <input type="text" pInputText id="code" [(ngModel)]="selectedFournisseur.code" required autofocus />
+    </div>
+    <div class="field mb-4">
+      <label for="nom" class="block font-medium mb-2">Raison Sociale *</label>
+      <input type="text" pInputText id="nom" [(ngModel)]="selectedFournisseur.nom" required />
+    </div>
+    <div class="field mb-4">
+      <label for="mf" class="block font-medium mb-2">Matricule Fiscal</label>
+      <input type="text" pInputText id="mf" [(ngModel)]="selectedFournisseur.matriculeFiscal" />
+    </div>
+    <div class="field mb-4">
+      <label for="adresse" class="block font-medium mb-2">Adresse</label>
+      <input type="text" pInputText id="adresse" [(ngModel)]="selectedFournisseur.adresse" />
+    </div>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div class="field">
+        <label for="contact" class="block font-medium mb-2">Nom du Contact</label>
+        <input type="text" pInputText id="contact" [(ngModel)]="selectedFournisseur.contactNom" />
+      </div>
+      <div class="field">
+        <label for="tel" class="block font-medium mb-2">Téléphone</label>
+        <input type="text" pInputText id="tel" [(ngModel)]="selectedFournisseur.telephone" />
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div class="field">
+        <label for="fax" class="block font-medium mb-2">Fax</label>
+        <input type="text" pInputText id="fax" [(ngModel)]="selectedFournisseur.fax" />
+      </div>
+      <div class="field">
+        <label for="email" class="block font-medium mb-2">Email</label>
+        <input type="text" pInputText id="email" [(ngModel)]="selectedFournisseur.email" />
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div class="field">
+        <label for="note" class="block font-medium mb-2">Note sur 10</label>
+        <input type="number" pInputText id="note" [(ngModel)]="selectedFournisseur.note" min="0" max="10" />
+      </div>
+      <div class="field">
+        <label for="statut" class="block font-medium mb-2">Statut d'Homologation</label>
+        <p-dropdown [options]="statutOptions" [(ngModel)]="selectedFournisseur.statut" inputId="statut"
+          appendTo="body"></p-dropdown>
+      </div>
+    </div>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button pButton label="Annuler" icon="pi pi-times" class="p-button-text" (click)="displayDialog = false"></button>
+    <button pButton label="Enregistrer" icon="pi pi-check" (click)="saveFournisseur()"
+      [disabled]="!selectedFournisseur.code || !selectedFournisseur.nom"></button>
+  </ng-template>
+</p-dialog>

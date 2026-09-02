@@ -1,0 +1,308 @@
+<p-toast></p-toast>
+<div class="web-container p-4 max-w-[1800px] mx-auto animation-fadein">
+  <!-- En-tête Compact -->
+  <div class="flex items-center justify-between mb-2 no-print border-b pb-2 shrink-0">
+    <div class="flex items-center gap-3">
+      <p-button icon="pi pi-arrow-left" label="Retour" styleClass="p-button-text p-button-secondary p-button-sm" routerLink="/catalogue"></p-button>
+      <h1 class="text-xl font-black text-gray-800 m-0">FICHE ARTICLE : {{ item?.nomenclature }}</h1>
+    </div>
+    <div class="flex gap-2">
+      <p-button icon="pi pi-history" label="Historique" styleClass="p-button-outlined p-button-secondary p-button-sm"></p-button>
+      <p-button icon="pi pi-print" label="Imprimer" styleClass="p-button-outlined p-button-secondary p-button-sm" (onClick)="printPage()"></p-button>
+      <p-button icon="pi pi-tags" label="Étiquette" styleClass="p-button-primary p-button-sm" (onClick)="printLabel()"></p-button>
+    </div>
+  </div>
+
+  <!-- Loading & Error -->
+  <div *ngIf="loading" class="flex justify-center items-center py-10"><i class="pi pi-spin pi-spinner text-3xl text-primary"></i></div>
+  <div *ngIf="error" class="bg-red-50 text-red-600 p-4 rounded-xl border border-red-200 flex items-center gap-4"><i class="pi pi-exclamation-triangle text-xl"></i><span class="font-bold">{{ error }}</span></div>
+
+  <!-- Main Content Grid -->
+  <div *ngIf="!loading && item" class="main-content-grid grid grid-cols-12 gap-4">
+    
+    <!-- Colonne de Gauche (4/12) -->
+    <div class="col-span-12 lg:col-span-4 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
+      
+      <!-- Bloc Photo -->
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden p-3 flex flex-col items-center">
+        <div *ngIf="item.photoUrl" class="w-full aspect-square max-w-[320px] rounded-lg border border-gray-100 overflow-hidden shadow-inner mb-3">
+          <img [src]="getFullUrl(item.photoUrl)" alt="Photo Article" class="w-full h-full object-cover" onerror="this.src='assets/placeholder-item.png'">
+        </div>
+        <div *ngIf="!item.photoUrl" class="w-full aspect-square max-w-[320px] rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center bg-gray-50 mb-3">
+          <i class="pi pi-image text-5xl text-gray-200"></i>
+          <p class="text-gray-400 font-bold mt-2 uppercase tracking-widest text-[10px]">Aucune Photo</p>
+        </div>
+        <p-fileUpload *ngIf="!isClient()" mode="basic" chooseLabel="Changer Photo" accept="image/*" maxFileSize="15000000" (onSelect)="onPhotoUpload($event)" [auto]="true" styleClass="p-button-text p-button-sm w-full"></p-fileUpload>
+      </div>
+
+      <!-- Traçabilité -->
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col items-center gap-2">
+        <h3 class="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] w-full mb-2">Traçabilité</h3>
+        <div class="bg-gray-50 p-4 rounded-lg border border-gray-100 w-full flex flex-col items-center">
+          <qrcode [qrdata]="item.nomenclature" [width]="140" [errorCorrectionLevel]="'M'"></qrcode>
+          <div class="mt-4 w-full flex justify-center overflow-hidden scale-90">
+            <svg class="barcode-svg"></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Colonne de Droite (8/12) -->
+    <div class="col-span-12 lg:col-span-8 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
+      
+      <!-- Identité -->
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="p-6 bg-gradient-to-br from-slate-50 to-white border-b border-gray-100 flex justify-between items-start">
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+               <span class="bg-primary text-white px-2 py-1 rounded text-xs font-black tracking-widest uppercase">NNO: {{ item.nomenclature }}</span>
+               <p-tag [value]="item.stockSecurite > 0 ? 'ACTIF' : 'NOUVEAU'" [severity]="getStockSeverity(item.stockSecurite)" styleClass="text-[10px] px-2 font-bold"></p-tag>
+            </div>
+            <h2 class="text-3xl font-black text-gray-900 leading-tight mb-2 tracking-tighter">{{ item.designation }}</h2>
+            <div class="flex gap-4 text-xs font-bold text-gray-400 uppercase tracking-widest">
+              <span>Catégorie: <b class="text-gray-800">{{ item.categorieCode }}</b></span>
+              <span>Classe: <b class="text-gray-800">{{ item.classeCode }}</b></span>
+            </div>
+          </div>
+          <div class="text-right">
+             <p class="text-[10px] text-gray-400 font-black uppercase mb-1 tracking-widest">Prix Unitaire (TND)</p>
+             <p class="text-4xl font-black text-primary">{{ item.prixUnitaire | number:'1.3-3' }}</p>
+          </div>
+        </div>
+
+        <div class="p-6 grid grid-cols-4 gap-4 bg-white">
+          <div class="flex flex-col"><span class="text-[10px] text-gray-400 font-black uppercase mb-1">Sous-Classe</span><span class="text-base font-bold text-gray-800">{{ item.sousClasseCode }}</span></div>
+          <div class="flex flex-col"><span class="text-[10px] text-gray-400 font-black uppercase mb-1">Série</span><span class="text-base font-bold text-gray-800">{{ item.serieCode }}</span></div>
+          <div class="flex flex-col"><span class="text-[10px] text-gray-400 font-black uppercase mb-1">Code Article</span><span class="text-base font-bold text-gray-800">{{ item.itemCode }}</span></div>
+          <div class="flex flex-col"><span class="text-[10px] text-gray-400 font-black uppercase mb-1">Enregistré le</span><span class="text-base font-bold text-gray-800">{{ item.createdAt | date:'shortDate' }}</span></div>
+        </div>
+      </div>
+
+      <!-- Stocks -->
+      <div class="bg-gray-900 text-white rounded-xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-sm font-black uppercase tracking-[0.2em] text-primary">Gestion des Stocks</h3>
+          <p-button *ngIf="!isClient()" label="Mouvement" icon="pi pi-arrows-h" styleClass="p-button-success p-button-sm" (onClick)="openMouvementModal()"></p-button>
+        </div>
+        
+        <div class="grid grid-cols-3 gap-4 mb-4">
+          <div class="bg-white/5 p-4 rounded-xl border border-white/10 flex justify-between items-center">
+            <div>
+              <p class="text-[10px] font-black uppercase opacity-50 mb-1">Stock Physique (Disponible)</p>
+              <p class="text-4xl font-black text-green-400">
+                {{ stockTotal | number:'1.0-0' }}
+                <span class="text-2xl text-gray-300 font-normal" *ngIf="getReservedTotal() > 0">
+                  ({{ stockTotal - getReservedTotal() }})
+                </span>
+              </p>
+            </div>
+            <i class="pi pi-box text-3xl opacity-20"></i>
+          </div>
+          <div class="bg-white/5 p-4 rounded-xl border border-white/10 flex justify-between items-center">
+            <div>
+              <p class="text-[10px] font-black uppercase opacity-50 mb-1">Stock Réservé</p>
+              <p class="text-4xl font-black text-orange-400">{{ getReservedTotal() | number:'1.0-0' }}</p>
+            </div>
+            <i class="pi pi-bookmark text-3xl opacity-20"></i>
+          </div>
+          <div class="bg-white/5 p-4 rounded-xl border border-white/10 flex justify-between items-center">
+            <div>
+              <p class="text-[10px] font-black uppercase opacity-50 mb-1">Seuil Alerte</p>
+              <p class="text-4xl font-black text-gray-400">{{ item.stockSecurite }}</p>
+            </div>
+            <i class="pi pi-shield text-3xl opacity-20"></i>
+          </div>
+        </div>
+
+        <p-table [value]="stocks" [scrollable]="true" scrollHeight="160px" styleClass="p-datatable-sm p-datatable-dark">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>SOUTE / MAGASIN</th>
+              <th>RAYON</th>
+              <th>EMPLACEMENT</th>
+              <th class="text-right">QTÉ PHYSIQUE</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-stock>
+            <tr class="text-sm">
+              <!-- Badge coloré par région géographique -->
+              <td class="font-black">
+                <div class="flex items-center gap-2">
+                  <!-- Indicateur visuel coloré selon le code de la soute -->
+                  <span class="flex-shrink-0 w-2.5 h-2.5 rounded-full"
+                    [style.background-color]="stock.magasinCode === 'SGS' ? '#60a5fa' : stock.magasinCode === 'SM1' ? '#34d399' : stock.magasinCode === 'SM2' ? '#fbbf24' : '#9ca3af'">
+                  </span>
+                  <div>
+                    <!-- Libellé de la région et code de la soute -->
+                    <span [class]="stock.magasinCode === 'SGS' ? 'text-blue-400' : stock.magasinCode === 'SM1' ? 'text-emerald-400' : stock.magasinCode === 'SM2' ? 'text-amber-400' : 'text-primary'">
+                      {{ stock.magasinCode === 'SGS' ? '🔵 NORD (Bizerte)' : stock.magasinCode === 'SM1' ? '🟢 CENTRE' : stock.magasinCode === 'SM2' ? '🟡 SUD' : stock.magasinCode }}
+                    </span>
+                    <span class="block text-[10px] text-gray-400 font-normal">{{ stock.magasinNom }}</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span *ngIf="stock.rayon" class="inline-flex items-center gap-1 text-gray-900 font-bold text-xs bg-cyan-200 border border-cyan-300 px-2 py-0.5 rounded">
+                  <i class="pi pi-map-marker text-[9px]"></i>{{ stock.rayon }}
+                </span>
+                <span *ngIf="!stock.rayon" class="text-gray-500 text-xs italic">—</span>
+              </td>
+              <td class="text-gray-400 text-xs">{{ stock.emplacement || '—' }}</td>
+              <td class="text-right">
+                <span class="px-3 py-0.5 rounded font-black text-lg"
+                  [class]="stock.magasinCode === 'SGS' ? 'text-blue-300' : stock.magasinCode === 'SM1' ? 'text-emerald-300' : 'text-amber-300'">
+                  {{ stock.quantite | number:'1.0-0' }}
+                </span>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="4" class="text-center py-4 text-gray-500 italic text-sm">Aucun stock enregistré dans les soutes.</td></tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <!-- Réservations (Transit) -->
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-sm font-black uppercase tracking-[0.2em] text-gray-800">Réservations Actives (Transit)</h3>
+        </div>
+        
+        <p-table [value]="reservations" [loading]="loadingReservations" [scrollable]="true" scrollHeight="150px" styleClass="p-datatable-sm">
+          <ng-template pTemplate="header">
+            <tr>
+              <th>UNITÉ</th>
+              <th>RÉF DEMANDE</th>
+              <th>N° BON DE SORTIE</th>
+              <th class="text-right">QTÉ RÉSERVÉE</th>
+              <th>DATE</th>
+              <th>STATUT</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-res>
+            <tr class="text-sm">
+              <td class="font-bold text-gray-800">{{ res.nomUnite }} ({{ res.codeUnite }})</td>
+              <td>{{ res.numeroDemande }}</td>
+              <td class="font-black text-primary">{{ res.numeroBs }}</td>
+              <td class="text-right"><span class="bg-orange-50 text-orange-600 px-3 py-0.5 rounded font-black border border-orange-100">{{ res.quantite }}</span></td>
+              <td>{{ res.dateReservation | date:'dd/MM/yyyy' }}</td>
+              <td><span class="bg-orange-100 text-orange-800 text-[10px] px-2 py-0.5 rounded font-bold uppercase">Réservé (Transit)</span></td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="6" class="text-center py-4 text-gray-400 italic text-sm">Aucune réservation active pour cet article.</td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <!-- Sécurité & Documentation -->
+      <div class="grid grid-cols-2 gap-4">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 border-l-4 border-l-orange-500">
+          <h3 class="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] mb-4">Sécurité GHS</h3>
+          <div *ngIf="!editDangerMode" class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+              <img *ngIf="getDangerImage(item.dangerClass || 'NONE')" [src]="getDangerImage(item.dangerClass || 'NONE')" class="w-12 h-12 object-contain">
+              <div *ngIf="!getDangerImage(item.dangerClass || 'NONE')" class="w-12 h-12 rounded bg-gray-50 flex items-center justify-center border border-gray-100">
+                <i class="pi pi-shield text-2xl text-gray-200"></i>
+              </div>
+              <div>
+                <p class="text-sm font-black text-gray-800 m-0">{{ getDangerLabel(item.dangerClass || 'NONE') }}</p>
+                <p class="text-[8px] text-gray-400 font-bold uppercase">Classification Officielle</p>
+              </div>
+            </div>
+            <p-button *ngIf="!isClient()" icon="pi pi-pencil" styleClass="p-button-rounded p-button-text p-button-secondary p-button-xs" (onClick)="editDangerMode = true"></p-button>
+          </div>
+          <div *ngIf="editDangerMode" class="flex items-center gap-2">
+            <p-dropdown [options]="dangerClasses" [(ngModel)]="selectedDangerClass" optionLabel="label" optionValue="value" styleClass="w-full p-inputtext-sm" appendTo="body"></p-dropdown>
+            <p-button icon="pi pi-check" styleClass="p-button-rounded p-button-success p-button-xs" (onClick)="saveDangerClass()"></p-button>
+            <p-button icon="pi pi-times" styleClass="p-button-rounded p-button-text p-button-secondary p-button-xs" (onClick)="editDangerMode = false"></p-button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] m-0">Documents</h3>
+            <p-fileUpload *ngIf="!isClient()" mode="basic" chooseLabel="+" accept="application/pdf" maxFileSize="15000000" (onSelect)="onDocUpload($event)" [auto]="true" styleClass="p-button-text p-button-sm"></p-fileUpload>
+          </div>
+          <div class="flex flex-col gap-2">
+            <div *ngFor="let doc of item.documents" class="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-100">
+              <span class="text-[10px] font-black text-gray-700 truncate max-w-[120px]">{{ doc.fileName }}</span>
+              <a [href]="getFullUrl(doc.fileUrl)" target="_blank" class="p-button p-button-text p-button-secondary p-button-xs"><i class="pi pi-download"></i></a>
+            </div>
+            <div *ngIf="!item.documents?.length" class="text-center py-2 text-gray-400 italic text-[10px]">Aucun document.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Layouts d'impression (cachés) -->
+<div *ngIf="!loading && item" class="print-label-container flex-col items-center justify-center p-8 text-center bg-white">
+  <h1 class="text-4xl font-extrabold text-black mb-6">{{ item.designation }}</h1>
+  <div class="flex items-center justify-center gap-12 mb-8"><qrcode [qrdata]="item.nomenclature" [width]="200" [errorCorrectionLevel]="'M'"></qrcode></div>
+  <svg class="barcode-svg"></svg>
+</div>
+
+<div *ngIf="!loading && item" class="print-document-container flex-col bg-white p-6 w-full text-black text-sm">
+  <div class="flex justify-between items-center border-b-2 border-gray-800 pb-3 mb-4">
+    <div><h2 class="text-base font-bold uppercase tracking-wider">Ministère de la Défense Nationale</h2><h3 class="text-sm font-semibold text-gray-700">GAMMA 3 • Systèmes & Logistique</h3></div>
+    <div class="text-right"><h1 class="text-2xl font-black uppercase text-primary-dark">Fiche Technique Article</h1><p class="text-xs text-gray-500 font-medium italic">Généré le {{ today | date:'dd/MM/yyyy' }}</p></div>
+  </div>
+  <div class="flex gap-6 mb-4 items-start">
+    <div *ngIf="item.photoUrl" class="w-32 h-32 border-2 border-gray-200 p-1 shrink-0 bg-gray-50 rounded shadow-sm"><img [src]="getFullUrl(item.photoUrl)" alt="Photo" class="w-full h-full object-contain"></div>
+    <div class="flex-grow">
+      <div class="flex justify-between items-end mb-1"><p class="text-xs text-gray-500 font-bold uppercase tracking-widest">Nomenclature (NNO)</p><p class="text-xs text-gray-400 font-medium">ID: #{{ item.id }}</p></div>
+      <p class="text-4xl font-black tracking-tighter mb-2 border-b-2 border-gray-100 pb-1">{{ item.nomenclature }}</p>
+      <p class="text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">Désignation Officielle</p><p class="text-2xl font-bold leading-tight">{{ item.designation }}</p>
+    </div>
+  </div>
+  <div class="mb-4">
+    <h4 class="text-sm font-bold uppercase bg-gray-800 text-white px-3 py-1 mb-2 inline-block rounded">Caractéristiques Logistiques</h4>
+    <div class="grid grid-cols-4 border border-gray-400">
+      <div class="bg-gray-100 p-2 font-bold border-r border-b border-gray-400">Code Article</div><div class="p-2 border-r border-b border-gray-400 font-medium">{{ item.itemCode }}</div>
+      <div class="bg-gray-100 p-2 font-bold border-r border-b border-gray-400">Catégorie</div><div class="p-2 border-b border-gray-400 font-medium">{{ item.categorieCode }}</div>
+      <div class="bg-gray-100 p-2 font-bold border-r border-b border-gray-400">Classe</div><div class="p-2 border-r border-b border-gray-400 font-medium">{{ item.classeCode }}</div>
+      <div class="bg-gray-100 p-2 font-bold border-r border-b border-gray-400">Sous-Classe</div><div class="p-2 border-b border-gray-400 font-medium">{{ item.sousClasseCode }}</div>
+      <div class="bg-gray-100 p-2 font-bold border-r border-b border-gray-400">Série</div><div class="p-2 border-r border-b border-gray-400 font-medium">{{ item.serieCode }}</div>
+      <div class="bg-gray-100 p-2 font-bold border-r border-b border-gray-400">Prix Unitaire</div><div class="p-2 border-b border-gray-400 font-bold text-primary">{{ item.prixUnitaire | number:'1.3-3' }} TND</div>
+      <div class="bg-gray-100 p-2 font-bold border-r border-gray-400">Stock Sécurité</div><div class="p-2 border-r border-gray-400 font-medium">{{ item.stockSecurite | number:'1.0-0' }}</div>
+      <div class="bg-gray-100 p-2 font-bold border-r border-gray-400">Enregistré le</div><div class="p-2 font-medium">{{ item.createdAt | date:'dd/MM/yyyy' }}</div>
+    </div>
+  </div>
+  <div class="flex gap-4 mb-4">
+    <div class="w-1/2 flex flex-col"><h4 class="text-sm font-bold uppercase border-b border-gray-400 pb-1 mb-2">Sécurité & Classification</h4><div class="flex items-center gap-3 border border-gray-200 p-3 rounded bg-gray-50 flex-grow"><img *ngIf="getDangerImage(item.dangerClass || 'NONE')" [src]="getDangerImage(item.dangerClass || 'NONE')" class="w-12 h-12 object-contain grayscale"><div><p class="font-bold text-base leading-none mb-1">{{ getDangerLabel(item.dangerClass || 'NONE') }}</p><p class="text-[10px] text-gray-500 uppercase font-medium">Manipulation réglementée GHS</p></div></div></div>
+    <div class="w-1/2 flex flex-col"><h4 class="text-sm font-bold uppercase border-b border-gray-400 pb-1 mb-2">Documentation Associée</h4><div class="border border-gray-200 p-2 rounded flex-grow"><ul class="list-none p-0 m-0" *ngIf="item.documents && item.documents.length > 0"><li *ngFor="let doc of item.documents" class="text-xs mb-1 flex items-center gap-2"><i class="pi pi-file-pdf text-red-600"></i><span class="truncate">{{ doc.fileName }}</span></li></ul><p *ngIf="!item.documents || item.documents.length === 0" class="italic text-gray-400 text-xs text-center py-2">Aucun document numérique.</p></div></div>
+  </div>
+  <div class="mt-auto border-t-2 border-gray-200 pt-4 flex justify-between items-start">
+    <div class="flex gap-8">
+      <div><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Traçabilité QR</p><qrcode [qrdata]="item.nomenclature" [width]="70" [errorCorrectionLevel]="'M'"></qrcode></div>
+      <div><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Code Logistique</p><svg class="barcode-svg" style="transform: scale(0.6); transform-origin: left top;"></svg></div>
+    </div>
+    <div class="text-right flex flex-col items-end"><div class="border border-gray-400 w-48 h-20 p-2 text-center flex flex-col justify-between"><p class="text-[10px] font-bold text-gray-400 uppercase">Visa de l'Officier Gestionnaire</p><p class="text-[9px] text-gray-300 italic">Signature et Tampon</p></div><p class="text-[10px] text-gray-400 mt-2 font-medium">Document officiel généré par le système GAMMA 3</p></div>
+  </div>
+</div>
+
+<p-dialog header="Enregistrer un Mouvement" [(visible)]="displayMouvementModal" [modal]="true" [style]="{width: '500px'}" styleClass="p-fluid">
+  <div class="flex flex-col gap-4 mt-2">
+    <div class="field"><label class="font-bold text-gray-700 block mb-2">Type de mouvement</label><p-dropdown [options]="[{label:'Entrée (+)', value:'ENTREE'}, {label:'Sortie (-)', value:'SORTIE'}, {label:'Inventaire (=)', value:'INVENTAIRE'}]" [(ngModel)]="mouvementDto.typeMouvement" appendTo="body"></p-dropdown></div>
+    <div class="field"><label class="font-bold text-gray-700 block mb-2">Quantité</label><input type="number" pInputText [(ngModel)]="mouvementDto.quantite" class="w-full p-2 border border-gray-300 rounded" min="1"></div>
+    <div class="field"><label class="font-bold text-gray-700 block mb-2">Magasin (ID)</label><input type="number" pInputText [(ngModel)]="mouvementDto.magasinId" class="w-full p-2 border border-gray-300 rounded"></div>
+    <div class="field"><label class="font-bold text-gray-700 block mb-2">Référence Document (BE / BS)</label><input type="text" pInputText [(ngModel)]="mouvementDto.referenceBon" class="w-full p-2 border border-gray-300 rounded"></div>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="field">
+        <label class="font-bold text-gray-700 block mb-2">Rayon <span class="font-normal text-gray-400">(ex: Rayon B-3)</span></label>
+        <input type="text" pInputText [(ngModel)]="mouvementDto.rayon" placeholder="Rayon A-1" class="w-full p-2 border border-gray-300 rounded">
+      </div>
+      <div class="field">
+        <label class="font-bold text-gray-700 block mb-2">Emplacement précis</label>
+        <input type="text" pInputText [(ngModel)]="mouvementDto.emplacement" placeholder="Étagère 3" class="w-full p-2 border border-gray-300 rounded">
+      </div>
+    </div>
+    <div class="field"><label class="font-bold text-gray-700 block mb-2">Motif / Justification</label><textarea pInputTextarea [(ngModel)]="mouvementDto.motif" rows="3" class="w-full p-2 border border-gray-300 rounded"></textarea></div>
+  </div>
+  <ng-template pTemplate="footer"><p-button label="Annuler" icon="pi pi-times" (onClick)="displayMouvementModal = false" styleClass="p-button-text"></p-button><p-button label="Enregistrer" icon="pi pi-check" (onClick)="effectuerMouvement()" styleClass="p-button-primary"></p-button></ng-template>
+</p-dialog>

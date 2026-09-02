@@ -1,0 +1,14 @@
+/* Compact Table Styles */
+:host ::ng-deep .p-datatable.p-datatable-sm .p-datatable-thead > tr > th {
+    padding: 0.25rem 0.5rem;
+    line-height: 1.2;
+}
+
+:host ::ng-deep .p-datatable.p-datatable-sm .p-datatable-tbody > tr > td {
+    padding: 0.25rem 0.5rem;
+    line-height: 1.2;
+}
+
+:host ::ng-deep .p-datatable.p-datatable-sm .p-datatable-tbody > tr {
+    height: auto;
+}

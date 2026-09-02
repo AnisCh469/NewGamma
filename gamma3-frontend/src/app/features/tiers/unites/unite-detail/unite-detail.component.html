@@ -1,0 +1,990 @@
+<p-toast></p-toast>
+<div class="web-container p-4 max-w-[1800px] mx-auto animation-fadein">
+  
+  <!-- En-tête Compact -->
+  <div class="flex items-center justify-between mb-2 no-print border-b pb-2 shrink-0">
+    <div class="flex items-center gap-3">
+      <p-button icon="pi pi-arrow-left" label="Retour" styleClass="p-button-text p-button-secondary p-button-sm" routerLink="/unites"></p-button>
+      <h1 class="text-xl font-black text-gray-800 m-0">FICHE UNITÉ / CLIENT : {{ unite?.code }}</h1>
+    </div>
+    <div class="flex gap-2">
+      <p-button *ngIf="!isClient()" icon="pi pi-pencil" label="Modifier" styleClass="p-button-outlined p-button-sm" (onClick)="editUnite()"></p-button>
+      <p-button icon="pi pi-print" label="Imprimer" styleClass="p-button-outlined p-button-secondary p-button-sm" (onClick)="printPage()"></p-button>
+      <p-button icon="pi pi-tags" label="Étiquette" styleClass="p-button-primary p-button-sm" (onClick)="printLabel()"></p-button>
+      <p-button *ngIf="!isClient()" icon="pi pi-trash" label="Supprimer" styleClass="p-button-danger p-button-sm" (onClick)="deleteUnite()"></p-button>
+    </div>
+  </div>
+
+  <!-- Loading & Error -->
+  <div *ngIf="loading" class="flex justify-center items-center py-10">
+    <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
+  </div>
+  <div *ngIf="error" class="bg-red-50 text-red-600 p-4 rounded-xl border border-red-200 flex items-center gap-4">
+    <i class="pi pi-exclamation-triangle text-xl"></i>
+    <span class="font-bold">{{ error }}</span>
+  </div>
+
+  <!-- Main Content Grid -->
+  <div *ngIf="!loading && unite" class="main-content-grid grid grid-cols-12 gap-4">
+    
+    <!-- Colonne de Gauche (4/12) -->
+    <div class="col-span-12 lg:col-span-4 flex flex-col gap-4">
+      
+      <!-- Bloc Insigne / Armoiries -->
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden p-4 flex flex-col items-center">
+        <h3 class="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] w-full mb-3">Insigne de l'Unité</h3>
+        
+        <div *ngIf="unite.logoUrl" class="w-full aspect-square max-w-[260px] rounded-lg border border-gray-100 overflow-hidden shadow-inner mb-4 flex items-center justify-center bg-slate-50">
+          <img [src]="getFullUrl(unite.logoUrl)" alt="Insigne Unité" class="max-w-full max-h-full object-contain p-2" onerror="this.src='assets/placeholder-emblem.png'">
+        </div>
+        
+        <div *ngIf="!unite.logoUrl" class="w-full aspect-square max-w-[260px] rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center bg-gray-50 mb-4 p-4 text-center">
+          <i class="pi pi-shield text-5xl text-gray-300 mb-2"></i>
+          <p class="text-gray-400 font-bold uppercase tracking-widest text-[10px] m-0">Aucun Insigne Défini</p>
+          <span class="text-slate-400 text-[9px] mt-1">Cliquez sur charger pour importer les armoiries ou l'emblème de l'unité</span>
+        </div>
+        
+        <p-fileUpload *ngIf="!isClient()" mode="basic" chooseLabel="Charger un Insigne" accept="image/*" maxFileSize="5000000" (onSelect)="onLogoUpload($event)" [auto]="true" styleClass="p-button-text p-button-sm w-full"></p-fileUpload>
+      </div>
+
+      <!-- Traçabilité QR & Barcode -->
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col items-center gap-2">
+        <h3 class="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] w-full mb-2">Traçabilité</h3>
+        <div class="bg-gray-50 p-4 rounded-lg border border-gray-100 w-full flex flex-col items-center">
+          <qrcode [qrdata]="unite.code" [width]="130" [errorCorrectionLevel]="'M'"></qrcode>
+          <div class="mt-4 w-full flex justify-center overflow-hidden scale-95">
+            <svg class="barcode-svg"></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sécurité & Double Facteur (2FA) (Client uniquement ou si c'est son propre profil) -->
+      <div *ngIf="isClient() && authService.currentUser()?.matricule === unite.code" 
+           class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col items-center gap-2 no-print">
+        <h3 class="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] w-full mb-2">Double Facteur (2FA)</h3>
+        
+        <!-- Si activé -->
+        <div *ngIf="authService.currentUser()?.requires2fa === false" class="w-full space-y-3">
+          <div class="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-3">
+            <i class="pi pi-check-circle text-green-600 text-xl"></i>
+            <div>
+              <span class="text-xs font-bold text-green-800 block">Double Facteur Activé</span>
+              <span class="text-[9px] text-green-600 font-semibold uppercase">Protection active</span>
+            </div>
+          </div>
+          <button pButton label="Désactiver le 2FA" class="p-button-sm p-button-outlined p-button-danger w-full font-bold" (click)="disable2Fa()"></button>
+        </div>
+
+        <!-- Si désactivé -->
+        <div *ngIf="!setup2FaMode && authService.currentUser()?.requires2fa !== false" class="w-full">
+          <p class="text-[10px] text-slate-500 mb-3 leading-normal">Renforcez la sécurité de votre compte militaire en activant la validation par code TOTP temporaire.</p>
+          <button pButton label="Activer le Double Facteur" icon="pi pi-lock" class="p-button-sm p-button-primary w-full font-bold" (click)="init2FaSetup()"></button>
+        </div>
+
+        <!-- Mode configuration (QR Code + Validation) -->
+        <div *ngIf="setup2FaMode" class="w-full space-y-4 bg-slate-50 p-4 rounded-lg border border-slate-100 flex flex-col items-center">
+          <p class="text-[10px] text-slate-600 font-medium text-center leading-normal">Scannez ce QR Code avec votre application de sécurité (ex: Google Authenticator) :</p>
+          
+          <qrcode [qrdata]="otpauthUrl" [width]="140" [errorCorrectionLevel]="'M'"></qrcode>
+          
+          <div class="w-full text-center">
+            <span class="text-[9px] text-slate-400 block font-semibold uppercase mb-1">Clé de secours</span>
+            <code class="text-xs font-mono font-bold bg-white px-2.5 py-1 border border-slate-200 rounded">{{ secret2fa }}</code>
+          </div>
+
+          <div class="w-full space-y-2">
+            <label class="text-[10px] font-bold text-slate-600 uppercase block">Code de validation</label>
+            <input pInputText type="text" [(ngModel)]="verificationCode2fa" placeholder="000 000" maxlength="6" class="text-center font-mono font-bold text-sm py-1.5 w-full">
+          </div>
+
+          <div class="flex gap-2 w-full pt-2">
+            <button pButton label="Annuler" class="p-button-text p-button-secondary p-button-sm w-1/3" (click)="setup2FaMode = false"></button>
+            <button pButton label="Activer" class="p-button-primary p-button-sm w-2/3" (click)="confirm2FaEnable()" [disabled]="!verificationCode2fa"></button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Colonne de Droite (8/12) -->
+    <div class="col-span-12 lg:col-span-8 flex flex-col gap-4">
+      
+      <!-- Identité / Informations Générales -->
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="p-6 bg-gradient-to-br from-slate-50 to-white border-b border-gray-100 flex justify-between items-start">
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+               <span class="bg-gamma-primary text-white px-2 py-1 rounded text-xs font-black tracking-widest uppercase">SIGLE UNITÉ: {{ unite.code }}</span>
+               <span class="bg-slate-100 text-slate-700 px-2 py-1 rounded text-[10px] font-bold">BASE NAVALE : {{ unite.baseNavale || '—' }}</span>
+            </div>
+            <h2 class="text-3xl font-black text-gray-900 leading-tight mb-2 tracking-tighter">{{ unite.nom }}</h2>
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest m-0">
+              Unité Utilisatrice / Client Interne de la Marine Nationale
+            </p>
+          </div>
+          <div class="text-right">
+             <p class="text-[10px] text-gray-400 font-black uppercase mb-1 tracking-widest">Enregistrée le</p>
+             <p class="text-xl font-black text-gray-800">{{ (unite.createdAt | date:'dd/MM/yyyy') || today | date:'dd/MM/yyyy' }}</p>
+          </div>
+        </div>
+
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 bg-white">
+          <div class="flex flex-col border-b border-gray-50 pb-2">
+            <span class="text-[10px] text-gray-400 font-black uppercase mb-1">Port d'Attache de Rattachement</span>
+            <span class="text-sm font-bold text-gray-800"><i class="pi pi-compass text-xs mr-2 text-slate-400"></i>Base Navale de {{ unite.baseNavale || '—' }}</span>
+          </div>
+          <div class="flex flex-col border-b border-gray-50 pb-2">
+            <span class="text-[10px] text-gray-400 font-black uppercase mb-1">Type d'entité</span>
+            <span class="text-sm font-bold text-gray-800"><i class="pi pi-tag text-xs mr-2 text-slate-400"></i>Unité Utilisatrice Logistique</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Onglets d'intégration future (Demandes de matériels / Distribution annuelle / Documents) -->
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden p-1">
+        <p-tabView [(activeIndex)]="activeTabIndex">
+          <!-- Tab: Plan d'Armement (Dotations) -->
+          <p-tabPanel header="Plan d'Armement (Dotations)">
+            <div class="p-4">
+              <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <div>
+                  <h4 class="font-bold text-slate-800 text-sm m-0 flex items-center gap-2">
+                    Plan d'Armement Réglementaire
+                    <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+                      {{ plans.length }} articles
+                    </span>
+                  </h4>
+                  <p class="text-xs text-slate-500 m-0">Gérez les dotations maximales autorisées et suivez les stocks à bord pour cette unité.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                  <div class="relative w-full sm:w-64">
+                    <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    <input pInputText type="text" (input)="onPlansSearch($event)" placeholder="Rechercher un article..." class="w-full text-xs pl-8 pr-3 py-1.5 rounded-lg border-gray-200 focus:border-gamma-primary" />
+                  </div>
+                  <p-button *ngIf="!isClient()" icon="pi pi-plus" label="Ajouter Dotation" styleClass="p-button-outlined p-button-sm shrink-0 font-bold" (onClick)="openNewPlanDialog()"></p-button>
+                  <p-button *ngIf="isClient()" icon="pi pi-plus-circle" label="Demander Dotation" styleClass="p-button-outlined p-button-sm shrink-0 font-bold" (onClick)="openDemandeDotationDialog()"></p-button>
+                  <!-- Le panier de demande de matériel est dans la page Catalogue -->
+                  <p-button *ngIf="isClient()" icon="pi pi-shopping-cart" label="Demander du Matériel" styleClass="p-button-success p-button-sm shrink-0 font-bold" routerLink="/catalogue" title="Aller au catalogue pour composer votre demande de matériel"></p-button>
+
+                </div>
+              </div>
+
+              <!-- Loading dotations -->
+              <div *ngIf="loadingPlans" class="flex justify-center items-center py-6">
+                <i class="pi pi-spin pi-spinner text-xl text-primary"></i>
+              </div>
+
+              <!-- Liste des dotations -->
+              <div *ngIf="!loadingPlans">
+                <p-table [value]="plans" styleClass="p-datatable-sm" [hidden]="plans.length === 0"
+                         [paginator]="true" [rows]="10" [rowsPerPageOptions]="[5,10,25,50,100]"
+                         [globalFilterFields]="['item.nomenclature', 'item.designation']"
+                         #dtPlans>
+                  <ng-template pTemplate="header">
+                    <tr>
+                      <th class="text-xs py-2 px-3" pSortableColumn="item.nomenclature">Nomenclature <p-sortIcon field="item.nomenclature"></p-sortIcon></th>
+                      <th class="text-xs py-2 px-3" pSortableColumn="item.designation">Désignation <p-sortIcon field="item.designation"></p-sortIcon></th>
+                      <th class="text-xs py-2 px-3" pSortableColumn="quantiteType">Dotation Max <p-sortIcon field="quantiteType"></p-sortIcon></th>
+                      <th class="text-xs py-2 px-3" pSortableColumn="quantiteReelle">Réelle à Bord <p-sortIcon field="quantiteReelle"></p-sortIcon></th>
+                      <th class="text-xs text-center py-2 px-3">Actions</th>
+                    </tr>
+                  </ng-template>
+                  <ng-template pTemplate="body" let-p>
+                    <tr class="text-xs hover:bg-blue-50/50 transition-colors">
+                      <td class="font-mono font-bold text-gamma-primary py-1.5 px-3">
+                        <a [routerLink]="['/catalogue', p.item.id]" class="hover:underline">{{ p.item.nomenclature }}</a>
+                      </td>
+                      <td class="font-medium text-slate-700 py-1.5 px-3">
+                        <a [routerLink]="['/catalogue', p.item.id]" class="hover:underline">{{ p.item.designation }}</a>
+                      </td>
+                      <td class="font-bold text-slate-800 py-1.5 px-3">{{ p.quantiteType }}</td>
+                      <td class="py-1.5 px-3">
+                        <span [class]="p.quantiteReelle < p.quantiteType ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'" class="px-2 py-0.5 rounded-full text-xs font-semibold">
+                          {{ p.quantiteReelle }}
+                        </span>
+                      </td>
+                      <td class="text-center py-1.5 px-3">
+                        <!-- Admin dotation edit/delete actions -->
+                        <div class="flex justify-center items-center gap-1" *ngIf="!isClient()">
+                          <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info p-button-sm" (click)="editPlan(p)"></button>
+                          <button pButton icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger p-button-sm" (click)="deletePlan(p)"></button>
+                        </div>
+                        <!-- Client material request addToCart action -->
+                        <div class="flex justify-center items-center" *ngIf="isClient()">
+                          <button pButton icon="pi pi-cart-plus" label="Demander" 
+                                  class="p-button-rounded p-button-success p-button-text p-button-sm font-bold" 
+                                  (click)="addToCart(p)" 
+                                  [disabled]="getRemainingDotation(p) <= 0" 
+                                  [title]="getRemainingDotation(p) <= 0 ? 'Dotation maximale atteinte' : 'Ajouter à votre panier de demande'"></button>
+                        </div>
+                      </td>
+                    </tr>
+                  </ng-template>
+                </p-table>
+
+                <div class="border border-dashed border-slate-200 rounded-xl p-8 text-center bg-slate-50/50 mt-2" *ngIf="plans.length === 0">
+                  <i class="pi pi-shield text-4xl text-slate-300 mb-2"></i>
+                  <p class="text-xs text-slate-500 m-0 font-medium">Aucun article enregistré dans le plan d'armement de cette unité.</p>
+                </div>
+              </div>
+
+              <!-- Section: Demandes d'Ajout au Plan d'Armement (Demandes de Dotation) -->
+              <div class="mt-8 border-t border-slate-100 pt-6">
+                <div class="flex justify-between items-center mb-4">
+                  <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider m-0">Demandes d'Ajout au Plan d'Armement</h4>
+                </div>
+
+                <!-- Loading demandes dotation -->
+                <div *ngIf="loadingDemandesDotation" class="flex justify-center items-center py-6">
+                  <i class="pi pi-spin pi-spinner text-xl text-primary"></i>
+                </div>
+
+                <!-- Table des demandes dotation -->
+                <div *ngIf="!loadingDemandesDotation">
+                  <p-table [value]="demandesDotation" styleClass="p-datatable-sm" *ngIf="demandesDotation.length > 0">
+                    <ng-template pTemplate="header">
+                      <tr>
+                        <th class="text-xs py-2 px-3">Article Demandé</th>
+                        <th class="text-xs py-2 px-3">Nomenclature</th>
+                        <th class="text-xs py-2 px-3 text-center">Dotation Demandée</th>
+                        <th class="text-xs py-2 px-3 text-center">Date Demande</th>
+                        <th class="text-xs py-2 px-3 text-center">Statut</th>
+                        <th class="text-xs py-2 px-3">Observations / Motif</th>
+                        <th class="text-xs text-center py-2 px-3" *ngIf="!isClient()">Actions d'Arbitrage</th>
+                      </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-d>
+                      <tr class="text-xs hover:bg-slate-50 transition-colors">
+                        <td class="font-bold text-slate-900 py-2 px-3">
+                          <a [routerLink]="['/catalogue', d.item.id]" class="hover:underline">{{ d.item.designation }}</a>
+                        </td>
+                        <td class="font-mono font-bold text-gamma-primary py-2 px-3">
+                          <a [routerLink]="['/catalogue', d.item.id]" class="hover:underline">{{ d.item.nomenclature }}</a>
+                        </td>
+                        <td class="font-bold text-slate-800 text-center py-2 px-3">{{ d.quantiteType }} u</td>
+                        <td class="text-slate-600 text-center py-2 px-3">{{ d.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+                        <td class="text-center py-2 px-3">
+                          <p-tag [value]="d.statut" [severity]="d.statut === 'APPROUVEE' ? 'success' : d.statut === 'REJETEE' ? 'danger' : 'warning'" styleClass="text-[9px] font-bold px-2"></p-tag>
+                        </td>
+                        <td class="text-slate-600 py-2 px-3">
+                          <span *ngIf="d.statut === 'REJETEE'" class="text-red-600 font-semibold">
+                            <i class="pi pi-ban mr-1"></i>Refusée : {{ d.motifRefus || '—' }}
+                          </span>
+                          <span *ngIf="d.statut === 'APPROUVEE'" class="text-green-600 font-semibold">
+                            <i class="pi pi-check-circle mr-1"></i>Approuvée & ajoutée
+                          </span>
+                          <span *ngIf="d.statut === 'SOUMISE'" class="italic text-slate-400">
+                            En attente d'avis de la DA
+                          </span>
+                        </td>
+                        <td class="text-center py-2 px-3" *ngIf="!isClient()">
+                          <div class="flex justify-center items-center gap-1" *ngIf="d.statut === 'SOUMISE'">
+                            <p-button icon="pi pi-check" styleClass="p-button-success p-button-sm p-button-rounded p-button-text" (click)="approuverDemandeDotation(d.id)"></p-button>
+                            <p-button icon="pi pi-ban" styleClass="p-button-danger p-button-sm p-button-rounded p-button-text" (click)="openRefusDotationDialog(d)"></p-button>
+                          </div>
+                          <span *ngIf="d.statut !== 'SOUMISE'" class="text-slate-400 italic">—</span>
+                        </td>
+                      </tr>
+                    </ng-template>
+                  </p-table>
+
+                  <div *ngIf="demandesDotation.length === 0" class="border border-dashed border-slate-200 rounded-xl p-6 text-center bg-slate-50/30">
+                    <i class="pi pi-inbox text-2xl text-slate-300 mb-2"></i>
+                    <p class="text-xs text-slate-500 m-0 font-medium">Aucune demande d'ajout d'article au Plan d'Armement émise.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </p-tabPanel>
+
+          <!-- Tab 1: Demandes de matériels -->
+          <p-tabPanel header="Demandes de Matériels (Sprint 12)">
+            <div class="p-6">
+              
+              <!-- En-tête de section -->
+              <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider m-0">HISTORIQUE DES DEMANDES DE L'UNITÉ</h4>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <p-button *ngIf="isClient()" icon="pi pi-shopping-cart" label="Nouvelle Demande (Catalogue)" 
+                            styleClass="p-button-success p-button-sm font-bold" routerLink="/catalogue"
+                            title="Composez votre demande via le catalogue d'articles"></p-button>
+                </div>
+              </div>
+
+              <!-- Spinner de chargement -->
+              <div *ngIf="loadingDemandes" class="flex justify-center items-center py-10">
+                <i class="pi pi-spin pi-spinner text-2xl text-primary"></i>
+              </div>
+
+              <div *ngIf="!loadingDemandes">
+                <!-- Tableau des demandes réelles -->
+                <p-table [value]="demandes" styleClass="p-datatable-sm" *ngIf="demandes.length > 0">
+                  <ng-template pTemplate="header">
+                    <tr>
+                      <th class="text-xs">Réf Demande</th>
+                      <th class="text-xs">Date</th>
+                      <th class="text-xs">Statut</th>
+                      <th class="text-xs">Bon de Sortie (BS)</th>
+                      <th class="text-xs">Observations / Rejet</th>
+                      <th class="text-xs text-center">Actions</th>
+                    </tr>
+                  </ng-template>
+                  <ng-template pTemplate="body" let-dem>
+                    <tr class="text-xs">
+                      <td class="font-mono font-bold text-gamma-primary">{{ dem.numeroDemande }}</td>
+                      <td class="font-medium text-slate-700">{{ dem.dateDemande | date:'dd/MM/yyyy' }}</td>
+                      <td>
+                        <p-tag [value]="dem.statut" [severity]="getStatutDemandeSeverity(dem.statut)" styleClass="text-[10px] px-2 font-bold"></p-tag>
+                      </td>
+                      <td class="font-mono text-slate-500 font-semibold">
+                        <div class="flex flex-col gap-1">
+                          <span>{{ dem.bonSortie?.numeroBs || 'En attente' }}</span>
+                          <span *ngIf="dem.bonSortie?.statut === 'PREPARE'" class="inline-flex items-center text-[10px] text-amber-700 font-bold bg-amber-50 border border-amber-100 rounded px-1.5 py-0.5 w-max">
+                            <i class="pi pi-clock mr-1 text-[9px]"></i>Prêt à être retiré aux magasins
+                          </span>
+                          <span *ngIf="dem.bonSortie?.statut === 'LIVRE'" class="inline-flex items-center text-[10px] text-green-700 font-bold bg-green-50 border border-green-100 rounded px-1.5 py-0.5 w-max">
+                            <i class="pi pi-check-circle mr-1 text-[9px]"></i>Récupéré physiquement
+                          </span>
+                        </div>
+                      </td>
+                      <td class="text-slate-600">
+                        <span *ngIf="dem.statut === 'REFUSE'" class="text-red-600 font-medium">
+                          <i class="pi pi-exclamation-triangle text-xs mr-1"></i>Refusé : {{ dem.motifRefus || 'Non spécifié' }}
+                        </span>
+                        <span *ngIf="dem.statut !== 'REFUSE'">
+                          —
+                        </span>
+                      </td>
+                      <td class="text-center">
+                        <p-button *ngIf="dem.bonSortie" icon="pi pi-print" label="Imprimer BS" 
+                                  styleClass="p-button-outlined p-button-sm font-bold" 
+                                  (onClick)="declencherImpression(dem)"></p-button>
+                        <span *ngIf="!dem.bonSortie" class="italic text-slate-400">En attente BS</span>
+                      </td>
+                    </tr>
+                  </ng-template>
+                </p-table>
+
+                <!-- Message si vide -->
+                <div *ngIf="demandes.length === 0" class="border border-dashed border-slate-200 rounded-xl p-8 text-center bg-slate-50/50 mt-2">
+                  <i class="pi pi-inbox text-3xl text-slate-300 mb-2"></i>
+                  <p class="text-xs text-slate-500 m-0 font-medium">Aucune demande de matériel émise par cette unité.</p>
+                </div>
+              </div>
+
+            </div>
+          </p-tabPanel>
+
+          <!-- Tab 2: Bilan des Dotations (Sprint 13) -->
+          <p-tabPanel header="États des Dotations & Consommation (Sprint 13)">
+            <div class="p-6">
+              
+              <!-- Cartouche de Bilan Logistique -->
+              <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gradient-to-r from-slate-50 to-slate-100 p-5 rounded-2xl border border-slate-200 shadow-inner mb-6">
+                <div>
+                  <h4 class="font-bold text-slate-800 text-sm m-0 flex items-center gap-2">
+                    <i class="pi pi-file-export text-gamma-primary text-base"></i>
+                    Bilan Comparatif de Dotation & Consommation
+                  </h4>
+                  <p class="text-xs text-slate-500 mt-1 m-0">Générez et téléchargez instantanément les rapports d'armement officiels au format JasperReports.</p>
+                </div>
+                <div class="flex gap-2 w-full sm:w-auto shrink-0">
+                  <p-button icon="pi pi-file-pdf" label="Télécharger PDF" styleClass="p-button-danger p-button-sm font-bold" (onClick)="downloadUnitReport('pdf')"></p-button>
+                  <p-button icon="pi pi-file-excel" label="Exporter Excel" styleClass="p-button-success p-button-sm font-bold" (onClick)="downloadUnitReport('xlsx')"></p-button>
+                </div>
+              </div>
+
+              <!-- Tableau Comparatif Interactif -->
+              <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider mb-3">ÉTAT COMPARATIF DES ARMEMENTS</h4>
+              <p-table [value]="plans" styleClass="p-datatable-sm" *ngIf="plans.length > 0">
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th class="text-xs">Nomenclature</th>
+                    <th class="text-xs">Désignation</th>
+                    <th class="text-xs text-right">Dotation Max (Cible)</th>
+                    <th class="text-xs text-right">Réelle (À Bord)</th>
+                    <th class="text-xs text-right">En Transit (Virtuelle)</th>
+                    <th class="text-xs text-center">Statut</th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-p>
+                  <tr class="text-xs hover:bg-slate-50 transition-colors">
+                    <td class="font-mono font-bold text-gamma-primary">
+                      <a [routerLink]="['/catalogue', p.item.id]" class="hover:underline">{{ p.item.nomenclature }}</a>
+                    </td>
+                    <td class="font-medium text-slate-700">
+                      <a [routerLink]="['/catalogue', p.item.id]" class="hover:underline">{{ p.item.designation }}</a>
+                    </td>
+                    <td class="font-bold text-slate-800 text-right">{{ p.quantiteType }} u</td>
+                    <td class="font-bold text-slate-800 text-right">{{ p.quantiteReelle }} u</td>
+                    <td class="text-slate-500 text-right">{{ p.quantiteVirtuelle - p.quantiteReelle > 0 ? (p.quantiteVirtuelle - p.quantiteReelle) : 0 }} u</td>
+                    <td class="text-center">
+                      <p-tag [value]="p.quantiteReelle >= p.quantiteType ? 'COMPLET' : 'INCOMPLET'" 
+                             [severity]="p.quantiteReelle >= p.quantiteType ? 'success' : 'warning'"
+                             styleClass="text-[9px] font-bold px-2"></p-tag>
+                    </td>
+                  </tr>
+                </ng-template>
+              </p-table>
+
+              <div *ngIf="plans.length === 0" class="border border-dashed border-slate-200 rounded-xl p-8 text-center bg-slate-50/50 mt-2">
+                <i class="pi pi-inbox text-3xl text-slate-300 mb-2"></i>
+                <p class="text-xs text-slate-500 m-0 font-medium">Aucun article enregistré pour comparer les consommations.</p>
+              </div>
+
+            </div>
+          </p-tabPanel>
+
+          <!-- Tab 3: Documents Associés -->
+          <p-tabPanel header="Documents & Notes de Service">
+            <div class="p-4 flex flex-col gap-4">
+              <div class="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <div>
+                  <h4 class="font-bold text-slate-800 text-sm m-0">Documents Administratifs Associés</h4>
+                  <p class="text-xs text-slate-500 m-0">Notes d'affectation, demandes officielles signées</p>
+                </div>
+                <p-fileUpload mode="basic" chooseLabel="Ajouter Document" accept="application/pdf" maxFileSize="10000000" [auto]="true" styleClass="p-button-text p-button-sm"></p-fileUpload>
+              </div>
+
+              <!-- Liste des documents administratifs -->
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl hover:border-slate-300 transition-colors">
+                  <div class="flex items-center gap-3">
+                    <i class="pi pi-file-pdf text-red-600 text-xl"></i>
+                    <div>
+                      <span class="text-xs font-bold text-slate-800 block">Note_Service_Affectation_Equipements_2026.pdf</span>
+                      <span class="text-[9px] text-slate-400 uppercase font-semibold">Signé par l'État-Major</span>
+                    </div>
+                  </div>
+                  <button pButton icon="pi pi-download" class="p-button-rounded p-button-text p-button-secondary p-button-sm"></button>
+                </div>
+              </div>
+            </div>
+          </p-tabPanel>
+
+          <!-- Tab 4: Réforme & Matériel H.S. -->
+          <p-tabPanel header="Réforme & Matériel H.S. (Sprint 15)">
+            <div class="p-6">
+              
+              <!-- En-tête de section -->
+              <div class="flex justify-between items-center mb-4">
+                <h4 class="text-xs font-gamma-bold uppercase text-slate-400 tracking-wider m-0">Suivi du matériel technique hors service</h4>
+                <p-button icon="pi pi-exclamation-triangle" label="Déclarer Matériel H.S." styleClass="p-button-danger p-button-sm font-bold" (onClick)="openNewReformeDialog()"></p-button>
+              </div>
+
+              <!-- Spinner de chargement -->
+              <div *ngIf="loadingReforme" class="flex justify-center items-center py-10">
+                <i class="pi pi-spin pi-spinner text-2xl text-primary"></i>
+              </div>
+
+              <div *ngIf="!loadingReforme">
+                <!-- Tableau des demandes réelles -->
+                <p-table [value]="dossiersReforme" styleClass="p-datatable-sm" *ngIf="dossiersReforme.length > 0">
+                  <ng-template pTemplate="header">
+                    <tr>
+                      <th class="text-xs py-2 px-3">N° Dossier</th>
+                      <th class="text-xs py-2 px-3">Date Demande</th>
+                      <th class="text-xs py-2 px-3">Motif</th>
+                      <th class="text-xs py-2 px-3">Statut</th>
+                      <th class="text-xs py-2 px-3">Décision Commission</th>
+                      <th class="text-xs py-2 px-3 text-center">Certificat</th>
+                    </tr>
+                  </ng-template>
+                  <ng-template pTemplate="body" let-dossier>
+                    <tr class="text-xs hover:bg-slate-50 transition-colors">
+                      <td class="font-mono font-bold text-gamma-primary py-2 px-3">{{ dossier.numeroDossier }}</td>
+                      <td class="font-medium text-slate-700 py-2 px-3">{{ dossier.dateDemande | date:'dd/MM/yyyy' }}</td>
+                      <td class="text-slate-600 max-w-xs truncate py-2 px-3">{{ dossier.motif }}</td>
+                      <td class="py-2 px-3">
+                        <p-tag [value]="dossier.statut" [severity]="getStatutDemandeSeverity(dossier.statut)" styleClass="text-[9px] px-2 font-bold"></p-tag>
+                      </td>
+                      <td class="py-2 px-3">
+                        <p-tag [value]="dossier.decisionCommission || 'EN EXAMEN'" 
+                               [severity]="dossier.decisionCommission === 'DECLASSEMENT' || dossier.decisionCommission === 'REFORME_COMPLETE' ? 'success' : 'warning'" 
+                               styleClass="text-[9px] px-2 font-bold"></p-tag>
+                      </td>
+                      <td class="text-center py-2 px-3">
+                        <button *ngIf="dossier.statut === 'TRAITE'" pButton icon="pi pi-file-pdf" 
+                                class="p-button-rounded p-button-text p-button-sm p-button-danger" 
+                                label="Certificat" (click)="printCertificatReforme(dossier)"></button>
+                        <span *ngIf="dossier.statut !== 'TRAITE'" class="text-slate-400 italic">—</span>
+                      </td>
+                    </tr>
+                  </ng-template>
+                </p-table>
+
+                <!-- Message si vide -->
+                <div *ngIf="dossiersReforme.length === 0" class="border border-dashed border-slate-200 rounded-xl p-8 text-center bg-slate-50/50 mt-2">
+                  <i class="pi pi-shield text-3xl text-slate-300 mb-2"></i>
+                  <p class="text-xs text-slate-500 m-0 font-medium">Aucun dossier de réforme ou matériel hors service déclaré.</p>
+                </div>
+              </div>
+
+            </div>
+          </p-tabPanel>
+        </p-tabView>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- Layouts d'impression (cachés) -->
+<div *ngIf="!loading && unite" class="print-label-container flex-col items-center justify-center p-8 text-center bg-white">
+  <h1 class="text-3xl font-extrabold text-black mb-4">{{ unite.nom }}</h1>
+  <div class="flex items-center justify-center gap-6 mb-6">
+    <qrcode [qrdata]="unite.code" [width]="180" [errorCorrectionLevel]="'M'"></qrcode>
+  </div>
+  <svg class="barcode-svg"></svg>
+</div>
+
+<div *ngIf="!loading && unite" class="print-document-container flex-col bg-white p-6 w-full text-black text-sm">
+  <div class="flex justify-between items-center border-b-2 border-gray-800 pb-3 mb-4">
+    <div>
+      <h2 class="text-base font-bold uppercase tracking-wider">Ministère de la Défense Nationale</h2>
+      <h3 class="text-sm font-semibold text-gray-700">GAMMA 3 • Logistique de la Marine</h3>
+    </div>
+    <div class="text-right">
+      <h1 class="text-2xl font-black uppercase text-gamma-primary">Fiche Unité Logistique</h1>
+      <p class="text-xs text-gray-500 font-medium italic">Généré le {{ today | date:'dd/MM/yyyy' }}</p>
+    </div>
+  </div>
+  
+  <div class="flex gap-6 mb-6 items-start">
+    <div *ngIf="unite.logoUrl" class="w-32 h-32 border-2 border-gray-200 p-2 shrink-0 bg-gray-50 rounded shadow-sm flex items-center justify-center">
+      <img [src]="getFullUrl(unite.logoUrl)" alt="Logo" class="max-w-full max-h-full object-contain">
+    </div>
+    <div class="flex-grow">
+      <div class="flex justify-between items-end mb-1">
+        <p class="text-xs text-gray-500 font-bold uppercase tracking-widest">Code Unique / Sigle de l'Unité</p>
+        <p class="text-xs text-gray-400 font-medium">ID: #{{ unite.id }}</p>
+      </div>
+      <p class="text-4xl font-black tracking-tighter mb-2 border-b-2 border-gray-100 pb-1">{{ unite.code }}</p>
+      <p class="text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">Nom Complet</p>
+      <p class="text-2xl font-bold leading-tight">{{ unite.nom }}</p>
+    </div>
+  </div>
+
+  <div class="mb-6">
+    <h4 class="text-sm font-bold uppercase bg-gray-800 text-white px-3 py-1 mb-2 inline-block rounded">Caractéristiques de Rattachement</h4>
+    <div class="grid grid-cols-4 border border-gray-400">
+      <div class="bg-gray-100 p-2 font-bold border-r border-b border-gray-400">Sigle Officiel</div>
+      <div class="p-2 border-r border-b border-gray-400 font-bold">{{ unite.code }}</div>
+      <div class="bg-gray-100 p-2 font-bold border-r border-b border-gray-400">Base Navale</div>
+      <div class="p-2 border-b border-gray-400 font-medium">{{ unite.baseNavale || '—' }}</div>
+      
+      <div class="bg-gray-100 p-2 font-bold border-r border-gray-400">Rôle Logistique</div>
+      <div class="p-2 border-r border-gray-400 font-medium" colspan="3">Unité Utilisatrice / Réceptionnaire Final de Matériels</div>
+    </div>
+  </div>
+
+  <div class="mt-auto border-t-2 border-gray-200 pt-4 flex justify-between items-start">
+    <div class="flex gap-8">
+      <div>
+        <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Traçabilité QR</p>
+        <qrcode [qrdata]="unite.code" [width]="70" [errorCorrectionLevel]="'M'"></qrcode>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Code Logistique</p>
+        <svg class="barcode-svg" style="transform: scale(0.65); transform-origin: left top;"></svg>
+      </div>
+    </div>
+    <div class="text-right flex flex-col items-end">
+      <div class="border border-gray-400 w-48 h-20 p-2 text-center flex flex-col justify-between">
+        <p class="text-[10px] font-bold text-gray-400 uppercase">Visa du Chef d'Unité Récepteur</p>
+        <p class="text-[9px] text-gray-300 italic">Signature et Tampon</p>
+      </div>
+      <p class="text-[10px] text-gray-400 mt-2 font-medium">Document officiel généré par le système GAMMA 3</p>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de modification -->
+<p-dialog header="Détails de l'Unité" [(visible)]="displayDialog" [modal]="true" [style]="{width: '500px'}" styleClass="p-fluid">
+  <div class="flex flex-col gap-4 mt-2">
+    <div class="field">
+      <label for="code" class="font-bold text-gray-700 block mb-1">Sigle / Code Unique *</label>
+      <input type="text" pInputText id="code" [(ngModel)]="selectedUnite.code" required autofocus [disabled]="true" />
+    </div>
+    <div class="field">
+      <label for="nom" class="font-bold text-gray-700 block mb-1">Nom Complet *</label>
+      <input type="text" pInputText id="nom" [(ngModel)]="selectedUnite.nom" required />
+    </div>
+    <div class="field">
+      <label for="base" class="font-bold text-gray-700 block mb-1">Base Navale de Rattachement</label>
+      <input type="text" pInputText id="base" [(ngModel)]="selectedUnite.baseNavale" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Annuler" icon="pi pi-times" (onClick)="displayDialog = false" styleClass="p-button-text"></p-button>
+    <p-button label="Enregistrer" icon="pi pi-check" (onClick)="saveUnite()" styleClass="p-button-primary" [disabled]="!selectedUnite.nom"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Modal de création / modification de PlanArmement -->
+<p-dialog [header]="isNewPlan ? 'Ajouter une Dotation' : 'Modifier la Dotation'" [(visible)]="displayPlanDialog" [modal]="true" [style]="{width: '500px'}" styleClass="p-fluid">
+  <div class="flex flex-col gap-4 mt-2">
+    
+    <!-- Choix de l'article (si nouveau plan) -->
+    <div class="field" *ngIf="isNewPlan">
+      <label for="itemSelect" class="font-bold text-gray-700 block mb-1">Sélectionner un Article *</label>
+      <p-dropdown [options]="allItems" [(ngModel)]="selectedItemForPlan" optionLabel="designation" placeholder="Choisir un article du catalogue" [filter]="true" filterBy="nomenclature,designation" appendTo="body" required>
+        <ng-template let-item pTemplate="item">
+          <div class="flex flex-col text-xs">
+            <span class="font-mono font-bold text-gamma-primary">{{ item.nomenclature }}</span>
+            <span class="text-slate-600 font-medium">{{ item.designation }}</span>
+          </div>
+        </ng-template>
+      </p-dropdown>
+    </div>
+
+    <!-- Article sélectionné (si modification) -->
+    <div class="field" *ngIf="!isNewPlan">
+      <label class="font-bold text-gray-700 block mb-1">Article</label>
+      <input type="text" pInputText [disabled]="true" [ngModel]="selectedPlan.item.nomenclature + ' - ' + selectedPlan.item.designation" />
+    </div>
+
+    <div class="field">
+      <label for="quantiteType" class="font-bold text-gray-700 block mb-1">Dotation Théorique (Quantité type) *</label>
+      <input type="number" pInputText id="quantiteType" [(ngModel)]="selectedPlan.quantiteType" min="0" required />
+    </div>
+
+    <div class="field">
+      <label for="quantiteReelle" class="font-bold text-gray-700 block mb-1">Quantité Réelle à Bord *</label>
+      <input type="number" pInputText id="quantiteReelle" [(ngModel)]="selectedPlan.quantiteReelle" min="0" required />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Annuler" icon="pi pi-times" (onClick)="displayPlanDialog = false" styleClass="p-button-text"></p-button>
+    <p-button label="Enregistrer" icon="pi pi-check" (onClick)="savePlan()" styleClass="p-button-primary" [disabled]="(isNewPlan && !selectedItemForPlan) || selectedPlan.quantiteType == null || selectedPlan.quantiteReelle == null"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Modal de création de Demande -->
+<p-dialog header="Émettre une demande d'approvisionnement" [(visible)]="displayDemandeDialog" [modal]="true" [style]="{width: '500px'}" styleClass="p-fluid">
+  <div class="flex flex-col gap-4 mt-2">
+    <div class="field">
+      <label for="numeroDemande" class="font-bold text-gray-700 block mb-1 text-xs">Référence Demande *</label>
+      <input type="text" pInputText id="numeroDemande" [(ngModel)]="newDemande.numeroDemande" required [disabled]="true" class="font-mono font-bold" />
+    </div>
+    
+    <div class="field">
+      <label class="font-bold text-gray-700 block mb-1 text-xs">Sélectionner un article autorisé de votre Dotation *</label>
+      <p-dropdown [options]="plans" [(ngModel)]="selectedPlanForDemande" optionLabel="item.designation" placeholder="Choisir un article" appendTo="body">
+        <ng-template let-p pTemplate="item">
+          <div class="flex flex-col text-xs">
+            <span class="font-black text-slate-800">{{ p.item.designation }}</span>
+            <span class="font-mono text-gamma-primary font-bold mt-0.5">{{ p.item.nomenclature }}</span>
+            <span class="text-slate-400 font-semibold mt-1">Quota Restant : {{ getRemainingDotation(p) }} / {{ p.quantiteType }} (Reel: {{ p.quantiteReelle }})</span>
+          </div>
+        </ng-template>
+      </p-dropdown>
+    </div>
+
+    <div class="field" *ngIf="selectedPlanForDemande">
+      <label for="quantiteDemandee" class="font-bold text-gray-700 block mb-1 text-xs">Quantité Demandée * (Reste autorisé : {{ getRemainingDotation(selectedPlanForDemande) }})</label>
+      <input type="number" pInputText id="quantiteDemandee" [(ngModel)]="quantiteDemandee" min="1" [max]="getRemainingDotation(selectedPlanForDemande)" required />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Annuler" icon="pi pi-times" (onClick)="displayDemandeDialog = false" styleClass="p-button-text"></p-button>
+    <p-button label="Soumettre" icon="pi pi-check" (onClick)="saveNewDemande()" styleClass="p-button-primary" [disabled]="!selectedPlanForDemande || quantiteDemandee <= 0 || quantiteDemandee > getRemainingDotation(selectedPlanForDemande)"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Modal de demande de dotation (Client) -->
+<p-dialog header="Demander l'ajout d'un article au Plan d'Armement" [(visible)]="displayDemandeDotationDialog" [modal]="true" [style]="{width: '500px'}" styleClass="p-fluid">
+  <div class="flex flex-col gap-4 mt-2">
+    <div class="field">
+      <label for="itemSelectDotation" class="font-bold text-gray-700 block mb-1">Sélectionner un Article du Catalogue *</label>
+      <p-dropdown [options]="allItems" [(ngModel)]="selectedItemForDotation" optionLabel="designation" placeholder="Choisir l'article à rajouter" [filter]="true" filterBy="nomenclature,designation" appendTo="body" required>
+        <ng-template let-item pTemplate="item">
+          <div class="flex flex-col text-xs">
+            <span class="font-mono font-bold text-gamma-primary">{{ item.nomenclature }}</span>
+            <span class="text-slate-600 font-medium">{{ item.designation }}</span>
+          </div>
+        </ng-template>
+      </p-dropdown>
+    </div>
+
+    <div class="field" *ngIf="selectedItemForDotation">
+      <label for="quantiteTypeDotation" class="font-bold text-gray-700 block mb-1">Dotation Cible Demandée (Quantité type) *</label>
+      <input type="number" pInputText id="quantiteTypeDotation" [(ngModel)]="newDemandeDotation.quantiteType" min="1" required />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Annuler" icon="pi pi-times" (onClick)="displayDemandeDotationDialog = false" styleClass="p-button-text"></p-button>
+    <p-button label="Soumettre la Demande" icon="pi pi-check" styleClass="p-button-primary font-bold" (onClick)="saveDemandeDotation()" [disabled]="!selectedItemForDotation || newDemandeDotation.quantiteType == null || newDemandeDotation.quantiteType <= 0"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Modal de saisie du motif de refus de dotation (Admin) -->
+<p-dialog header="Motif de refus de l'ajout au Plan d'Armement" [(visible)]="displayRefusDotationDialog" [modal]="true" [style]="{width: '450px'}" styleClass="p-fluid">
+  <div class="flex flex-col gap-4 mt-2">
+    <div class="field">
+      <label for="motifRefusDotation" class="font-bold text-red-600 block mb-1 text-xs">Saisir le motif de rejet obligatoire *</label>
+      <textarea pInputText id="motifRefusDotation" [(ngModel)]="motifRefusDotation" rows="3" required placeholder="Renseigner la justification logistique du refus..." class="w-full text-sm p-3 border border-red-300 rounded focus:border-red-500"></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Annuler" icon="pi pi-times" (onClick)="displayRefusDotationDialog = false" styleClass="p-button-text"></p-button>
+    <p-button label="Confirmer le Refus" icon="pi pi-check" styleClass="p-button-danger font-bold" (onClick)="refuserDemandeDotation()" [disabled]="!motifRefusDotation"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Modal de création de dossier de Réforme (Client) -->
+<p-dialog header="Déclarer Matériel H.S. (Proposition à la Réforme)" [(visible)]="displayReformeDialog" [modal]="true" [style]="{width: '500px'}" styleClass="p-fluid">
+  <div class="flex flex-col gap-4 mt-2">
+    <div class="field">
+      <label class="font-bold text-gray-700 block mb-1 text-xs">Sélectionner un article en dotation réelle à réformer *</label>
+      <p-dropdown [options]="plans" [(ngModel)]="selectedPlanForReforme" optionLabel="item.designation" placeholder="Choisir un article à réformer" appendTo="body">
+        <ng-template let-p pTemplate="item">
+          <div class="flex flex-col text-xs">
+            <span class="font-black text-slate-800">{{ p.item.designation }}</span>
+            <span class="font-mono text-gamma-primary font-bold mt-0.5">{{ p.item.nomenclature }}</span>
+            <span class="text-slate-400 font-semibold mt-1">Quantité Réelle à Bord : {{ p.quantiteReelle }}</span>
+          </div>
+        </ng-template>
+      </p-dropdown>
+    </div>
+
+    <div class="field" *ngIf="selectedPlanForReforme">
+      <label for="quantiteAReformer" class="font-bold text-gray-700 block mb-1 text-xs">Quantité H.S. à réformer * (Max : {{ selectedPlanForReforme.quantiteReelle }})</label>
+      <input type="number" pInputText id="quantiteAReformer" [(ngModel)]="quantiteAReformer" min="1" [max]="selectedPlanForReforme.quantiteReelle" required />
+    </div>
+
+    <div class="field">
+      <label for="motifReforme" class="font-bold text-gray-700 block mb-1 text-xs">Rapport technique / Motif d'inaptitude H.S. *</label>
+      <textarea pInputText id="motifReforme" [(ngModel)]="motifReforme" rows="3" class="w-full text-sm p-3 border border-slate-350 rounded focus:border-gamma-primary" required placeholder="Justifier l'état défectueux, usure anormale, accident..."></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Annuler" icon="pi pi-times" (onClick)="displayReformeDialog = false" styleClass="p-button-text"></p-button>
+    <p-button label="Soumettre le dossier" icon="pi pi-check" (onClick)="saveNewReforme()" styleClass="p-button-danger font-bold" [disabled]="!selectedPlanForReforme || quantiteAReformer <= 0 || quantiteAReformer > selectedPlanForReforme.quantiteReelle || !motifReforme"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- ========================================================================= -->
+<!-- GABARIT D'IMPRESSION A4 OFFICIEL DU CERTIFICAT DE RÉFORME / DÉCLASSEMENT    -->
+<!-- ========================================================================= -->
+<div class="print-only print-a4 space-y-6 text-black p-8" *ngIf="printDossierReforme">
+  <div class="flex justify-between items-start border-b border-black pb-4 text-xs font-semibold">
+    <div class="space-y-1">
+      <p class="font-bold text-sm">RÉPUBLIQUE TUNISIENNE</p>
+      <p>MINISTÈRE DE LA DÉFENSE NATIONALE</p>
+      <p>ARMÉE DE MER</p>
+      <p>DIVISION APPROVISIONNEMENT</p>
+    </div>
+    <div class="text-right space-y-1">
+      <p>Bizerte, le {{ today | date:'dd/MM/yyyy' }}</p>
+      <p class="font-mono">DR-REF: {{ printDossierReforme?.numeroDossier }}</p>
+    </div>
+  </div>
+
+  <div class="text-center py-6">
+    <h2 class="text-xl font-bold tracking-widest uppercase">CERTIFICAT DE RÉFORME &amp; DÉCLASSEMENT</h2>
+    <p class="text-xs font-semibold mt-1">CERTIFICAT DE DÉCHARGE D'INVENTAIRE N° {{ printDossierReforme?.numeroDossier }}</p>
+  </div>
+
+  <div class="border border-black p-4 text-xs space-y-2">
+    <p>Il est certifié par la présente que la Commission Militaire de Réforme réunie le <strong>{{ printDossierReforme?.dateCommission | date:'dd/MM/yyyy' }}</strong>,</p>
+    <p>Sous la présidence des officiers de la DA désignés, a statué sur le matériel technique proposé à la réforme par l'unité <strong>{{ printDossierReforme?.unite?.designation }}</strong>.</p>
+    <p>Le matériel répertorié ci-dessous a été reconnu inapte au service actif de la Marine Nationale :</p>
+  </div>
+
+  <table class="w-full text-left text-xs border border-black border-collapse">
+    <thead>
+      <tr class="bg-gray-100 border-b border-black">
+        <th class="py-2 px-3 border-r border-black font-bold">Nomenclature</th>
+        <th class="py-2 px-3 border-r border-black font-bold">Désignation de l'article</th>
+        <th class="py-2 px-3 border-r border-black font-bold text-right">Qté Réformée</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let l of printLignesReforme" class="border-b border-black">
+        <td class="py-2 px-3 border-r border-black font-mono">{{ l.item?.nomenclature }}</td>
+        <td class="py-2 px-3 border-r border-black font-bold">{{ l.item?.designation }}</td>
+        <td class="py-2 px-3 border-r border-black font-bold text-right text-red-600">{{ l.quantite }} u</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="border border-black p-4 text-xs">
+    <h4 class="font-bold uppercase mb-1">Avis officiel de la Commission :</h4>
+    <p class="font-bold text-sm bg-gray-50 p-2.5 rounded border mb-2 flex justify-between">
+      <span>Décision Actée :</span>
+      <span class="underline">{{ getDecisionLabel(printDossierReforme?.decisionCommission) }}</span>
+    </p>
+    <p>Observations : <em>{{ printDossierReforme?.observationsCommission || 'N/A' }}</em></p>
+  </div>
+
+  <div class="text-xs text-gray-500 pt-8">
+    <p>En conséquence, le matériel sus-désigné est officiellement radié des états de dotation active de l'unité <strong>{{ printDossierReforme?.unite?.designation }}</strong>.</p>
+    <p *ngIf="printDossierReforme?.decisionCommission === 'DECLASSEMENT'">
+      Le matériel a été reversé physiquement aux magasins du <strong>Service Réforme et Remise (SRR)</strong>.
+    </p>
+  </div>
+
+  <div class="grid grid-cols-2 gap-8 text-center pt-8 text-xs font-bold">
+    <div>
+      <p>Le Chef d'Unité</p>
+      <div class="h-20"></div>
+      <p class="underline">{{ printDossierReforme?.unite?.designation }}</p>
+    </div>
+    <div>
+      <p>Le Directeur de la Division Approvisionnement</p>
+      <div class="h-20"></div>
+      <p class="underline">CF Mnasri</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL PANIER DE DEMANDE DE MATÉRIEL (CLIENT) ==================== -->
+<p-dialog header="Panier de Demande de Matériel" [(visible)]="displayCartDialog" [modal]="true" [style]="{width: '650px'}" styleClass="p-fluid no-print">
+  <div class="flex flex-col gap-4 mt-2">
+    
+    <!-- Alerte informative -->
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-xs font-semibold text-blue-800 flex items-start gap-2">
+      <i class="pi pi-info-circle text-lg mt-0.5"></i>
+      <div>
+        <span>Consolidez vos demandes physiques de matériels. Vous pouvez modifier la quantité demandée pour chaque article dans la limite de votre dotation réglementaire disponible.</span>
+      </div>
+    </div>
+
+    <!-- Table du panier -->
+    <div class="border border-slate-150 rounded-xl overflow-hidden">
+      <table class="w-full text-xs text-left border-collapse">
+        <thead>
+          <tr class="bg-slate-50 font-bold border-b border-slate-200 text-slate-500">
+            <th class="p-3">Article</th>
+            <th class="p-3">Nomenclature</th>
+            <th class="p-3 text-center w-[120px]">Dotation Restante</th>
+            <th class="p-3 text-center w-[140px]">Qté Demandée *</th>
+            <th class="p-3 text-center w-[50px]">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let c of cart; let idx = index" class="border-b border-slate-100 text-slate-800 hover:bg-slate-50/30 transition-colors">
+            <td class="p-3">
+              <div class="font-bold text-slate-900">{{ c.plan.item.designation }}</div>
+            </td>
+            <td class="p-3 font-mono font-bold text-gamma-primary">{{ c.plan.item.nomenclature }}</td>
+            <td class="p-3 text-center font-bold text-slate-700">{{ getRemainingDotation(c.plan) }} u</td>
+            <td class="p-3 text-center">
+              <input type="number" pInputText [(ngModel)]="c.quantiteDemandee" min="1" [max]="getRemainingDotation(c.plan)" class="w-full text-center p-1 border border-gray-300 rounded font-bold" />
+            </td>
+            <td class="p-3 text-center">
+              <button pButton icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger p-button-sm" (click)="removeFromCart(idx)"></button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-200 mt-2 text-xs">
+      <span class="font-bold text-slate-600">Total Articles :</span>
+      <span class="font-black text-slate-800 text-sm">{{ getCartTotalCount() }} unité(s)</span>
+    </div>
+
+  </div>
+  <ng-template pTemplate="footer">
+    <div class="flex justify-between w-full pt-2">
+      <p-button label="Vider le Panier" icon="pi pi-trash" (click)="clearCart()" styleClass="p-button-text p-button-danger p-button-sm"></p-button>
+      <div class="flex gap-2">
+        <p-button label="Fermer" icon="pi pi-times" (click)="displayCartDialog = false" styleClass="p-button-text p-button-sm"></p-button>
+        <p-button label="Soumettre la Demande" icon="pi pi-check" styleClass="p-button-primary font-bold p-button-sm" (click)="submitCartDemande()"></p-button>
+      </div>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Bon de sortie impression (caché en affichage normal) -->
+<div *ngIf="printDemande" class="print-document-container flex-col bg-white p-8 w-full text-black text-sm hidden font-serif">
+  <!-- En-tête réglementaire -->
+  <div class="flex justify-between items-start border-b-2 border-black pb-4 mb-6">
+    <div class="text-xs uppercase font-bold leading-normal">
+      <p class="m-0">Ministère de la Défense Nationale</p>
+      <p class="m-0">Marine Nationale Tunisienne</p>
+      <p class="m-0 font-black">Division de l'Approvisionnement (DA)</p>
+      <p class="m-0 font-mono text-[9px] mt-1 text-slate-500">Service Distribution Logistique</p>
+    </div>
+    <div class="flex gap-4 items-center">
+      <div class="text-right">
+        <h1 class="text-xl font-bold uppercase tracking-tight m-0">BON DE SORTIE MATÉRIELS</h1>
+        <p class="text-xs font-mono font-bold text-slate-700 m-0 mt-1">BS N° : {{ printDemande.bonSortie?.numeroBs }}</p>
+        <p class="text-[10px] text-slate-500 m-0 mt-0.5">Date de sortie : {{ printDemande.bonSortie?.dateSortie | date:'dd/MM/yyyy' }}</p>
+      </div>
+      <qrcode [qrdata]="'BS:' + (printDemande.bonSortie?.numeroBs || '') + '|DEM:' + printDemande.numeroDemande + '|UNIT:' + printDemande.unite?.code" [width]="70" [errorCorrectionLevel]="'M'"></qrcode>
+    </div>
+  </div>
+
+  <!-- Références de l'arbitrage -->
+  <div class="grid grid-cols-2 border border-black p-4 bg-slate-50/50 mb-6 gap-x-8 gap-y-2 text-xs">
+    <div>
+      <p class="m-0"><strong>Unité Bénéficiaire :</strong> {{ printDemande.unite?.nom }} ({{ printDemande.unite?.code }})</p>
+      <p class="m-0 mt-1"><strong>Transporteur affecté :</strong> {{ printDemande.bonSortie?.transporteur || 'Service Transit DA' }}</p>
+    </div>
+    <div>
+      <p class="m-0"><strong>Demande d'origine :</strong> {{ printDemande.numeroDemande }} du {{ printDemande.dateDemande | date:'dd/MM/yyyy' }}</p>
+      <p class="m-0 mt-1"><strong>Véhicule logistique :</strong> {{ printDemande.bonSortie?.vehiculeMatricule || 'MDN-10452' }}</p>
+    </div>
+  </div>
+
+  <p class="text-xs font-bold uppercase tracking-wider mb-2">Détails des Articles Sortis de Stock pour Affectation :</p>
+  
+  <!-- Tableau des matériels livrés -->
+  <table class="w-full border-collapse border border-black text-[11px] mb-8">
+    <thead>
+      <tr class="bg-slate-100 text-left font-bold border-b border-black">
+        <th class="border-r border-black p-2 w-[160px]">Nomenclature</th>
+        <th class="border-r border-black p-2">Désignation</th>
+        <th class="border-r border-black p-2 text-center w-[85px]">Qté Demandée</th>
+        <th class="border-r border-black p-2 text-center w-[85px]">Qté Accordée</th>
+        <th class="border-r border-black p-2 text-right w-[110px]">P.U. HT</th>
+        <th class="p-2 text-right w-[135px]">Valeur Total HT</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let l of printLignes" class="border-b border-black">
+        <td class="border-r border-black p-2 font-mono font-bold text-gamma-primary">
+          <a [routerLink]="['/catalogue', l.item.id]" class="hover:underline no-print">{{ l.item.nomenclature || 'Non définie' }}</a>
+          <span class="only-print">{{ l.item.nomenclature || 'Non définie' }}</span>
+        </td>
+        <td class="border-r border-black p-2 font-medium">{{ l.item.designation }}</td>
+        <td class="border-r border-black p-2 text-center text-slate-500">{{ l.quantiteDemandee }}</td>
+        <td class="border-r border-black p-2 text-center font-bold text-black text-sm">{{ l.quantiteAccordee != null ? l.quantiteAccordee : l.quantiteDemandee }}</td>
+        <td class="border-r border-black p-2 text-right">{{ l.item.prixUnitaire | number:'1.3-3' }} DT</td>
+        <td class="p-2 text-right font-bold">{{ getLigneTotal(l) | number:'1.3-3' }} DT</td>
+      </tr>
+      <!-- Total -->
+      <tr class="font-bold border-t-2 border-black">
+        <td colspan="4" class="border-r border-black p-2 text-right">VALEUR TOTALE ESTIMÉE DE LA DOTATION LOGISTIQUE</td>
+        <td class="border-r border-black p-2"></td>
+        <td class="p-2 text-right text-sm decoration-double font-bold">{{ getGlobalTotalPrint() | number:'1.3-3' }} DT</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="text-[10px] text-slate-500 italic leading-relaxed mb-6">
+    <b>Note de sécurité convoi :</b> Le présent Bon de Sortie vaut autorisation de transport réglementaire des matériels énumérés ci-dessus. Tout contrôle de convoi ou de transit en base navale militaire doit vérifier la conformité des plaques d'immatriculation du véhicule logistique mentionné.
+  </p>
+
+  <!-- Bas de page Signatures -->
+  <div class="mt-auto pt-8 border-t border-slate-300 grid grid-cols-3 gap-6 text-center text-xs leading-normal">
+    <div class="border border-black p-4 h-32 flex flex-col justify-between">
+      <p class="font-bold m-0 uppercase text-[9px] tracking-wider">L'Officier Expéditeur (DA)</p>
+      <p class="italic text-[8px] text-slate-400">Signature & Visa</p>
+    </div>
+    <div class="border border-black p-4 h-32 flex flex-col justify-between">
+      <p class="font-bold m-0 uppercase text-[9px] tracking-wider">Le Chef de Convoi (Transport)</p>
+      <p class="italic text-[8px] text-slate-400">Signature & Visa</p>
+    </div>
+    <div class="border border-black p-4 h-32 flex flex-col justify-between font-black border-dashed border-red-500">
+      <p class="font-bold m-0 uppercase text-[9px] tracking-wider text-red-600">L'Officier Réceptionnaire (Unité) *</p>
+      <p class="italic text-[8.5px] text-red-500">Signé et renvoyé officiellement</p>
+      <p class="italic text-[8px] text-slate-400 mt-2">Signature & Visa</p>
+    </div>
+  </div>
+</div>
+

@@ -1,0 +1,414 @@
+<p-toast></p-toast>
+<div class="web-container p-4 max-w-[1800px] mx-auto animation-fadein">
+
+  <!-- En-tête de la Console -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6 p-6 flex flex-col md:flex-row justify-between items-center gap-4 no-print">
+    <div>
+      <div class="flex items-center gap-3 mb-2">
+        <h1 class="text-3xl font-extrabold text-gray-900 m-0 tracking-tight">Arbitrage & Distribution</h1>
+        <span class="bg-blue-100 text-blue-800 text-xs font-black px-2.5 py-1 rounded-full uppercase tracking-widest">{{ demandes.length }} Demandes</span>
+        <span *ngIf="isFiltered" (click)="clearFilter()" class="bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors text-xs font-black px-2.5 py-1 rounded-full uppercase tracking-widest flex items-center gap-1.5 cursor-pointer no-print shadow-sm">
+          <i class="pi pi-filter-slash"></i> Filtré par unité (Cliquez pour réinitialiser)
+        </span>
+      </div>
+      <p class="text-gray-500 font-medium m-0">Console de traitement logistique de la Division Approvisionnement (DA)</p>
+    </div>
+    
+    <div class="flex items-center gap-3 w-full md:w-auto">
+      <div class="relative w-full md:w-80 group">
+        <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors z-10"></i>
+        <input pInputText type="text" #searchVal (input)="dtDemandes.filterGlobal(searchVal.value, 'contains')" placeholder="Rechercher une demande, unité..." class="w-full pl-11 pr-4 py-3 bg-gray-50 border-gray-200 hover:bg-white focus:bg-white rounded-xl transition-all shadow-none">
+      </div>
+    </div>
+  </div>
+
+  <!-- Tiroir Principal par Onglets -->
+  <p-tabView [(activeIndex)]="activeTabIndex">
+    
+    <!-- Onglet 1 : Arbitrage des Livraisons (Matériels) -->
+    <p-tabPanel header="Arbitrage des Livraisons (Matériels)">
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden no-print">
+        <p-table #dtDemandes [value]="demandes" [globalFilterFields]="['numeroDemande', 'unite.nom', 'unite.code', 'statut']" [paginator]="true" [rows]="25" [loading]="loading" styleClass="p-datatable-sm" [rowHover]="true" responsiveLayout="scroll">
+          <ng-template pTemplate="header">
+            <tr>
+              <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 tracking-wider">Référence Demande</th>
+              <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 tracking-wider">Unité Demandeuse</th>
+              <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 tracking-wider">Date Soumission</th>
+              <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 tracking-wider">Statut Dossier</th>
+              <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 tracking-wider">Bon de Sortie</th>
+              <th class="py-3 px-4 text-right">Actions d'Arbitrage</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-dem>
+            <tr class="hover:bg-blue-50/50 transition-colors">
+              <td class="py-3 px-4 text-sm font-mono font-bold text-gamma-primary">{{ dem.numeroDemande }}</td>
+              <td class="py-3 px-4 text-sm font-bold text-slate-800">
+                {{ dem.unite?.nom }} <span class="text-xs text-slate-400 font-mono font-bold ml-1">({{ dem.unite?.code }})</span>
+              </td>
+              <td class="py-3 px-4 text-sm font-medium text-slate-700">{{ dem.dateDemande | date:'dd/MM/yyyy' }}</td>
+              <td class="py-3 px-4">
+                <p-tag [value]="getStatutLabel(dem.statut)" [severity]="getStatutSeverity(dem.statut)" styleClass="text-[10px] px-2 font-bold"></p-tag>
+              </td>
+              <td class="py-3 px-4 font-mono text-sm text-slate-500 font-bold">
+                <div class="flex flex-col gap-1">
+                  <span>{{ dem.bonSortie?.numeroBs || '—' }}</span>
+                  <span *ngIf="dem.bonSortie?.statut === 'PREPARE'" class="inline-flex items-center text-[10px] text-amber-700 font-bold bg-amber-50 border border-amber-100 rounded px-1.5 py-0.5 w-max">
+                    <i class="pi pi-clock mr-1 text-[9px]"></i>À RETIRER
+                  </span>
+                  <span *ngIf="dem.bonSortie?.statut === 'LIVRE'" class="inline-flex items-center text-[10px] text-green-700 font-bold bg-green-50 border border-green-100 rounded px-1.5 py-0.5 w-max">
+                    <i class="pi pi-check-circle mr-1 text-[9px]"></i>REMIS
+                  </span>
+                </div>
+              </td>
+              <td class="py-3 px-4 text-right flex justify-end gap-2 items-center">
+                <!-- Traiter si Soumise -->
+                <p-button *ngIf="dem.statut === 'SOUMIS'" icon="pi pi-cog" label="Traiter la demande" styleClass="p-button-primary p-button-sm font-bold rounded-lg" (click)="openArbitrageModal(dem)"></p-button>
+                
+                <!-- Consultation / Imprimer si Approuvée -->
+                <ng-container *ngIf="dem.statut === 'APPROUVE_TOTAL' || dem.statut === 'APPROUVE_PARTIEL'">
+                  <p-button icon="pi pi-eye" label="Détails" styleClass="p-button-text p-button-secondary p-button-sm rounded-lg font-bold" (click)="openArbitrageModal(dem)"></p-button>
+                  <p-button icon="pi pi-print" label="Imprimer le BS" styleClass="p-button-outlined p-button-secondary p-button-sm rounded-lg" (click)="declencherImpression(dem)"></p-button>
+                  <p-button *ngIf="dem.bonSortie?.statut === 'PREPARE' && authService.currentUser()?.role === 'DA_MANAGER'" icon="pi pi-check" label="Confirmer Retrait" styleClass="p-button-success p-button-sm rounded-lg font-bold" (click)="confirmerLivraisonPhysique(dem)"></p-button>
+                  <span *ngIf="dem.bonSortie?.statut === 'PREPARE' && authService.currentUser()?.role === 'ADMIN'" class="inline-flex items-center text-[10px] text-blue-700 font-bold bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5 w-max">
+                    <i class="pi pi-clock mr-1 text-[9px]"></i>EN ATTENTE RETRAIT MAGASIN
+                  </span>
+                </ng-container>
+
+                <!-- Consultation si Refusée -->
+                <ng-container *ngIf="dem.statut === 'REFUSE'">
+                  <span class="text-red-500 text-xs font-bold self-center mr-1">
+                    <i class="pi pi-ban mr-1"></i>Rejetée
+                  </span>
+                  <p-button icon="pi pi-eye" label="Détails" styleClass="p-button-outlined p-button-secondary p-button-sm rounded-lg font-bold" (click)="openArbitrageModal(dem)"></p-button>
+                </ng-container>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="6" class="text-center py-12">
+                <i class="pi pi-inbox text-4xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500 font-medium m-0">Aucune demande d'approvisionnement en matériel en attente.</p>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </p-tabPanel>
+
+    <!-- Onglet 2 : Validation des Plans (Dotations) -->
+    <p-tabPanel header="Validation des Plans (Dotations)">
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden no-print">
+        <p-table [value]="demandesDotation" [paginator]="true" [rows]="25" [loading]="loadingDotation" styleClass="p-datatable-sm" [rowHover]="true" responsiveLayout="scroll">
+          <ng-template pTemplate="header">
+            <tr>
+              <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 tracking-wider">Unité Demandeuse</th>
+              <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 tracking-wider">Article Demandé</th>
+              <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 tracking-wider">Nomenclature</th>
+              <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 tracking-wider text-center">Dotation Demandée</th>
+              <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 tracking-wider text-center">Date Soumission</th>
+              <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 tracking-wider text-center">Statut</th>
+              <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 tracking-wider">Observations / Motif</th>
+              <th class="py-3 px-4 text-right">Actions d'Arbitrage</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-d>
+            <tr class="hover:bg-blue-50/50 transition-colors">
+              <td class="py-3 px-4 text-sm font-bold text-slate-800">
+                {{ d.unite?.nom }} <span class="text-xs text-slate-400 font-mono font-bold ml-1">({{ d.unite?.code }})</span>
+              </td>
+              <td class="py-3 px-4 text-sm font-bold text-slate-900">{{ d.item.designation }}</td>
+              <td class="py-3 px-4 text-sm font-mono font-bold text-gamma-primary">{{ d.item.nomenclature }}</td>
+              <td class="py-3 px-4 text-sm font-bold text-slate-800 text-center">{{ d.quantiteType }} u</td>
+              <td class="py-3 px-4 text-sm font-medium text-slate-700 text-center">{{ d.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td class="py-3 px-4 text-center">
+                <p-tag [value]="d.statut" [severity]="d.statut === 'APPROUVEE' ? 'success' : d.statut === 'REJETEE' ? 'danger' : 'warning'" styleClass="text-[10px] px-2 font-bold"></p-tag>
+              </td>
+              <td class="py-3 px-4 text-sm text-slate-600">
+                <span *ngIf="d.statut === 'REJETEE'" class="text-red-600 font-semibold">
+                  <i class="pi pi-ban mr-1"></i>Refusée : {{ d.motifRefus || '—' }}
+                </span>
+                <span *ngIf="d.statut === 'APPROUVEE'" class="text-green-600 font-semibold">
+                  <i class="pi pi-check-circle mr-1"></i>Approuvée & ajoutée
+                </span>
+                <span *ngIf="d.statut === 'SOUMISE'" class="italic text-slate-400">
+                  En attente d'avis de la DA
+                </span>
+              </td>
+              <td class="py-3 px-4 text-right flex justify-end gap-2 items-center">
+                <div class="flex justify-center items-center gap-1.5" *ngIf="d.statut === 'SOUMISE'">
+                  <p-button icon="pi pi-check" styleClass="p-button-success p-button-sm p-button-rounded p-button-text font-bold" (onClick)="approuverDotation(d)"></p-button>
+                  <p-button icon="pi pi-ban" styleClass="p-button-danger p-button-sm p-button-rounded p-button-text font-bold" (onClick)="openRefusDotationDialog(d)"></p-button>
+                </div>
+                <span *ngIf="d.statut !== 'SOUMISE'" class="text-slate-400 italic">—</span>
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="8" class="text-center py-12">
+                <i class="pi pi-inbox text-4xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500 font-medium m-0">Aucune demande d'ajout d'article au Plan d'Armement en attente.</p>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </p-tabPanel>
+  </p-tabView>
+
+</div>
+
+
+<!-- ==================== MODAL DE TRAITEMENT LOGISTIQUE & ARBITRAGE (DA) ==================== -->
+<p-dialog [header]="(selectedDemande?.statut === 'SOUMIS' ? 'Arbitrage Logistique' : 'Détails de la Demande') + ' : ' + selectedDemande?.numeroDemande" [(visible)]="displayArbitrageDialog" [modal]="true" [style]="{width: '750px'}" styleClass="p-fluid no-print">
+  <div class="flex flex-col gap-4 mt-2">
+    
+    <!-- Infos Unité -->
+    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs font-semibold text-slate-700">
+      <p class="m-0"><b>Unité Bénéficiaire :</b> {{ selectedDemande?.unite?.nom }} ({{ selectedDemande?.unite?.code }})</p>
+      <p class="m-0 mt-1"><b>Date d'Émission :</b> {{ selectedDemande?.dateDemande | date:'dd/MM/yyyy' }}</p>
+      <p class="m-0 mt-1" *ngIf="selectedDemande?.statut !== 'SOUMIS'">
+        <b>Statut :</b> 
+        <p-tag [value]="getStatutLabel(selectedDemande?.statut)" [severity]="getStatutSeverity(selectedDemande?.statut)" styleClass="text-[10px] px-2 font-bold ml-1"></p-tag>
+      </p>
+    </div>
+
+    <!-- ========= RECOMMANDATION INTELLIGENTE (IA Logistique) ========= -->
+    <div *ngIf="globalRecommendation && selectedDemande?.statut === 'SOUMIS'" 
+         class="border rounded-xl p-4 flex flex-col gap-4 transition-all"
+         [ngClass]="getRecommendationClass()">
+      <div class="min-w-0 flex-1 flex flex-col gap-3 w-full">
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="font-black text-sm">{{ recommendationLabel }}</div>
+          <span *ngIf="recommendationApplied" class="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-white/70 border border-current opacity-70">
+            Appliquée — en attente de votre confirmation
+          </span>
+        </div>
+        <p class="text-xs mt-1 opacity-80 leading-relaxed m-0 whitespace-normal break-words">{{ recommendationDetail }}</p>
+      </div>
+      <div class="shrink-0">
+        <button pButton 
+                [label]="recommendationApplied ? 'Ré-appliquer' : 'Appliquer'"
+                icon="pi pi-bolt"
+                [class]="getRecommendationButtonClass() + ' self-start sm:self-center'"
+                (click)="applyRecommendation()"
+                title="Pré-remplir la décision selon l'analyse logistique (vous devez confirmer)"></button>
+      </div>
+    </div>
+    <!-- ==================== FIN RECOMMANDATION ==================== -->
+
+    <!-- Choix de décision -->
+    <div class="field">
+      <label class="font-bold text-gray-700 block mb-1 text-xs">Avis / Décision Finale de la DA *</label>
+      <p-dropdown [options]="decisionOptions" [(ngModel)]="decision" optionLabel="label" optionValue="value" (onChange)="onDecisionChange()" appendTo="body" styleClass="text-sm" [disabled]="selectedDemande?.statut !== 'SOUMIS'"></p-dropdown>
+    </div>
+
+    <!-- Si décision Rejet -->
+    <div class="field" *ngIf="decision === 'REFUSE'">
+      <label for="motifRefus" class="font-bold text-gray-700 block mb-1 text-xs text-red-600">Motif de Refus *</label>
+      <textarea pInputText id="motifRefus" [(ngModel)]="motifRefus" rows="3" required placeholder="Saisir la raison réglementaire du rejet..." class="w-full text-sm p-3 border border-red-300 rounded focus:border-red-500 focus:ring-1 focus:ring-red-500" [disabled]="selectedDemande?.statut !== 'SOUMIS'"></textarea>
+    </div>
+
+    <!-- Si décision Approbation -->
+    <div *ngIf="decision !== 'REFUSE'" class="flex flex-col gap-4">
+      <div class="field" *ngIf="selectedDemande?.statut === 'SOUMIS'">
+        <label class="font-bold text-gray-700 block mb-1 text-xs">Soute / Magasin de Prélèvement (DA) *</label>
+        <p-dropdown [options]="magasins" [(ngModel)]="selectedMagasin" optionLabel="nom" placeholder="Sélectionner la soute DA de prélèvement" appendTo="body" styleClass="text-sm" [disabled]="selectedDemande?.statut !== 'SOUMIS'"></p-dropdown>
+        
+        <!-- Smart warehouse selection explanation -->
+        <div *ngIf="autoSelectedMagasinReason" class="text-[11px] text-blue-800 font-semibold mt-2 bg-blue-50 border border-blue-100 rounded-lg p-2.5 flex items-start gap-2 shadow-sm">
+          <i class="pi pi-bolt text-sm text-blue-500 mt-0.5 animate-pulse shrink-0"></i>
+          <div>
+            <span class="font-bold text-blue-900 block mb-0.5">Sélection automatique intelligente (IA Logistique) :</span>
+            <span>{{ autoSelectedMagasinReason }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ajustement quantitatif des articles demandés -->
+      <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider m-0 mt-2">Détails des articles demandés</h4>
+      <div class="border border-slate-100 rounded-xl overflow-hidden">
+        <table class="w-full text-xs text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50 font-bold border-b border-slate-200 text-slate-500">
+              <th class="p-3">Article</th>
+              <th class="p-3">Nomenclature</th>
+              <th class="p-3 text-center w-[120px]">Qté Demandée</th>
+              <th class="p-3 text-center w-[150px]" *ngIf="decision === 'APPROUVE_PARTIEL' || selectedDemande?.statut !== 'SOUMIS'">Qté Accordée *</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let l of lignes" class="border-b border-slate-100 text-slate-800 hover:bg-slate-50/30 transition-colors">
+              <td class="p-3 font-medium">
+                <!-- Designation -->
+                <div class="font-bold text-slate-900 text-sm">
+                  <a [routerLink]="['/catalogue', l.item.id]" (click)="displayArbitrageDialog = false" class="hover:underline text-slate-900">{{ l.item.designation }}</a>
+                </div>
+                
+                <!-- Magasins stock pills (live info) -->
+                <div class="flex flex-wrap gap-1 mt-1.5" *ngIf="selectedDemande?.statut === 'SOUMIS'">
+                  <span *ngFor="let sm of l.stocksParMagasin" class="inline-flex items-center text-[9px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-mono font-bold border border-slate-200">
+                    {{ sm.code }}: {{ sm.quantite | number:'1.0-0' }} u
+                  </span>
+                  <span *ngIf="!l.stocksParMagasin || l.stocksParMagasin.length === 0" class="text-[9px] text-slate-400 italic">
+                    Aucun stock disponible dans les soutes DA
+                  </span>
+                </div>
+
+                <!-- Recommendations / Forecasts if a soute is selected -->
+                <div class="mt-3 bg-slate-50/80 backdrop-blur-[2px] border border-slate-200 rounded-xl p-3 flex flex-col gap-1 text-[10px]" *ngIf="selectedMagasin && selectedDemande?.statut === 'SOUMIS'">
+                  <div class="flex items-center justify-between font-bold text-slate-700">
+                    <span class="flex items-center gap-1">
+                      <i class="pi pi-compass text-[10px] text-slate-400"></i>
+                      Stock dans {{ selectedMagasin.nom }} ({{ selectedMagasin.code }}):
+                    </span>
+                    <span [class]="isStockCriticalInSelectedMagasin(l) ? 'text-red-600 font-extrabold' : 'text-slate-900'">
+                      {{ getItemStockInSelectedMagasin(l) | number:'1.0-0' }} u 
+                      <span class="text-slate-400 font-normal">(Seuil sécu : {{ l.stockSecurite || 0 }} u)</span>
+                    </span>
+                  </div>
+                  <div class="flex justify-between items-center text-slate-500 mt-0.5">
+                    <span>Consommation mensuelle moyenne :</span>
+                    <span class="font-bold text-slate-700">{{ l.consommationMoyenne | number:'1.0-0' }} u / mois</span>
+                  </div>
+                  <div class="flex justify-between items-center text-slate-500 mt-0.5" *ngIf="l.previsions && l.previsions.length > 0">
+                    <span>Stock à venir (Commandes en cours) :</span>
+                    <span class="font-black text-teal-600">
+                      +{{ l.previsions[0].quantite | number:'1.0-0' }} u (BPR: {{ l.previsions[0].reference }})
+                    </span>
+                  </div>
+                  <div class="mt-2 font-black uppercase text-[9px] tracking-wide p-1.5 rounded flex items-center gap-1.5" 
+                       [ngClass]="getItemStockInSelectedMagasin(l) <= 0 ? 'bg-red-50 text-red-700 border border-red-100' : 
+                                  getItemStockInSelectedMagasin(l) < l.quantiteDemandee ? 'bg-orange-50 text-orange-700 border border-orange-100' : 
+                                  isStockCriticalInSelectedMagasin(l) ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-green-50 text-green-700 border border-green-100'">
+                    <i class="pi" [ngClass]="getItemStockInSelectedMagasin(l) <= 0 ? 'pi-times-circle' : 
+                                            getItemStockInSelectedMagasin(l) < l.quantiteDemandee ? 'pi-exclamation-triangle' : 
+                                            isStockCriticalInSelectedMagasin(l) ? 'pi-exclamation-circle' : 'pi-check-circle'"></i>
+                    {{ getLogisticsRecommendation(l) }}
+                  </div>
+                </div>
+              </td>
+              <td class="p-3 font-mono font-bold text-gamma-primary">
+                <a [routerLink]="['/catalogue', l.item.id]" (click)="displayArbitrageDialog = false" class="hover:underline">{{ l.item.nomenclature }}</a>
+              </td>
+              <td class="p-3 text-center font-bold text-sm">{{ l.quantiteDemandee }}</td>
+              <td class="p-3 text-center" *ngIf="decision === 'APPROUVE_PARTIEL' || selectedDemande?.statut !== 'SOUMIS'">
+                <input type="number" pInputText [(ngModel)]="l.quantiteAccordee" min="0" [max]="l.quantiteDemandee" class="w-full text-center p-1.5 border border-gray-300 rounded font-bold text-sm" [disabled]="selectedDemande?.statut !== 'SOUMIS'" />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button [label]="selectedDemande?.statut === 'SOUMIS' ? 'Annuler' : 'Fermer'" icon="pi pi-times" (click)="displayArbitrageDialog = false" styleClass="p-button-text"></p-button>
+    <p-button *ngIf="selectedDemande?.statut === 'SOUMIS'" label="Soumettre l'Arbitrage" icon="pi pi-check" styleClass="p-button-primary font-bold" (click)="saveArbitrage()"></p-button>
+  </ng-template>
+</p-dialog>
+
+
+<!-- ==================== GABARIT D'IMPRESSION A4 : BON DE SORTIE & ORDRE DE MOUVEMENT ==================== -->
+<div *ngIf="printDemande" class="print-document-container flex-col bg-white p-8 w-full text-black text-sm hidden font-serif">
+  
+  <!-- En-tête réglementaire -->
+  <div class="flex justify-between items-start border-b-2 border-black pb-4 mb-6">
+    <div class="text-xs uppercase font-bold leading-normal">
+      <p class="m-0">Ministère de la Défense Nationale</p>
+      <p class="m-0">Marine Nationale Tunisienne</p>
+      <p class="m-0 font-black">Division de l'Approvisionnement (DA)</p>
+      <p class="m-0 font-mono text-[9px] mt-1 text-slate-500">Service Distribution Logistique</p>
+    </div>
+    <div class="flex gap-4 items-center">
+      <div class="text-right">
+        <h1 class="text-xl font-bold uppercase tracking-tight m-0">BON DE SORTIE MATÉRIELS</h1>
+        <p class="text-xs font-mono font-bold text-slate-700 m-0 mt-1">BS N° : {{ printDemande.bonSortie?.numeroBs }}</p>
+        <p class="text-[10px] text-slate-500 m-0 mt-0.5">Date de sortie : {{ printDemande.bonSortie?.dateSortie | date:'dd/MM/yyyy' }}</p>
+      </div>
+      <qrcode [qrdata]="'BS:' + (printDemande.bonSortie?.numeroBs || '') + '|DEM:' + printDemande.numeroDemande + '|UNIT:' + printDemande.unite?.code" [width]="70" [errorCorrectionLevel]="'M'"></qrcode>
+    </div>
+  </div>
+
+  <!-- Références de l'arbitrage -->
+  <div class="grid grid-cols-2 border border-black p-4 bg-slate-50/50 mb-6 gap-x-8 gap-y-2 text-xs">
+    <div>
+      <p class="m-0"><strong>Unité Bénéficiaire :</strong> {{ printDemande.unite?.nom }} ({{ printDemande.unite?.code }})</p>
+      <p class="m-0 mt-1"><strong>Transporteur affecté :</strong> {{ printDemande.bonSortie?.transporteur || 'Service Transit DA' }}</p>
+    </div>
+    <div>
+      <p class="m-0"><strong>Demande d'origine :</strong> {{ printDemande.numeroDemande }} du {{ printDemande.dateDemande | date:'dd/MM/yyyy' }}</p>
+      <p class="m-0 mt-1"><strong>Véhicule logistique :</strong> {{ printDemande.bonSortie?.vehiculeMatricule || 'MDN-10452' }}</p>
+    </div>
+  </div>
+
+  <p class="text-xs font-bold uppercase tracking-wider mb-2">Détails des Articles Sortis de Stock pour Affectation :</p>
+  
+  <!-- Tableau des matériels livrés -->
+  <table class="w-full border-collapse border border-black text-[11px] mb-8">
+    <thead>
+      <tr class="bg-slate-100 text-left font-bold border-b border-black">
+        <th class="border-r border-black p-2 w-[160px]">Nomenclature</th>
+        <th class="border-r border-black p-2">Désignation</th>
+        <th class="border-r border-black p-2 text-center w-[85px]">Qté Demandée</th>
+        <th class="border-r border-black p-2 text-center w-[85px]">Qté Accordée</th>
+        <th class="border-r border-black p-2 text-right w-[110px]">P.U. HT</th>
+        <th class="p-2 text-right w-[135px]">Valeur Total HT</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let l of printLignes" class="border-b border-black">
+        <td class="border-r border-black p-2 font-mono font-bold">{{ l.item.nomenclature || 'Non définie' }}</td>
+        <td class="border-r border-black p-2 font-medium">{{ l.item.designation }}</td>
+        <td class="border-r border-black p-2 text-center text-slate-500">{{ l.quantiteDemandee }}</td>
+        <td class="border-r border-black p-2 text-center font-bold text-black text-sm">{{ l.quantiteAccordee != null ? l.quantiteAccordee : l.quantiteDemandee }}</td>
+        <td class="border-r border-black p-2 text-right">{{ l.item.prixUnitaire | number:'1.3-3' }} DT</td>
+        <td class="p-2 text-right font-bold">{{ getLigneTotal(l) | number:'1.3-3' }} DT</td>
+      </tr>
+      <!-- Total -->
+      <tr class="font-bold border-t-2 border-black">
+        <td colspan="4" class="border-r border-black p-2 text-right">VALEUR TOTALE ESTIMÉE DE LA DOTATION LOGISTIQUE</td>
+        <td class="border-r border-black p-2"></td>
+        <td class="p-2 text-right text-sm decoration-double font-bold">{{ getGlobalTotalPrint() | number:'1.3-3' }} DT</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="text-[10px] text-slate-500 italic leading-relaxed mb-6">
+    <b>Note de sécurité convoi :</b> Le présent Bon de Sortie vaut autorisation de transport réglementaire des matériels énumérés ci-dessus. Tout contrôle de convoi ou de transit en base navale militaire doit vérifier la conformité des plaques d'immatriculation du véhicule logistique mentionné.
+  </p>
+
+  <!-- Bas de page Signatures -->
+  <div class="mt-auto pt-8 border-t border-slate-300 grid grid-cols-3 gap-6 text-center text-xs leading-normal">
+    <div class="border border-black p-4 h-32 flex flex-col justify-between">
+      <p class="font-bold m-0 uppercase text-[9px] tracking-wider">L'Officier Expéditeur (DA)</p>
+      <p class="italic text-[8px] text-slate-400">Signature & Visa</p>
+    </div>
+    <div class="border border-black p-4 h-32 flex flex-col justify-between">
+      <p class="font-bold m-0 uppercase text-[9px] tracking-wider">Le Chef de Convoi (Transport)</p>
+      <p class="italic text-[8px] text-slate-400">Signature & Visa</p>
+    </div>
+    <div class="border border-black p-4 h-32 flex flex-col justify-between">
+      <p class="font-bold m-0 uppercase text-[9px] tracking-wider">L'Officier Réceptionnaire (Unité)</p>
+      <p class="italic text-[8px] text-slate-400">Signature & Visa</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== DIALOG DE REFUS DE DOTATION ==================== -->
+<p-dialog header="Refuser la Demande d'Ajout (Dotation)" [(visible)]="displayRefusDotationDialog" [modal]="true" [style]="{width: '450px'}" styleClass="p-fluid no-print">
+  <div class="flex flex-col gap-4 mt-2">
+    <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-xs font-semibold text-red-800">
+      Vous vous apprêtez à rejeter la demande d'ajout réglementaire pour l'article <strong>{{ selectedDotation?.item?.designation }}</strong> destinée à l'unité <strong>{{ selectedDotation?.unite?.nom }}</strong>.
+    </div>
+    <div class="field">
+      <label for="motifRefusDotation" class="font-bold text-gray-700 block mb-1 text-xs text-red-600">Motif réglementaire de refus *</label>
+      <textarea pInputText id="motifRefusDotation" [(ngModel)]="motifRefusDotation" rows="3" required placeholder="Ex : Dotation réglementaire déjà atteinte, hors nomenclature..." class="w-full text-sm p-3 border border-red-300 rounded focus:border-red-500 focus:ring-1 focus:ring-red-500"></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Annuler" icon="pi pi-times" (click)="displayRefusDotationDialog = false" styleClass="p-button-text"></p-button>
+    <p-button label="Confirmer le Rejet" icon="pi pi-check" styleClass="p-button-danger font-bold" (click)="saveRefusDotation()" [disabled]="!motifRefusDotation"></p-button>
+  </ng-template>
+</p-dialog>

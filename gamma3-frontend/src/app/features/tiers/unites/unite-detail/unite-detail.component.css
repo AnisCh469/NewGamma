@@ -1,0 +1,100 @@
+.animation-fadein {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Optimisation Web */
+:host ::ng-deep {
+  .p-card .p-card-body {
+    padding: clamp(0.5rem, 1.5vh, 1.5rem) !important;
+  }
+  .p-panel .p-panel-header {
+    padding: clamp(0.4rem, 1vh, 1rem) clamp(0.5rem, 1.5vh, 1.5rem) !important;
+  }
+  .p-panel .p-panel-content {
+    padding: clamp(0.5rem, 1.5vh, 1.5rem) !important;
+  }
+  /* Style custom pour les onglets */
+  .p-tabview .p-tabview-panels {
+    padding: 1.5rem 0 0 0 !important;
+  }
+}
+
+.web-container {
+  overflow-x: hidden;
+}
+
+/* Impression Fiche Complète */
+@media print {
+  @page { margin: 10mm; size: A4 portrait; }
+
+  /* En mode print, on cache la vue web classique par défaut si un mode est actif */
+  body.print-document-mode .web-container,
+  body.print-label-mode .web-container {
+    display: none !important;
+  }
+}
+
+/* Base states */
+.print-label-container,
+.print-document-container {
+  display: none;
+}
+
+/* Mode Impression Étiquette */
+body.print-label-mode {
+  background: white;
+}
+
+body.print-label-mode .print-label-container {
+  display: flex !important;
+  background: white;
+}
+
+/* Mode Impression Document A4 Officiel (Optimisé) */
+body.print-document-mode {
+  background: white;
+  font-family: 'Inter', 'Roboto', sans-serif;
+}
+
+body.print-document-mode .print-document-container {
+  display: flex !important;
+  background: white;
+  width: 210mm; /* A4 Width */
+  height: 297mm; /* A4 Height */
+  max-height: 297mm;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+@media print {
+  @page { 
+    margin: 0; 
+    size: A4 portrait; 
+  }
+  
+  body.print-document-mode {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-document-container {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  /* Force small text for logistics details */
+  .print-document-container .text-sm { font-size: 0.875rem !important; }
+  .print-document-container .text-xs { font-size: 0.75rem !important; }
+  
+  /* Avoid splitting blocks */
+  .print-document-container h4,
+  .print-document-container .grid,
+  .print-document-container .flex {
+    break-inside: avoid;
+  }
+}

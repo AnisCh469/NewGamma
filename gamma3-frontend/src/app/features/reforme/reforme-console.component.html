@@ -1,0 +1,292 @@
+<!-- CONSOLE D'ARBITRAGE DE RÉFORME (ÉCRAN D'ADMINISTRATION PRINCIPAL) -->
+<div class="p-6 max-w-7xl mx-auto space-y-6 no-print">
+  
+  <p-toast></p-toast>
+
+  <!-- ENTÊTE DE LA CONSOLE -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div class="space-y-1">
+      <div class="flex items-center gap-3">
+        <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight">Console de Réforme & Déclassement</h1>
+        <span class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-semibold border border-blue-100">
+          {{ dossiers.length }} dossiers
+        </span>
+        <span *ngIf="isFiltered" (click)="clearFilter()" class="bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5 cursor-pointer border border-amber-200 shadow-sm no-print">
+          <i class="pi pi-filter-slash"></i> Filtré par unité (Cliquez pour réinitialiser)
+        </span>
+      </div>
+      <p class="text-sm text-slate-500 font-medium">Examen réglementaire et commission de réforme militaire du matériel technique H.S.</p>
+    </div>
+  </div>
+
+  <!-- TABLEAU DES DOSSIERS -->
+  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <p-table [value]="dossiers" [loading]="loading" [paginator]="true" [rows]="10" styleClass="p-datatable-sm"
+             [rowHover]="true" responsiveLayout="scroll">
+      <ng-template pTemplate="header">
+        <tr class="bg-slate-50/75 border-b border-slate-100">
+          <th class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">N° Dossier</th>
+          <th class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date Demande</th>
+          <th class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Unité</th>
+          <th class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Motif</th>
+          <th class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Statut</th>
+          <th class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Décision Commission</th>
+          <th class="py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-dossier>
+        <tr class="hover:bg-blue-50/30 transition-colors border-b border-slate-100">
+          <td class="py-2.5 px-4 font-mono font-bold text-xs text-blue-600">{{ dossier.numeroDossier }}</td>
+          <td class="py-2.5 px-4 text-xs text-slate-600 font-medium">{{ dossier.dateDemande | date:'dd/MM/yyyy' }}</td>
+          <td class="py-2.5 px-4 text-xs text-slate-700 font-semibold">{{ dossier.unite?.designation }}</td>
+          <td class="py-2.5 px-4 text-xs text-slate-500 max-w-xs truncate">{{ dossier.motif }}</td>
+          <td class="py-2.5 px-4 text-xs">
+            <p-tag [severity]="getStatutSeverity(dossier.statut)" [value]="dossier.statut"></p-tag>
+          </td>
+          <td class="py-2.5 px-4 text-xs">
+            <p-tag [severity]="getDecisionSeverity(dossier.decisionCommission)" [value]="getDecisionLabel(dossier.decisionCommission)"></p-tag>
+          </td>
+          <td class="py-2.5 px-4 text-xs text-right space-x-1.5 whitespace-nowrap">
+            <button *ngIf="dossier.statut === 'SOUMIS'" pButton icon="pi pi-check-square" 
+                    class="p-button-sm p-button-outlined" label="Examen Commission" 
+                    (click)="openCommissionModal(dossier)"></button>
+            <button *ngIf="dossier.statut === 'TRAITE'" pButton icon="pi pi-print" 
+                    class="p-button-sm p-button-outlined p-button-secondary" label="Imprimer PV" 
+                    (click)="declencherImpression(dossier)"></button>
+            <button *ngIf="dossier.statut === 'TRAITE'" pButton icon="pi pi-eye" 
+                    class="p-button-sm p-button-text p-button-secondary" 
+                    (click)="openCommissionModal(dossier)"></button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="py-8 text-center text-slate-400 font-medium">
+            <i class="pi pi-inbox text-3xl mb-2 block"></i>
+            Aucune demande de réforme en attente ou traitée.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- DIALOG DE LA COMMISSION DE RÉFORME MILITAIRE -->
+  <p-dialog [(visible)]="displayCommissionDialog" [header]="'Examen de Commission de Réforme — ' + selectedDossier?.numeroDossier"
+            [modal]="true" [style]="{width: '700px'}" [draggable]="false" [resizable]="false" styleClass="custom-dialog">
+    
+    <div class="space-y-6 py-2">
+      <!-- Détails dossier -->
+      <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 flex justify-between text-xs">
+        <div class="space-y-1">
+          <p class="text-slate-400 uppercase font-semibold">Unité utilisatrice</p>
+          <p class="text-slate-700 font-bold text-sm">{{ selectedDossier?.unite?.designation }}</p>
+        </div>
+        <div class="space-y-1 text-right">
+          <p class="text-slate-400 uppercase font-semibold">Date de Demande</p>
+          <p class="text-slate-700 font-bold text-sm">{{ selectedDossier?.dateDemande | date:'dd/MM/yyyy' }}</p>
+        </div>
+      </div>
+
+      <!-- Motif -->
+      <div class="space-y-1">
+        <label class="text-xs font-bold text-slate-500 uppercase tracking-wide">Motif d'inaptitude ou H.S.</label>
+        <p class="text-slate-700 text-sm font-medium border-l-4 border-amber-500 pl-3 py-1 bg-amber-50/50 rounded-r-lg">
+          {{ selectedDossier?.motif }}
+        </p>
+      </div>
+
+      <!-- Grille Articles à examiner -->
+      <div class="space-y-2">
+        <label class="text-xs font-bold text-slate-500 uppercase tracking-wide">Matériels proposés à la réforme</label>
+        <div class="border border-slate-150 rounded-xl overflow-hidden">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-150">
+                <th class="py-2 px-3 font-semibold text-slate-500">Nomenclature</th>
+                <th class="py-2 px-3 font-semibold text-slate-500">Désignation</th>
+                <th class="py-2 px-3 font-semibold text-slate-500 text-right">Quantité H.S.</th>
+                <th class="py-2 px-3 font-semibold text-slate-500">Observations</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let l of lignes" class="border-b border-slate-100 hover:bg-slate-50/30">
+                <td class="py-2.5 px-3 font-mono text-xs">{{ l.item?.nomenclature }}</td>
+                <td class="py-2.5 px-3 font-semibold text-slate-700">{{ l.item?.designation }}</td>
+                <td class="py-2.5 px-3 font-bold text-red-600 text-right">{{ l.quantite }}</td>
+                <td class="py-2.5 px-3 text-slate-500 max-w-xs truncate">{{ l.observations || 'N/A' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <hr class="border-slate-100">
+
+      <!-- Formulaire Commission -->
+      <div class="space-y-4" *ngIf="selectedDossier?.statut === 'SOUMIS'; else readOnlyView">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Décision -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-bold text-slate-600 uppercase tracking-wide">Décision de la Commission</label>
+            <p-dropdown [options]="decisionOptions" [(ngModel)]="decision" [style]="{width: '100%'}"></p-dropdown>
+          </div>
+          <!-- Date Commission -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-bold text-slate-600 uppercase tracking-wide">Date d'évaluation</label>
+            <input pInputText type="date" [(ngModel)]="dateCommission" class="w-full">
+          </div>
+        </div>
+
+        <!-- Membres -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-bold text-slate-600 uppercase tracking-wide">Membres de la commission militaire</label>
+          <input pInputText type="text" [(ngModel)]="membresCommission" class="w-full" placeholder="CF Mnasri, LV Nouri, etc.">
+        </div>
+
+        <!-- Observations -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-bold text-slate-600 uppercase tracking-wide">Observations / Rapports de Commission</label>
+          <textarea pInputTextarea [rows]="3" [(ngModel)]="observationsCommission" class="w-full" 
+                    placeholder="Saisir les remarques techniques, raisons de rebut ou de déclassement..."></textarea>
+        </div>
+      </div>
+
+      <!-- Mode consultation en lecture seule -->
+      <ng-template #readOnlyView>
+        <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 space-y-3 text-xs">
+          <h4 class="font-bold text-blue-800 text-sm mb-1 uppercase tracking-wider">Avis définitif de la Commission</h4>
+          <div class="grid grid-cols-2 gap-3 text-blue-900 font-medium">
+            <div>
+              <p class="text-blue-500/80 font-bold uppercase tracking-wider">Décision</p>
+              <p class="font-bold text-sm text-blue-950">{{ getDecisionLabel(selectedDossier?.decisionCommission) }}</p>
+            </div>
+            <div>
+              <p class="text-blue-500/80 font-bold uppercase tracking-wider">Date Commission</p>
+              <p class="font-semibold text-slate-700">{{ selectedDossier?.dateCommission | date:'dd/MM/yyyy' }}</p>
+            </div>
+          </div>
+          <div>
+            <p class="text-blue-500/80 font-bold uppercase tracking-wider">Membres de la Commission</p>
+            <p class="text-slate-800">{{ selectedDossier?.membresCommission }}</p>
+          </div>
+          <div>
+            <p class="text-blue-500/80 font-bold uppercase tracking-wider">Observations</p>
+            <p class="text-slate-800 italic bg-white/70 p-2.5 rounded-lg border border-blue-100/50">{{ selectedDossier?.observationsCommission || 'Aucune observation.' }}</p>
+          </div>
+        </div>
+      </ng-template>
+
+    </div>
+
+    <!-- Actions du dialogue -->
+    <ng-template pTemplate="footer">
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+        <button pButton label="Fermer" class="p-button-text p-button-secondary" (click)="displayCommissionDialog = false"></button>
+        <button *ngIf="selectedDossier?.statut === 'SOUMIS'" pButton label="Acter la Décision" icon="pi pi-check" 
+                class="p-button-primary" (click)="saveCommissionDecision()"></button>
+      </div>
+    </ng-template>
+  </p-dialog>
+</div>
+
+<!-- ========================================================================= -->
+<!-- GABARIT D'IMPRESSION A4 OFFICIEL DU PV DE COMMISSION DE RÉFORME             -->
+<!-- ========================================================================= -->
+<div class="print-only print-a4 space-y-6 text-black p-8" *ngIf="printDossier">
+  
+  <!-- En-tête officiel Ministère de la Défense Nationale -->
+  <div class="flex justify-between items-start border-b border-black pb-4 text-xs font-semibold">
+    <div class="space-y-1">
+      <p class="font-bold text-sm">RÉPUBLIQUE TUNISIENNE</p>
+      <p>MINISTÈRE DE LA DÉFENSE NATIONALE</p>
+      <p>ARMÉE DE MER</p>
+      <p>DIVISION APPROVISIONNEMENT</p>
+      <p class="font-mono text-2xs">SRR / Service Réforme & Remise</p>
+    </div>
+    <div class="text-right space-y-1">
+      <p>Bizerte, le {{ today | date:'dd/MM/yyyy' }}</p>
+      <p class="font-mono">Réf: {{ printDossier?.numeroDossier }}</p>
+      <p class="bg-black text-white px-2 py-0.5 rounded font-bold">RÉFORME / DÉCLASSEMENT</p>
+    </div>
+  </div>
+
+  <div class="text-center py-6">
+    <h2 class="text-xl font-bold tracking-widest uppercase">PROCÈS-VERBAL DE COMMISSION DE RÉFORME</h2>
+    <p class="text-sm font-semibold mt-1">Conformément aux instructions générales du Service de Logistique de la Marine</p>
+  </div>
+
+  <!-- Données administratives -->
+  <div class="border border-black p-4 grid grid-cols-2 gap-4 text-xs font-semibold">
+    <div>
+      <p class="text-gray-500 uppercase">Unité Demandeur :</p>
+      <p class="text-sm font-bold text-black">{{ printDossier?.unite?.designation }}</p>
+    </div>
+    <div>
+      <p class="text-gray-500 uppercase">Date d'examen :</p>
+      <p class="text-sm font-bold text-black">{{ printDossier?.dateCommission | date:'dd/MM/yyyy' }}</p>
+    </div>
+    <div class="col-span-2">
+      <p class="text-gray-500 uppercase">Membres constitutifs de la Commission Militaire :</p>
+      <p class="text-sm font-bold text-black">{{ printDossier?.membresCommission }}</p>
+    </div>
+  </div>
+
+  <!-- Tableau des articles -->
+  <div class="space-y-2">
+    <p class="text-xs font-bold uppercase tracking-wider">Matériels inspectés et statués :</p>
+    <table class="w-full text-left text-xs border border-black border-collapse">
+      <thead>
+        <tr class="bg-gray-100 border-b border-black">
+          <th class="py-2 px-3 border-r border-black font-bold">Nomenclature</th>
+          <th class="py-2 px-3 border-r border-black font-bold">Désignation</th>
+          <th class="py-2 px-3 border-r border-black font-bold text-right">Qté Inspectée</th>
+          <th class="py-2 px-3 border-r border-black font-bold">Observations techniques</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let l of printLignes" class="border-b border-black">
+          <td class="py-2 px-3 border-r border-black font-mono">{{ l.item?.nomenclature }}</td>
+          <td class="py-2 px-3 border-r border-black font-bold">{{ l.item?.designation }}</td>
+          <td class="py-2 px-3 border-r border-black font-bold text-right">{{ l.quantite }}</td>
+          <td class="py-2 px-3 border-r border-black text-gray-700">{{ l.observations || 'N/A' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Rapport et Décision -->
+  <div class="border border-black p-4 space-y-4 text-xs">
+    <div>
+      <h4 class="font-bold uppercase text-gray-500 mb-1">Rapport & Observations de la Commission :</h4>
+      <p class="text-black italic min-h-[60px]">{{ printDossier?.observationsCommission || 'Aucune observation particulière.' }}</p>
+    </div>
+    <div class="border-t border-black pt-3">
+      <h3 class="text-sm font-extrabold uppercase flex justify-between items-center bg-gray-50 p-2">
+        <span>Décision Finale Actée :</span>
+        <span class="underline">{{ getDecisionLabel(printDossier?.decisionCommission) }}</span>
+      </h3>
+    </div>
+  </div>
+
+  <!-- Encart réglementaire de visa et signatures -->
+  <div class="grid grid-cols-2 gap-8 text-center pt-8 text-xs font-bold">
+    <div>
+      <p>Les Membres de la Commission</p>
+      <p class="text-2xs text-gray-400 mt-0.5">(Signatures individuelles)</p>
+      <div class="h-24"></div>
+      <p class="underline">{{ getFirstMembreCommission(printDossier) }}</p>
+    </div>
+    <div>
+      <p>Le Directeur de la Division Approvisionnement</p>
+      <p class="text-2xs text-gray-400 mt-0.5">(Visa officiel & Cachet de l'État-Major)</p>
+      <div class="h-24"></div>
+      <p class="underline">CF Mnasri</p>
+    </div>
+  </div>
+
+  <!-- Petit avertissement légal de décharge d'inventaire -->
+  <div class="text-2xs text-gray-400 pt-16 text-center border-t border-gray-100 uppercase tracking-widest leading-relaxed">
+    Ce procès-verbal certifie le déclassement comptable du matériel susmentionné.<br>
+    Le matériel réformé complet est déchargé de l'inventaire de l'État. Le matériel déclassé est versé au Magasin SRR.
+  </div>
+</div>

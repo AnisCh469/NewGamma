@@ -1,0 +1,76 @@
+/* Styles standards */
+.web-container {
+  font-family: 'Inter', 'Outfit', sans-serif;
+}
+
+/* Gabarit d'impression masqué à l'écran */
+.print-document-container {
+  display: none;
+}
+
+/* Styles d'impression */
+@media print {
+  /* Masquage des éléments de navigation et interactifs */
+  .no-print,
+  p-toast,
+  .p-toast,
+  app-topbar,
+  .app-topbar,
+  app-sidebar,
+  .app-sidebar,
+  p-button,
+  .p-button,
+  header,
+  footer,
+  aside,
+  nav,
+  .web-container {
+    display: none !important;
+  }
+
+  /* Affichage du Bon de Sortie */
+  .print-document-container {
+    display: flex !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    font-size: 12px !important;
+    color: #000000 !important;
+    background-color: #ffffff !important;
+  }
+
+  /* Configuration de la page (A4 vertical) */
+  @page {
+    size: A4 portrait;
+    margin: 20mm 15mm 20mm 15mm;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    font-family: 'Times New Roman', serif !important;
+  }
+
+  table {
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+}

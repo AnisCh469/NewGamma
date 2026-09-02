@@ -1,0 +1,492 @@
+<p-toast></p-toast>
+<div class="web-container p-4 max-w-[1800px] mx-auto animation-fadein">
+  
+  <!-- En-tête Compact -->
+  <div class="flex items-center justify-between mb-2 no-print border-b pb-2 shrink-0">
+    <div class="flex items-center gap-3">
+      <p-button icon="pi pi-arrow-left" label="Retour" styleClass="p-button-text p-button-secondary p-button-sm" routerLink="/fournisseurs"></p-button>
+      <h1 class="text-xl font-black text-gray-800 m-0">FICHE FOURNISSEUR : {{ fournisseur?.code }}</h1>
+    </div>
+    <div class="flex gap-2">
+      <p-button icon="pi pi-pencil" label="Modifier" styleClass="p-button-outlined p-button-sm" (onClick)="editFournisseur()"></p-button>
+      <p-button icon="pi pi-print" label="Imprimer" styleClass="p-button-outlined p-button-secondary p-button-sm" (onClick)="printPage()"></p-button>
+      <p-button icon="pi pi-tags" label="Étiquette" styleClass="p-button-primary p-button-sm" (onClick)="printLabel()"></p-button>
+      <p-button icon="pi pi-trash" label="Supprimer" styleClass="p-button-danger p-button-sm" (onClick)="deleteFournisseur()"></p-button>
+    </div>
+  </div>
+
+  <!-- Loading & Error -->
+  <div *ngIf="loading" class="flex justify-center items-center py-10">
+    <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
+  </div>
+  <div *ngIf="error" class="bg-red-50 text-red-600 p-4 rounded-xl border border-red-200 flex items-center gap-4">
+    <i class="pi pi-exclamation-triangle text-xl"></i>
+    <span class="font-bold">{{ error }}</span>
+  </div>
+
+  <!-- Main Content Grid -->
+  <div *ngIf="!loading && fournisseur" class="main-content-grid grid grid-cols-12 gap-4">
+    
+    <!-- Colonne de Gauche (4/12) -->
+    <div class="col-span-12 lg:col-span-4 flex flex-col gap-4">
+      
+      <!-- Bloc Logo / Sigle -->
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden p-4 flex flex-col items-center">
+        <h3 class="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] w-full mb-3">Logo / Armoiries</h3>
+        
+        <div *ngIf="fournisseur.logoUrl" class="w-full aspect-square max-w-[260px] rounded-lg border border-gray-100 overflow-hidden shadow-inner mb-4 flex items-center justify-center bg-slate-50">
+          <img [src]="getFullUrl(fournisseur.logoUrl)" alt="Logo Fournisseur" class="max-w-full max-h-full object-contain p-2" onerror="this.src='assets/placeholder-logo.png'">
+        </div>
+        
+        <div *ngIf="!fournisseur.logoUrl" class="w-full aspect-square max-w-[260px] rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center bg-gray-50 mb-4 p-4 text-center">
+          <i class="pi pi-building text-5xl text-gray-300 mb-2"></i>
+          <p class="text-gray-400 font-bold uppercase tracking-widest text-[10px] m-0">Aucun Logo Défini</p>
+          <span class="text-slate-400 text-[9px] mt-1">Cliquez sur charger pour importer le sigle ou logo de la société</span>
+        </div>
+        
+        <p-fileUpload mode="basic" chooseLabel="Charger un Logo" accept="image/*" maxFileSize="5000000" (onSelect)="onLogoUpload($event)" [auto]="true" styleClass="p-button-text p-button-sm w-full"></p-fileUpload>
+      </div>
+
+      <!-- Traçabilité QR & Barcode -->
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col items-center gap-2">
+        <h3 class="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] w-full mb-2">Traçabilité</h3>
+        <div class="bg-gray-50 p-4 rounded-lg border border-gray-100 w-full flex flex-col items-center">
+          <qrcode [qrdata]="fournisseur.code" [width]="130" [errorCorrectionLevel]="'M'"></qrcode>
+          <div class="mt-4 w-full flex justify-center overflow-hidden scale-95">
+            <svg class="barcode-svg"></svg>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Colonne de Droite (8/12) -->
+    <div class="col-span-12 lg:col-span-8 flex flex-col gap-4">
+      
+      <!-- Identité / Informations Générales -->
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="p-6 bg-gradient-to-br from-slate-50 to-white border-b border-gray-100 flex justify-between items-start">
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+               <span class="bg-gamma-primary text-white px-2 py-1 rounded text-xs font-black tracking-widest uppercase">CODE TIERS: {{ fournisseur.code }}</span>
+               <p-tag [value]="fournisseur.statut || 'PROSPECT'" [severity]="getStatutSeverity(fournisseur.statut)" styleClass="text-[10px] px-2 font-bold"></p-tag>
+            </div>
+            <h2 class="text-3xl font-black text-gray-900 leading-tight mb-2 tracking-tighter">{{ fournisseur.nom }}</h2>
+            <div class="flex gap-4 text-xs font-bold text-gray-400 uppercase tracking-widest">
+              <span>Matricule Fiscal: <b class="text-gray-800">{{ fournisseur.matriculeFiscal || '—' }}</b></span>
+              <span>Note Qualité: <b class="text-gamma-accent" *ngIf="fournisseur.note">{{ fournisseur.note }}/10</b><b class="text-gray-400" *ngIf="!fournisseur.note">Non Évalué</b></span>
+            </div>
+          </div>
+          <div class="text-right">
+             <p class="text-[10px] text-gray-400 font-black uppercase mb-1 tracking-widest">Date de Création</p>
+             <p class="text-xl font-black text-gray-800">{{ (fournisseur.createdAt | date:'dd/MM/yyyy') || today | date:'dd/MM/yyyy' }}</p>
+          </div>
+        </div>
+
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 bg-white border-b border-gray-100">
+          <div class="flex flex-col border-b border-gray-50 pb-2">
+            <span class="text-[10px] text-gray-400 font-black uppercase mb-1">Contact Référent</span>
+            <span class="text-sm font-bold text-gray-800"><i class="pi pi-user text-xs mr-2 text-slate-400"></i>{{ fournisseur.contactNom || '—' }}</span>
+          </div>
+          <div class="flex flex-col border-b border-gray-50 pb-2">
+            <span class="text-[10px] text-gray-400 font-black uppercase mb-1">Téléphone de Contact</span>
+            <span class="text-sm font-bold text-gray-800"><i class="pi pi-phone text-xs mr-2 text-slate-400"></i>{{ fournisseur.telephone || '—' }}</span>
+          </div>
+          <div class="flex flex-col border-b border-gray-50 pb-2">
+            <span class="text-[10px] text-gray-400 font-black uppercase mb-1">Adresse Email</span>
+            <span class="text-sm font-bold text-gray-800"><i class="pi pi-envelope text-xs mr-2 text-slate-400"></i>{{ fournisseur.email || '—' }}</span>
+          </div>
+          <div class="flex flex-col border-b border-gray-50 pb-2">
+            <span class="text-[10px] text-gray-400 font-black uppercase mb-1">Numéro de Fax</span>
+            <span class="text-sm font-bold text-gray-800"><i class="pi pi-print text-xs mr-2 text-slate-400"></i>{{ fournisseur.fax || '—' }}</span>
+          </div>
+        </div>
+        
+        <div class="p-6 bg-slate-50/50">
+          <span class="text-[10px] text-gray-400 font-black uppercase mb-1 block">Adresse Géographique</span>
+          <p class="text-sm text-slate-700 m-0 font-medium leading-relaxed">
+            <i class="pi pi-map-marker text-xs mr-2 text-slate-400"></i>{{ fournisseur.adresse || 'Aucune adresse enregistrée.' }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Onglets d'intégration future (Marchés / Performance / Documents) -->
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden p-1">
+        <p-tabView>
+          <!-- Tab 1: Achats et Marchés -->
+          <p-tabPanel header="Marchés & Achats (Sprint 10)">
+            <div class="p-6">
+              
+              <!-- Boutons d'Action -->
+              <div class="flex justify-between items-center mb-4">
+                <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider m-0">CONTRATS CADRES ET COMMANDES EN COURS</h4>
+                <div class="flex gap-2">
+                  <p-button icon="pi pi-file" label="Nouveau Marché" styleClass="p-button-outlined p-button-sm" (onClick)="openNewMarcheDialog()"></p-button>
+                  <p-button icon="pi pi-shopping-cart" label="Créer une Commande" styleClass="p-button-primary p-button-sm" (onClick)="openNewCommandeDialog()"></p-button>
+                </div>
+              </div>
+
+              <!-- Liste des Marchés -->
+              <div *ngIf="loadingMarches" class="flex justify-center items-center py-6">
+                <i class="pi pi-spin pi-spinner text-xl text-primary"></i>
+              </div>
+
+              <div *ngIf="!loadingMarches">
+                <div class="mb-6" *ngIf="marches.length > 0">
+                  <h5 class="text-xs font-bold text-gray-700 uppercase tracking-widest mb-3">Marchés Actifs</h5>
+                  
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div *ngFor="let m of marches" class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between hover:shadow-md transition-shadow">
+                      <div>
+                        <div class="flex justify-between items-start mb-2">
+                          <span class="font-mono font-black text-gamma-primary text-xs uppercase">{{ m.numeroMarche }}</span>
+                          <p-tag [value]="m.statut || 'ACTIF'" [severity]="m.statut === 'ACTIF' ? 'success' : 'secondary'" styleClass="text-[9px] px-1.5 font-bold"></p-tag>
+                        </div>
+                        <h4 class="font-bold text-slate-800 text-sm mb-1 leading-tight">{{ m.designation }}</h4>
+                        <p class="text-[10px] text-gray-400 font-semibold mb-3">
+                          Validité : {{ m.dateDebut | date:'dd/MM/yyyy' }} au {{ m.dateFin | date:'dd/MM/yyyy' }}
+                        </p>
+                      </div>
+
+                      <div class="mt-2 border-t border-slate-100 pt-3">
+                        <div class="flex justify-between text-xs font-black text-slate-700 mb-1">
+                          <span>Budget Consommé : {{ getMarcheBudgetConsomme(m) | number:'1.3-3' }} DT</span>
+                          <span>{{ getMarcheBudgetConsommePercent(m) }}%</span>
+                        </div>
+                        <!-- Barre de progression personnalisée -->
+                        <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden mb-2">
+                          <div class="bg-gamma-accent h-2 rounded-full" [style.width.%]="getMarcheBudgetConsommePercent(m)"></div>
+                        </div>
+                        <div class="flex justify-between items-center text-[10px] text-gray-400 font-semibold mt-1">
+                          <span>Montant Total HT : {{ m.montantTotalHt | number:'1.3-3' }} DT</span>
+                          <button pButton icon="pi pi-plus" label="Commande" class="p-button-text p-button-sm text-gamma-primary p-0 h-auto font-bold uppercase tracking-wider" (onClick)="openNewCommandeDialog(m)"></button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mb-4" *ngIf="marches.length === 0">
+                  <div class="border border-dashed border-slate-200 rounded-xl p-6 text-center bg-slate-50/50">
+                    <i class="pi pi-file text-3xl text-slate-300 mb-2"></i>
+                    <p class="text-xs text-slate-500 m-0 font-medium">Aucun marché cadre enregistré pour ce fournisseur.</p>
+                  </div>
+                </div>
+
+                <!-- Liste des Commandes -->
+                <div class="mt-6">
+                  <h5 class="text-xs font-bold text-gray-700 uppercase tracking-widest mb-3">Historique des Commandes</h5>
+                  
+                  <p-table [value]="commandes" styleClass="p-datatable-sm" *ngIf="commandes.length > 0">
+                    <ng-template pTemplate="header">
+                      <tr>
+                        <th class="text-xs">Réf Commande</th>
+                        <th class="text-xs">Date</th>
+                        <th class="text-xs">Liaison Marché</th>
+                        <th class="text-xs">Montant TTC</th>
+                        <th class="text-xs">Statut</th>
+                      </tr>
+                    </ng-template>
+                    <ng-template pTemplate="body" let-cmd>
+                      <tr class="text-xs">
+                        <td class="font-mono font-bold text-gamma-primary">{{ cmd.numeroCommande }}</td>
+                        <td class="font-medium text-slate-700">{{ cmd.dateCommande | date:'dd/MM/yyyy' }}</td>
+                        <td class="font-mono text-slate-500">{{ cmd.marche?.numeroMarche || 'Hors Marché' }}</td>
+                        <td class="font-bold text-slate-800">{{ cmd.montantTotal | number:'1.3-3' }} DT</td>
+                        <td>
+                          <p-tag [value]="cmd.statut || 'EN_ATTENTE'" [severity]="cmd.statut === 'LIVRE' ? 'success' : (cmd.statut === 'ANNULE' ? 'danger' : 'warning')"></p-tag>
+                        </td>
+                      </tr>
+                    </ng-template>
+                  </p-table>
+
+                  <div *ngIf="commandes.length === 0" class="border border-dashed border-slate-200 rounded-xl p-6 text-center bg-slate-50/50 mt-2">
+                    <i class="pi pi-shopping-cart text-3xl text-slate-300 mb-2"></i>
+                    <p class="text-xs text-slate-500 m-0 font-medium">Aucun bon de commande émis pour ce fournisseur.</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </p-tabPanel>
+
+          <!-- Tab 2: Performance et Évaluations -->
+          <p-tabPanel header="Performance & Évaluations">
+            <div class="relative p-6">
+              <!-- Overlay simulation lock -->
+              <div class="absolute inset-0 bg-slate-50/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center text-center p-4">
+                <div class="bg-white p-4 rounded-2xl shadow-lg border border-slate-100 flex flex-col items-center max-w-md">
+                  <i class="pi pi-lock text-3xl text-gamma-primary mb-2"></i>
+                  <h4 class="font-bold text-slate-800 text-base">Module Évaluation Qualité</h4>
+                  <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                    Les indicateurs de performance seront reliés aux réceptions matérielles lors du **Sprint 11**.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Simulation Indicators Grid -->
+              <div class="opacity-50 grid grid-cols-3 gap-4 text-center">
+                <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                  <span class="text-[10px] font-black uppercase text-slate-400">Taux de Conformité</span>
+                  <p class="text-3xl font-black text-green-600 mt-1">98.2%</p>
+                  <span class="text-[9px] text-slate-400">Objectif: >95%</span>
+                </div>
+                <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                  <span class="text-[10px] font-black uppercase text-slate-400">Respect Délais</span>
+                  <p class="text-3xl font-black text-green-600 mt-1">94.5%</p>
+                  <span class="text-[9px] text-slate-400">Objectif: >90%</span>
+                </div>
+                <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                  <span class="text-[10px] font-black uppercase text-slate-400">Audits Qualité</span>
+                  <p class="text-3xl font-black text-slate-700 mt-1">A+</p>
+                  <span class="text-[9px] text-slate-400">Dernier audit: Mars 2026</span>
+                </div>
+              </div>
+            </div>
+          </p-tabPanel>
+
+          <!-- Tab 3: Documents Associés -->
+          <p-tabPanel header="Documents Administratifs">
+            <div class="p-4 flex flex-col gap-4">
+              <div class="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <div>
+                  <h4 class="font-bold text-slate-800 text-sm m-0">Archive Documentaire du Fournisseur</h4>
+                  <p class="text-xs text-slate-500 m-0">RIB, Attestations, Contrats cadres numérisés</p>
+                </div>
+                <p-fileUpload mode="basic" chooseLabel="Ajouter Document" accept="application/pdf" maxFileSize="10000000" [auto]="true" styleClass="p-button-text p-button-sm"></p-fileUpload>
+              </div>
+
+              <!-- Liste des documents administratifs -->
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl hover:border-slate-300 transition-colors">
+                  <div class="flex items-center gap-3">
+                    <i class="pi pi-file-pdf text-red-600 text-xl"></i>
+                    <div>
+                      <span class="text-xs font-bold text-slate-800 block">Attestation_Homologation_Marine_2026.pdf</span>
+                      <span class="text-[9px] text-slate-400 uppercase font-semibold">Validité : 31/12/2027</span>
+                    </div>
+                  </div>
+                  <button pButton icon="pi pi-download" class="p-button-rounded p-button-text p-button-secondary p-button-sm"></button>
+                </div>
+
+                <div class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl hover:border-slate-300 transition-colors">
+                  <div class="flex items-center gap-3">
+                    <i class="pi pi-file-pdf text-red-600 text-xl"></i>
+                    <div>
+                      <span class="text-xs font-bold text-slate-800 block">RIB_BCT_Euro_MTU.pdf</span>
+                      <span class="text-[9px] text-slate-400 uppercase font-semibold">Banque Centrale de Tunisie</span>
+                    </div>
+                  </div>
+                  <button pButton icon="pi pi-download" class="p-button-rounded p-button-text p-button-secondary p-button-sm"></button>
+                </div>
+              </div>
+            </div>
+          </p-tabPanel>
+        </p-tabView>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- Layouts d'impression (cachés) -->
+<div *ngIf="!loading && fournisseur" class="print-label-container flex-col items-center justify-center p-8 text-center bg-white">
+  <h1 class="text-3xl font-extrabold text-black mb-4">{{ fournisseur.nom }}</h1>
+  <div class="flex items-center justify-center gap-6 mb-6">
+    <qrcode [qrdata]="fournisseur.code" [width]="180" [errorCorrectionLevel]="'M'"></qrcode>
+  </div>
+  <svg class="barcode-svg"></svg>
+</div>
+
+<div *ngIf="!loading && fournisseur" class="print-document-container flex-col bg-white p-6 w-full text-black text-sm">
+  <div class="flex justify-between items-center border-b-2 border-gray-800 pb-3 mb-4">
+    <div>
+      <h2 class="text-base font-bold uppercase tracking-wider">Ministère de la Défense Nationale</h2>
+      <h3 class="text-sm font-semibold text-gray-700">GAMMA 3 • Direction de l'Approvisionnement</h3>
+    </div>
+    <div class="text-right">
+      <h1 class="text-2xl font-black uppercase text-gamma-primary">Fiche Tiers Fournisseur</h1>
+      <p class="text-xs text-gray-500 font-medium italic">Généré le {{ today | date:'dd/MM/yyyy' }}</p>
+    </div>
+  </div>
+  
+  <div class="flex gap-6 mb-6 items-start">
+    <div *ngIf="fournisseur.logoUrl" class="w-32 h-32 border-2 border-gray-200 p-2 shrink-0 bg-gray-50 rounded shadow-sm flex items-center justify-center">
+      <img [src]="getFullUrl(fournisseur.logoUrl)" alt="Logo" class="max-w-full max-h-full object-contain">
+    </div>
+    <div class="flex-grow">
+      <div class="flex justify-between items-end mb-1">
+        <p class="text-xs text-gray-500 font-bold uppercase tracking-widest">Code Unique Fournisseur</p>
+        <p class="text-xs text-gray-400 font-medium">ID: #{{ fournisseur.id }}</p>
+      </div>
+      <p class="text-4xl font-black tracking-tighter mb-2 border-b-2 border-gray-100 pb-1">{{ fournisseur.code }}</p>
+      <p class="text-xs text-gray-500 font-bold uppercase tracking-widest mb-1">Raison Sociale / Nom</p>
+      <p class="text-2xl font-bold leading-tight">{{ fournisseur.nom }}</p>
+    </div>
+  </div>
+
+  <div class="mb-6">
+    <h4 class="text-sm font-bold uppercase bg-gray-800 text-white px-3 py-1 mb-2 inline-block rounded">Informations Commerciales & Légales</h4>
+    <div class="grid grid-cols-4 border border-gray-400">
+      <div class="bg-gray-100 p-2 font-bold border-r border-b border-gray-400">Matricule Fiscal</div>
+      <div class="p-2 border-r border-b border-gray-400 font-medium">{{ fournisseur.matriculeFiscal || '—' }}</div>
+      <div class="bg-gray-100 p-2 font-bold border-r border-b border-gray-400">Statut</div>
+      <div class="p-2 border-b border-gray-400 font-bold">{{ fournisseur.statut || 'PROSPECT' }}</div>
+      
+      <div class="bg-gray-100 p-2 font-bold border-r border-b border-gray-400">Contact</div>
+      <div class="p-2 border-r border-b border-gray-400 font-medium">{{ fournisseur.contactNom || '—' }}</div>
+      <div class="bg-gray-100 p-2 font-bold border-r border-b border-gray-400">Téléphone</div>
+      <div class="p-2 border-b border-gray-400 font-medium">{{ fournisseur.telephone || '—' }}</div>
+      
+      <div class="bg-gray-100 p-2 font-bold border-r border-b border-gray-400">Adresse Email</div>
+      <div class="p-2 border-r border-b border-gray-400 font-medium">{{ fournisseur.email || '—' }}</div>
+      <div class="bg-gray-100 p-2 font-bold border-r border-b border-gray-400">Fax</div>
+      <div class="p-2 border-b border-gray-400 font-medium">{{ fournisseur.fax || '—' }}</div>
+
+      <div class="bg-gray-100 p-2 font-bold border-r border-gray-400">Note Globale</div>
+      <div class="p-2 border-r border-gray-400 font-bold text-gamma-primary" colspan="3">{{ fournisseur.note ? fournisseur.note + '/10' : 'Non évalué' }}</div>
+    </div>
+  </div>
+
+  <div class="mb-6">
+    <h4 class="text-sm font-bold uppercase border-b border-gray-400 pb-1 mb-2">Adresse de la Société</h4>
+    <div class="border border-gray-200 p-3 rounded bg-gray-50 font-medium text-slate-800">
+      {{ fournisseur.adresse || 'Aucune adresse enregistrée.' }}
+    </div>
+  </div>
+
+  <div class="mt-auto border-t-2 border-gray-200 pt-4 flex justify-between items-start">
+    <div class="flex gap-8">
+      <div>
+        <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Traçabilité QR</p>
+        <qrcode [qrdata]="fournisseur.code" [width]="70" [errorCorrectionLevel]="'M'"></qrcode>
+      </div>
+      <div>
+        <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Code Logistique</p>
+        <svg class="barcode-svg" style="transform: scale(0.65); transform-origin: left top;"></svg>
+      </div>
+    </div>
+    <div class="text-right flex flex-col items-end">
+      <div class="border border-gray-400 w-48 h-20 p-2 text-center flex flex-col justify-between">
+        <p class="text-[10px] font-bold text-gray-400 uppercase">Visa de l'Officier Contrôleur</p>
+        <p class="text-[9px] text-gray-300 italic">Signature et Tampon</p>
+      </div>
+      <p class="text-[10px] text-gray-400 mt-2 font-medium">Document officiel généré par le système GAMMA 3</p>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de modification -->
+<p-dialog header="Détails du Fournisseur" [(visible)]="displayDialog" [modal]="true" [style]="{width: '500px'}" styleClass="p-fluid">
+  <div class="flex flex-col gap-4 mt-2">
+    <div class="field">
+      <label for="code" class="font-bold text-gray-700 block mb-1">Code Unique *</label>
+      <input type="text" pInputText id="code" [(ngModel)]="selectedFournisseur.code" required autofocus [disabled]="true" />
+    </div>
+    <div class="field">
+      <label for="nom" class="font-bold text-gray-700 block mb-1">Raison Sociale *</label>
+      <input type="text" pInputText id="nom" [(ngModel)]="selectedFournisseur.nom" required />
+    </div>
+    <div class="field">
+      <label for="matricule" class="font-bold text-gray-700 block mb-1">Matricule Fiscal</label>
+      <input type="text" pInputText id="matricule" [(ngModel)]="selectedFournisseur.matriculeFiscal" />
+    </div>
+    <div class="field">
+      <label for="statut" class="font-bold text-gray-700 block mb-1">Statut</label>
+      <p-dropdown [options]="statutOptions" [(ngModel)]="selectedFournisseur.statut" appendTo="body" optionLabel="label" optionValue="value"></p-dropdown>
+    </div>
+    <div class="field">
+      <label for="contact" class="font-bold text-gray-700 block mb-1">Nom du Contact</label>
+      <input type="text" pInputText id="contact" [(ngModel)]="selectedFournisseur.contactNom" />
+    </div>
+    <div class="field">
+      <label for="tel" class="font-bold text-gray-700 block mb-1">Téléphone</label>
+      <input type="text" pInputText id="tel" [(ngModel)]="selectedFournisseur.telephone" />
+    </div>
+    <div class="field">
+      <label for="email" class="font-bold text-gray-700 block mb-1">Email</label>
+      <input type="text" pInputText id="email" [(ngModel)]="selectedFournisseur.email" />
+    </div>
+    <div class="field">
+      <label for="fax" class="font-bold text-gray-700 block mb-1">Fax</label>
+      <input type="text" pInputText id="fax" [(ngModel)]="selectedFournisseur.fax" />
+    </div>
+    <div class="field">
+      <label for="note" class="font-bold text-gray-700 block mb-1">Note de Performance (/10)</label>
+      <input type="number" pInputText id="note" [(ngModel)]="selectedFournisseur.note" min="0" max="10" />
+    </div>
+    <div class="field">
+      <label for="adresse" class="font-bold text-gray-700 block mb-1">Adresse</label>
+      <input type="text" pInputText id="adresse" [(ngModel)]="selectedFournisseur.adresse" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Annuler" icon="pi pi-times" (onClick)="displayDialog = false" styleClass="p-button-text"></p-button>
+    <p-button label="Enregistrer" icon="pi pi-check" (onClick)="saveFournisseur()" styleClass="p-button-primary" [disabled]="!selectedFournisseur.nom"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Modal de création de Marché -->
+<p-dialog header="Créer un nouveau Marché (Contrat cadre)" [(visible)]="displayMarcheDialog" [modal]="true" [style]="{width: '500px'}" styleClass="p-fluid">
+  <div class="flex flex-col gap-4 mt-2">
+    <div class="field">
+      <label for="numeroMarche" class="font-bold text-gray-700 block mb-1">Numéro de Marché *</label>
+      <input type="text" pInputText id="numeroMarche" [(ngModel)]="newMarche.numeroMarche" required placeholder="Ex: MAR-2026-004" />
+    </div>
+    <div class="field">
+      <label for="designationMarche" class="font-bold text-gray-700 block mb-1">Objet / Désignation *</label>
+      <input type="text" pInputText id="designationMarche" [(ngModel)]="newMarche.designation" required placeholder="Ex: Acquisition de rechange diesel" />
+    </div>
+    <div class="field">
+      <label for="montantTotalHt" class="font-bold text-gray-700 block mb-1">Montant Total HT *</label>
+      <input type="number" pInputText id="montantTotalHt" [(ngModel)]="newMarche.montantTotalHt" required />
+    </div>
+    <div class="field">
+      <label for="montantTotalTtc" class="font-bold text-gray-700 block mb-1">Montant Total TTC *</label>
+      <input type="number" pInputText id="montantTotalTtc" [(ngModel)]="newMarche.montantTotalTtc" required />
+    </div>
+    <div class="field">
+      <label for="dateDebut" class="font-bold text-gray-700 block mb-1">Date Début</label>
+      <input type="date" pInputText id="dateDebut" [(ngModel)]="newMarche.dateDebut" />
+    </div>
+    <div class="field">
+      <label for="dateFin" class="font-bold text-gray-700 block mb-1">Date Fin</label>
+      <input type="date" pInputText id="dateFin" [(ngModel)]="newMarche.dateFin" />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Annuler" icon="pi pi-times" (onClick)="displayMarcheDialog = false" styleClass="p-button-text"></p-button>
+    <p-button label="Enregistrer" icon="pi pi-check" (onClick)="saveNewMarche()" styleClass="p-button-primary" [disabled]="!newMarche.numeroMarche || !newMarche.designation"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- Modal de création de Commande -->
+<p-dialog header="Émettre un Bon de Commande" [(visible)]="displayCommandeDialog" [modal]="true" [style]="{width: '500px'}" styleClass="p-fluid">
+  <div class="flex flex-col gap-4 mt-2">
+    <div class="field" *ngIf="newCommande.marche">
+      <label class="font-bold text-gray-700 block mb-1">Liaison Marché</label>
+      <input type="text" pInputText [disabled]="true" [ngModel]="newCommande.marche.numeroMarche + ' - ' + newCommande.marche.designation" />
+    </div>
+    <div class="field" *ngIf="!newCommande.marche && marches.length > 0">
+      <label for="liaisonMarche" class="font-bold text-gray-700 block mb-1">Lier à un Marché Cadre</label>
+      <p-dropdown [options]="marches" [(ngModel)]="newCommande.marche" optionLabel="numeroMarche" placeholder="Sélectionner un marché (facultatif)" [showClear]="true" appendTo="body"></p-dropdown>
+    </div>
+    <div class="field">
+      <label for="numeroCommande" class="font-bold text-gray-700 block mb-1">Numéro de Commande *</label>
+      <input type="text" pInputText id="numeroCommande" [(ngModel)]="newCommande.numeroCommande" required placeholder="Ex: BC-2026-052" />
+    </div>
+    <div class="field">
+      <label for="dateCommande" class="font-bold text-gray-700 block mb-1">Date de la Commande *</label>
+      <input type="date" pInputText id="dateCommande" [(ngModel)]="newCommande.dateCommande" required />
+    </div>
+    <div class="field">
+      <label for="montantTotalCmd" class="font-bold text-gray-700 block mb-1">Montant Total TTC *</label>
+      <input type="number" pInputText id="montantTotalCmd" [(ngModel)]="newCommande.montantTotal" required />
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Annuler" icon="pi pi-times" (onClick)="displayCommandeDialog = false" styleClass="p-button-text"></p-button>
+    <p-button label="Enregistrer" icon="pi pi-check" (onClick)="saveNewCommande()" styleClass="p-button-primary" [disabled]="!newCommande.numeroCommande || !newCommande.dateCommande || !newCommande.montantTotal"></p-button>
+  </ng-template>
+</p-dialog>

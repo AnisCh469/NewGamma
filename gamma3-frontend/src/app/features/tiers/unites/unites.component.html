@@ -1,0 +1,123 @@
+<div class="min-h-screen bg-slate-50 p-8">
+
+  <!-- En-tête de page -->
+  <div class="mb-8 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+    <div>
+      <h1 class="text-3xl font-extrabold text-gamma-dark tracking-tight">Unités Utilisatrices</h1>
+      <p class="text-slate-500 mt-1">
+        Gérez les unités et directions clientes (DMEN, etc.)
+        <span *ngIf="unites.length > 0" class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+          {{ unites.length | number }} unités
+        </span>
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+
+      <!-- ══ Barre de recherche premium (Code · Nom · Base Navale) ══ -->
+      <div class="relative group">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <i class="pi pi-search text-slate-400 group-focus-within:text-blue-500 transition-colors duration-200"
+             style="font-size: 0.8rem"></i>
+        </div>
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="dt.filterGlobal($event, 'contains')"
+          placeholder="Code · Nom complet · Base Navale"
+          class="w-72 pl-9 pr-9 py-2 text-sm
+                 bg-slate-50 border border-slate-200 rounded-xl
+                 focus:outline-none focus:ring-2 focus:ring-blue-400/40 focus:border-blue-400
+                 focus:bg-white placeholder:text-slate-400 text-slate-700
+                 transition-all duration-200"
+          id="search-unites"
+        />
+        <button
+          *ngIf="searchTerm"
+          (click)="clearSearch(dt)"
+          class="absolute inset-y-0 right-0 pr-3 flex items-center
+                 text-slate-400 hover:text-slate-600 transition-colors duration-150"
+          title="Effacer la recherche" type="button">
+          <i class="pi pi-times" style="font-size: 0.75rem"></i>
+        </button>
+        <div *ngIf="!searchTerm"
+          class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
+          <span class="hidden sm:flex items-center gap-0.5">
+            <kbd class="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-400" style="font-size:10px">Ctrl</kbd>
+            <kbd class="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-400" style="font-size:10px">K</kbd>
+          </span>
+        </div>
+      </div>
+      <!-- ══ fin barre de recherche ══ -->
+
+      <p-button label="Nouvelle Unité" icon="pi pi-plus" (onClick)="openNew()" styleClass="p-button-primary"></p-button>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+    <p-table #dt [value]="unites" [paginator]="true" [rows]="25"
+      [rowsPerPageOptions]="[25, 50, 100]" responsiveLayout="scroll"
+      [globalFilterFields]="['code','nom','baseNavale','planCount']"
+      styleClass="p-datatable-striped p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr class="bg-slate-50 border-b border-slate-200">
+          <th pSortableColumn="code" class="font-semibold text-slate-700 py-1 px-4 text-xs">Code (Sigle) <p-sortIcon field="code"></p-sortIcon></th>
+          <th pSortableColumn="nom" class="font-semibold text-slate-700 py-1 px-4 text-xs">Nom Complet <p-sortIcon field="nom"></p-sortIcon></th>
+          <th pSortableColumn="baseNavale" class="font-semibold text-slate-700 py-1 px-4 text-xs">Base Navale <p-sortIcon field="baseNavale"></p-sortIcon></th>
+          <th pSortableColumn="planCount" class="font-semibold text-slate-700 py-1 px-4 text-xs">Plan d'Armement <p-sortIcon field="planCount"></p-sortIcon></th>
+          <th class="font-semibold text-slate-700 py-1 px-4 text-xs text-center">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-unite>
+        <tr class="hover:bg-blue-50 transition-colors duration-150 cursor-pointer border-b border-slate-100">
+          <td class="font-mono font-medium text-gamma-primary py-1 px-4 text-xs">
+            <a [routerLink]="['/unites', unite.id]" class="hover:underline text-blue-600 font-semibold cursor-pointer">{{unite.code}}</a>
+          </td>
+          <td class="font-medium text-slate-700 py-1 px-4 text-xs">{{unite.nom}}</td>
+          <td class="py-1 px-4">
+            <span *ngIf="unite.baseNavale" class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs border border-slate-200">{{unite.baseNavale}}</span>
+            <span *ngIf="!unite.baseNavale" class="text-slate-400 text-xs">—</span>
+          </td>
+          <td class="py-1 px-4">
+            <span [class]="unite.planCount > 0 ? 'bg-blue-100 text-blue-800 border-blue-200/50' : 'bg-slate-50 text-slate-400 border-slate-200'"
+                  class="px-2.5 py-0.5 rounded-full text-xs font-bold border">
+              {{ unite.planCount || 0 | number }} articles
+            </span>
+          </td>
+          <td class="text-center py-1 px-4">
+            <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info p-button-sm mr-1 w-7 h-7 p-0" (click)="editUnite(unite)"></button>
+            <button pButton icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger p-button-sm w-7 h-7 p-0" (click)="deleteUnite(unite)"></button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="text-center p-8 text-slate-500">
+            <i class="pi pi-sitemap text-4xl mb-3 text-slate-300 block"></i>
+            Aucune unité trouvée.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-dialog [(visible)]="displayDialog" [style]="{width: '500px'}" header="Détails de l'Unité" [modal]="true" class="p-fluid">
+  <ng-template pTemplate="content">
+    <div class="field mb-4">
+      <label for="code" class="block font-medium mb-2">Code / Sigle *</label>
+      <input type="text" pInputText id="code" [(ngModel)]="selectedUnite.code" placeholder="Ex: DMEN" required autofocus />
+    </div>
+    <div class="field mb-4">
+      <label for="nom" class="block font-medium mb-2">Nom Complet *</label>
+      <input type="text" pInputText id="nom" [(ngModel)]="selectedUnite.nom" required />
+    </div>
+    <div class="field mb-4">
+      <label for="base" class="block font-medium mb-2">Base Navale de rattachement</label>
+      <input type="text" pInputText id="base" [(ngModel)]="selectedUnite.baseNavale" placeholder="Ex: Bizerte" />
+    </div>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button pButton label="Annuler" icon="pi pi-times" class="p-button-text" (click)="displayDialog = false"></button>
+    <button pButton label="Enregistrer" icon="pi pi-check" (click)="saveUnite()" [disabled]="!selectedUnite.code || !selectedUnite.nom"></button>
+  </ng-template>
+</p-dialog>

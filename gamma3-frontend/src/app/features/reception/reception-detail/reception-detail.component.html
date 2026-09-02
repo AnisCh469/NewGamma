@@ -1,0 +1,386 @@
+<p-toast></p-toast>
+<div class="web-container p-4 max-w-[1400px] mx-auto animation-fadein">
+  
+  <!-- En-tête -->
+  <div class="flex items-center justify-between mb-6 no-print border-b pb-3 shrink-0">
+    <div class="flex items-center gap-3">
+      <p-button icon="pi pi-arrow-left" label="Retour" styleClass="p-button-text p-button-secondary p-button-sm" routerLink="/receptions"></p-button>
+      <h1 class="text-2xl font-black text-gray-800 m-0">
+        <span *ngIf="isNew">Nouveau Dossier de Réception</span>
+        <span *ngIf="!isNew">Dossier de Réception : {{ bpr?.numeroBpr }}</span>
+      </h1>
+      <p-tag *ngIf="bpr" [value]="bpr.statut" [severity]="bpr.statut === 'VALIDE' ? 'success' : (bpr.statut === 'REJETE' ? 'danger' : 'warning')" styleClass="text-[10px] font-bold px-2"></p-tag>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="flex justify-center items-center py-20 no-print">
+    <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
+  </div>
+
+  <div *ngIf="!loading">
+    <!-- Fil d'ariane / Étapes -->
+    <div *ngIf="!isNew" class="bg-white rounded-xl shadow-sm border border-gray-150 p-6 mb-6 no-print">
+      <p-steps [model]="items" [(activeIndex)]="activeIndex" [readonly]="true"></p-steps>
+    </div>
+
+    <!-- ==================== MODE CRÉATION DE BPR (isNew === true) ==================== -->
+    <div *ngIf="isNew" class="grid grid-cols-12 gap-6 no-print">
+      
+      <!-- Volet Gauche (4/12) : En-tête BPR -->
+      <div class="col-span-12 lg:col-span-4 bg-white rounded-2xl border border-gray-250 shadow-sm p-6 flex flex-col gap-4">
+        <h3 class="text-[11px] font-black uppercase text-gray-400 tracking-[0.2em] mb-2">1. Informations Générales</h3>
+        
+        <div class="field">
+          <label for="newNumeroBpr" class="font-bold text-gray-700 block mb-1 text-xs">Numéro de BPR *</label>
+          <input type="text" pInputText id="newNumeroBpr" [(ngModel)]="newBpr.numeroBpr" required class="w-full text-sm font-bold font-mono" placeholder="Ex: BPR-2026-123" />
+        </div>
+
+        <div class="field">
+          <label for="newDateReception" class="font-bold text-gray-700 block mb-1 text-xs">Date de Réception *</label>
+          <input type="date" pInputText id="newDateReception" [(ngModel)]="newBpr.dateReception" required class="w-full text-sm" />
+        </div>
+
+        <div class="field">
+          <label class="font-bold text-gray-700 block mb-1 text-xs">Fournisseur Expéditeur *</label>
+          <p-dropdown [options]="fournisseurs" [(ngModel)]="newBpr.fournisseur" optionLabel="nom" placeholder="Sélectionner le fournisseur" (onChange)="onFournisseurChange($event)" appendTo="body" styleClass="w-full text-sm"></p-dropdown>
+        </div>
+
+        <div class="field" *ngIf="commandes.length > 0">
+          <label class="font-bold text-gray-700 block mb-1 text-xs">Associer à un Bon de Commande (DA)</label>
+          <p-dropdown [options]="commandes" [(ngModel)]="newBpr.commande" optionLabel="numeroCommande" placeholder="Lier à un BC (facultatif)" [showClear]="true" appendTo="body" styleClass="w-full text-sm font-mono"></p-dropdown>
+        </div>
+
+        <div class="field">
+          <label class="font-bold text-gray-700 block mb-1 text-xs">Soute / Magasin de Destination *</label>
+          <p-dropdown [options]="magasins" [(ngModel)]="newBpr.magasin" optionLabel="nom" placeholder="Sélectionner le magasin" appendTo="body" styleClass="w-full text-sm"></p-dropdown>
+        </div>
+
+        <div class="mt-4 pt-4 border-t border-slate-100 flex gap-2">
+          <p-button label="Annuler" icon="pi pi-times" styleClass="p-button-text p-button-secondary w-full p-button-sm" routerLink="/receptions"></p-button>
+          <p-button label="Créer le BPR" icon="pi pi-check" styleClass="p-button-primary w-full p-button-sm" (onClick)="saveBpr()" [disabled]="!newBpr.numeroBpr || !newBpr.fournisseur || !newBpr.magasin || newLignes.length === 0"></p-button>
+        </div>
+      </div>
+
+      <!-- Volet Droite (8/12) : Articles et Nomenclature -->
+      <div class="col-span-12 lg:col-span-8 bg-white rounded-2xl border border-gray-250 shadow-sm p-6 flex flex-col gap-4">
+        <h3 class="text-[11px] font-black uppercase text-gray-400 tracking-[0.2em] mb-2">2. Contenu de la Réception (Articles)</h3>
+
+        <!-- Formulaire d'ajout d'article -->
+        <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 grid grid-cols-12 gap-3 items-end">
+          <div class="col-span-12 md:col-span-7">
+            <label class="font-bold text-gray-700 block mb-1 text-xs">Rechercher un Article (Désignation ou Nomenclature) *</label>
+            <p-autoComplete [(ngModel)]="selectedItem" [suggestions]="filteredItems" (completeMethod)="searchItems($event)" field="designation" placeholder="Tapez pour rechercher..." styleClass="w-full" inputStyleClass="w-full text-sm"></p-autoComplete>
+          </div>
+          <div class="col-span-12 md:col-span-3">
+            <label class="font-bold text-gray-700 block mb-1 text-xs">Quantité Livrée *</label>
+            <input type="number" pInputText [(ngModel)]="tempQuantite" min="1" class="w-full text-sm font-bold text-center" />
+          </div>
+          <div class="col-span-12 md:col-span-2">
+            <p-button label="Ajouter" icon="pi pi-plus" styleClass="p-button-outlined p-button-sm w-full font-bold" (onClick)="addLine()"></p-button>
+          </div>
+        </div>
+
+        <!-- Tableau des lignes ajoutées -->
+        <div class="mt-2 flex-grow overflow-auto">
+          <p-table [value]="newLignes" styleClass="p-datatable-sm">
+            <ng-template pTemplate="header">
+              <tr>
+                <th class="text-xs">Nomenclature</th>
+                <th class="text-xs">Désignation</th>
+                <th class="text-xs text-center">Quantité</th>
+                <th class="text-xs text-right">P.U HT (Seeder)</th>
+                <th class="text-xs text-right">Total HT</th>
+                <th class="text-xs text-center w-[70px]">Retirer</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-l let-i="rowIndex">
+              <tr class="text-xs">
+                <td class="font-mono font-bold text-gamma-primary">{{ l.item.nomenclature || 'Non définie' }}</td>
+                <td class="font-medium text-slate-800">{{ l.item.designation }}</td>
+                <td class="font-bold text-center">{{ l.quantiteLivree }}</td>
+                <td class="text-right text-slate-500">{{ l.prixUnitaire | number:'1.3-3' }} DT</td>
+                <td class="text-right font-bold text-slate-700">{{ getLigneTotal(l) | number:'1.3-3' }} DT</td>
+                <td class="text-center">
+                  <button pButton icon="pi pi-trash" class="p-button-text p-button-danger p-button-sm p-0 h-auto" (onClick)="removeLine(i)"></button>
+                </td>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="emptymessage">
+              <tr>
+                <td colspan="6" class="text-center py-8 text-slate-400 font-medium">
+                  <i class="pi pi-shopping-cart text-2xl mr-2 align-middle"></i>
+                  Aucun matériel ajouté pour le moment.
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+
+        <div class="border-t border-slate-100 pt-4 flex justify-between items-center text-sm font-black text-slate-800" *ngIf="newLignes.length > 0">
+          <span>TOTAL ESTIMÉ H.T.</span>
+          <span class="text-lg text-gamma-primary">{{ getNewLignesTotal() | number:'1.3-3' }} DT</span>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ==================== MODE VISUALISATION / DOSSIER EXISTANT ==================== -->
+    <div *ngIf="!isNew" class="grid grid-cols-12 gap-6 no-print">
+      
+      <!-- ==================== ETAPE 0 : CONSTATION PHYSIQUE (BPR) ==================== -->
+      <div *ngIf="activeIndex === 0" class="col-span-12 bg-white rounded-2xl border border-gray-150 shadow-sm p-6 flex flex-col gap-6">
+        <div class="flex justify-between items-center">
+          <h2 class="text-lg font-black text-slate-800 m-0 uppercase tracking-wider">1. Constat Physique (Bon Provisoire)</h2>
+          <span class="font-mono text-xs font-black bg-slate-100 text-slate-700 px-3 py-1 rounded-full">{{ bpr?.numeroBpr }}</span>
+        </div>
+
+        <!-- Informations Générales -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 bg-slate-50 border border-slate-150 rounded-xl p-4 text-xs font-bold text-slate-700 uppercase">
+          <div>
+            <span class="text-[10px] text-gray-400 block mb-1">Fournisseur</span>
+            <span class="text-sm font-black text-slate-800">{{ bpr?.fournisseur?.nom }}</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-gray-400 block mb-1">Magasin de Stockage</span>
+            <span class="text-sm font-black text-slate-800">{{ bpr?.magasin?.nom }}</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-gray-400 block mb-1">Date de Réception</span>
+            <span class="text-sm font-black text-slate-800">{{ bpr?.dateReception | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div>
+            <span class="text-[10px] text-gray-400 block mb-1">Liaison Commande</span>
+            <span class="text-sm font-black text-gamma-primary font-mono">{{ bpr?.commande?.numeroCommande || 'Aucun lien BC' }}</span>
+          </div>
+        </div>
+
+        <!-- Liste des lignes du BPR -->
+        <div class="border border-slate-100 rounded-xl overflow-hidden">
+          <p-table [value]="lignes" styleClass="p-datatable-sm">
+            <ng-template pTemplate="header">
+              <tr>
+                <th class="text-xs">Nomenclature</th>
+                <th class="text-xs">Désignation</th>
+                <th class="text-xs text-center">Quantité Reçue</th>
+                <th class="text-xs text-right">Prix Unitaire HT</th>
+                <th class="text-xs text-right">Montant Total HT</th>
+              </tr>
+            </ng-template>
+            <ng-template pTemplate="body" let-ligne>
+              <tr class="text-xs">
+                <td class="font-mono font-bold text-gamma-primary">{{ ligne.item.nomenclature || 'Non définie' }}</td>
+                <td class="font-medium text-slate-800">{{ ligne.item.designation }}</td>
+                <td class="font-bold text-center text-sm text-slate-900">{{ ligne.quantiteLivree }}</td>
+                <td class="text-right text-slate-500">{{ (ligne.prixUnitaire || ligne.item.prixUnitaire) | number:'1.3-3' }} DT</td>
+                <td class="text-right font-bold text-slate-800">{{ getLigneTotal(ligne) | number:'1.3-3' }} DT</td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </div>
+
+        <!-- Bloc soumission PV Commission (Visible uniquement pour Admin) -->
+        <div class="border-t border-slate-150 pt-6 flex justify-between items-center bg-slate-50/50 p-4 rounded-xl" *ngIf="!isClient() && bpr?.statut === 'ATTENTE_PV'">
+          <div class="max-w-xl">
+            <h4 class="font-bold text-slate-800 text-sm m-0">Avis Technique de la Commission de Réception</h4>
+            <p class="text-xs text-slate-500 m-0 mt-1 leading-relaxed">
+              Le matériel a été réceptionné physiquement. Enregistrer le Procès-Verbal de conformité de la commission technique afin de débloquer l'entrée définitive en stock.
+            </p>
+          </div>
+          <p-button label="Enregistrer le PV de Commission" icon="pi pi-file" styleClass="p-button-primary p-button-sm font-bold px-4 py-2" (onClick)="activeIndex = 1"></p-button>
+        </div>
+      </div>
+
+
+      <!-- ==================== ETAPE 1 : PV DE COMMISSION ==================== -->
+      <div *ngIf="activeIndex === 1" class="col-span-12 bg-white rounded-2xl border border-gray-150 shadow-sm p-6 flex flex-col gap-6">
+        <h2 class="text-lg font-black text-slate-800 m-0 uppercase tracking-wider">2. Procès-Verbal de la Commission Technique</h2>
+
+        <!-- Formulaire de saisie de PV (Si non existant) -->
+        <div *ngIf="!pv" class="grid grid-cols-12 gap-6">
+          <div class="col-span-12 lg:col-span-4 flex flex-col gap-4">
+            <div class="field">
+              <label for="numeroPv" class="font-bold text-gray-700 block mb-1 text-xs">Numéro de PV *</label>
+              <input type="text" pInputText id="numeroPv" [(ngModel)]="newPv.numeroPv" required class="w-full text-sm font-bold font-mono" />
+            </div>
+            
+            <div class="field">
+              <label for="dateCommission" class="font-bold text-gray-700 block mb-1 text-xs">Date de Commission *</label>
+              <input type="date" pInputText id="dateCommission" [(ngModel)]="newPv.dateCommission" required class="w-full text-sm" />
+            </div>
+
+            <div class="field">
+              <label class="font-bold text-gray-700 block mb-1 text-xs">Décision Finale de la Commission *</label>
+              <p-dropdown [options]="decisionOptions" [(ngModel)]="newPv.decision" optionLabel="label" optionValue="value" appendTo="body" styleClass="w-full text-sm"></p-dropdown>
+            </div>
+          </div>
+
+          <div class="col-span-12 lg:col-span-8 flex flex-col gap-4">
+            <div class="field">
+              <label class="font-bold text-gray-700 block mb-1 text-xs">Officiers membres de la Commission *</label>
+              <input type="text" pInputText [(ngModel)]="newPv.membres" required class="w-full text-sm" placeholder="Ex: CEN. Ben Ali (Président), EV1. Haddad..." />
+            </div>
+
+            <div class="field">
+              <label class="font-bold text-gray-700 block mb-1 text-xs">Observations techniques & réserves éventuelles</label>
+              <textarea pInputText [(ngModel)]="newPv.observations" rows="4" class="w-full text-sm p-3 border border-gray-300 rounded" placeholder="Décrivez les résultats de l'examen technique..."></textarea>
+            </div>
+
+            <div class="text-right pt-4 border-t border-slate-100">
+              <p-button label="Retour aux détails physiques" icon="pi pi-chevron-left" styleClass="p-button-text p-button-secondary mr-2" (onClick)="activeIndex = 0"></p-button>
+              <p-button label="Enregistrer le PV" icon="pi pi-check" styleClass="p-button-primary font-bold" (onClick)="validerPv()" [disabled]="!newPv.numeroPv || !newPv.membres" [loading]="validatingPv"></p-button>
+            </div>
+          </div>
+        </div>
+
+        <!-- PV validé existant -->
+        <div *ngIf="pv" class="flex flex-col gap-6">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 border border-slate-150 rounded-xl p-4 text-xs font-bold text-slate-700 uppercase">
+            <div>
+              <span class="text-[10px] text-gray-400 block mb-1">Réf du PV</span>
+              <span class="text-sm font-black text-slate-800 font-mono">{{ pv.numeroPv }}</span>
+            </div>
+            <div>
+              <span class="text-[10px] text-gray-400 block mb-1">Date Commission</span>
+              <span class="text-sm font-black text-slate-800">{{ pv.dateCommission | date:'dd/MM/yyyy' }}</span>
+            </div>
+            <div>
+              <span class="text-[10px] text-gray-400 block mb-1">Décision Commission</span>
+              <p-tag [value]="pv.decision === 'ACCEPTE' ? 'ACCEPTÉ SANS RÉSERVES' : (pv.decision === 'ACCEPTE_AVEC_RESERVE' ? 'ACCEPTÉ AVEC RÉSERVES' : 'REFUSÉ')" [severity]="pv.decision === 'REFUSE' ? 'danger' : 'success'" styleClass="text-[10px] px-2.5 font-bold"></p-tag>
+            </div>
+          </div>
+
+          <div class="bg-slate-50/50 p-4 border border-slate-100 rounded-xl text-xs leading-relaxed text-slate-700">
+            <p class="m-0 mb-2"><b>Membres de la commission technique :</b> {{ pv.membres }}</p>
+            <p class="m-0" *ngIf="pv.observations"><b>Observations techniques :</b> {{ pv.observations }}</p>
+          </div>
+
+          <!-- Alerte Refusé -->
+          <div class="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 flex items-start gap-3" *ngIf="pv.decision === 'REFUSE'">
+            <i class="pi pi-exclamation-triangle text-2xl"></i>
+            <div>
+              <h4 class="font-bold text-sm m-0">RÉCEPTION REJETÉE PAR LA COMMISSION</h4>
+              <p class="text-xs m-0 mt-1">Les matériels déclarés non conformes ont été mis en quarantaine et ne peuvent être mis en stock physique.</p>
+            </div>
+          </div>
+
+          <!-- Section BE (Si PV favorable) -->
+          <div *ngIf="pv.decision !== 'REFUSE'">
+            <!-- Formulaire de BE (Si non existant) -->
+            <div *ngIf="!be && !isClient()" class="border-t border-slate-150 pt-6 flex flex-col gap-4">
+              <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-2">Création du Bon d'Entrée Financier (Valorisation & Entrée Stock)</h3>
+              
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end bg-slate-50/50 border border-slate-200 rounded-2xl p-6">
+                <div class="field">
+                  <label for="numeroBe" class="font-bold text-gray-700 block mb-1 text-xs">Numéro de BE *</label>
+                  <input type="text" pInputText id="numeroBe" [(ngModel)]="newBe.numeroBe" required class="w-full text-sm font-bold font-mono" />
+                </div>
+                <div class="field">
+                  <label for="dateEntree" class="font-bold text-gray-700 block mb-1 text-xs">Date d'Entrée *</label>
+                  <input type="date" pInputText id="dateEntree" [(ngModel)]="newBe.dateEntree" required class="w-full text-sm" />
+                </div>
+                <div>
+                  <p-button label="Générer BE & Mettre en Stock" icon="pi pi-box" styleClass="p-button-success font-bold w-full p-button-sm h-[40px]" (onClick)="genererBe()" [loading]="generatingBe" [disabled]="!newBe.numeroBe"></p-button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+
+      <!-- ==================== ETAPE 2 : BON D'ENTRÉE VALIDE (FIN) ==================== -->
+      <div *ngIf="activeIndex === 2 && be" class="col-span-12 bg-white rounded-2xl border border-gray-150 shadow-sm p-6 text-center flex flex-col items-center py-10 gap-4">
+        <i class="pi pi-check-circle text-6xl text-green-500 mb-2"></i>
+        <h2 class="text-2xl font-black text-slate-800 m-0 uppercase tracking-wider">Dossier de Réception Clôturé</h2>
+        <p class="text-slate-500 text-sm max-w-xl m-0 leading-relaxed">
+          Le Bon d'Entrée comptable <b>{{ be.numeroBe }}</b> a été généré et validé. Le stock physique en soute (<b>{{ bpr?.magasin?.nom }}</b>) a été automatiquement mis à jour et valorisé.
+        </p>
+
+        <div class="mt-4 flex gap-3">
+          <p-button label="Consulter l'historique" icon="pi pi-list" styleClass="p-button-text p-button-secondary p-button-sm" routerLink="/receptions"></p-button>
+          <p-button label="Imprimer le Bon d'Entrée Officiel (A4)" icon="pi pi-print" styleClass="p-button-primary p-button-sm font-bold" (onClick)="printBE()"></p-button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ==================== GABARIT D'IMPRESSION COMPTABLE A4 (HORS NAVIGATION) ==================== -->
+<div *ngIf="!loading && be" class="print-document-container flex-col bg-white p-8 w-full text-black text-sm hidden font-serif">
+  
+  <!-- En-tête MDN -->
+  <div class="flex justify-between items-start border-b-2 border-black pb-4 mb-6">
+    <div class="text-xs uppercase font-bold leading-normal">
+      <p class="m-0">Ministère de la Défense Nationale</p>
+      <p class="m-0">Marine Nationale Tunisienne</p>
+      <p class="m-0">Direction de l'Approvisionnement (DA)</p>
+      <p class="m-0 font-mono text-[9px] mt-1 text-slate-500">Service Comptabilité Matière</p>
+    </div>
+    <div class="text-right">
+      <h1 class="text-xl font-bold uppercase tracking-tight m-0">BON D'ENTRÉE COMPTABLE</h1>
+      <p class="text-xs font-mono font-bold text-slate-700 m-0 mt-1">BE N° : {{ be.numeroBe }}</p>
+      <p class="text-[10px] text-slate-500 m-0 mt-0.5">Date d'intégration : {{ be.dateEntree | date:'dd/MM/yyyy' }}</p>
+    </div>
+  </div>
+
+  <!-- Références du Dossier Administratif -->
+  <div class="grid grid-cols-2 border border-black p-4 bg-slate-50/50 mb-6 gap-x-8 gap-y-2 text-xs">
+    <div>
+      <p class="m-0"><strong>Magasin Réceptionnaire :</strong> {{ bpr?.magasin?.nom }} ({{ bpr?.magasin?.code }})</p>
+      <p class="m-0 mt-1"><strong>Fournisseur Expéditeur :</strong> {{ bpr?.fournisseur?.nom }} ({{ bpr?.fournisseur?.code }})</p>
+    </div>
+    <div>
+      <p class="m-0"><strong>Référence BPR d'Origine :</strong> {{ bpr?.numeroBpr }} du {{ bpr?.dateReception | date:'dd/MM/yyyy' }}</p>
+      <p class="m-0 mt-1"><strong>PV de Commission associé :</strong> {{ pv?.numeroPv }} du {{ pv?.dateCommission | date:'dd/MM/yyyy' }}</p>
+    </div>
+  </div>
+
+  <p class="text-xs font-bold uppercase tracking-wider mb-2">Inventaire Valorisé des Matériels Pris en Charge :</p>
+  
+  <!-- Tableau des articles -->
+  <table class="w-full border-collapse border border-black text-[11px] mb-8">
+    <thead>
+      <tr class="bg-slate-100 text-left font-bold border-b border-black">
+        <th class="border-r border-black p-2 w-[160px]">Nomenclature</th>
+        <th class="border-r border-black p-2">Désignation</th>
+        <th class="border-r border-black p-2 text-center w-[80px]">Quantité</th>
+        <th class="border-r border-black p-2 text-right w-[110px]">P.U. HT</th>
+        <th class="p-2 text-right w-[130px]">Montant Total HT</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let l of lignes" class="border-b border-black">
+        <td class="border-r border-black p-2 font-mono font-bold">{{ l.item.nomenclature || 'Non définie' }}</td>
+        <td class="border-r border-black p-2 font-medium">{{ l.item.designation }}</td>
+        <td class="border-r border-black p-2 text-center font-bold">{{ l.quantiteLivree }}</td>
+        <td class="border-r border-black p-2 text-right">{{ (l.prixUnitaire || l.item.prixUnitaire) | number:'1.3-3' }} DT</td>
+        <td class="p-2 text-right font-bold">{{ getLigneTotal(l) | number:'1.3-3' }} DT</td>
+      </tr>
+      <!-- Total -->
+      <tr class="font-bold border-t-2 border-black">
+        <td colspan="3" class="border-r border-black p-2 text-right">MONTANT TOTAL DU BON D'ENTRÉE (HT)</td>
+        <td class="border-r border-black p-2"></td>
+        <td class="p-2 text-right text-sm decoration-double font-bold">{{ getGlobalTotal() | number:'1.3-3' }} DT</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Bas de page Signatures -->
+  <div class="mt-auto pt-8 border-t border-slate-300 grid grid-cols-3 gap-6 text-center text-xs leading-normal">
+    <div class="border border-black p-4 h-32 flex flex-col justify-between">
+      <p class="font-bold m-0 uppercase text-[9px] tracking-wider">Le Chef du Magasin</p>
+      <p class="italic text-[8px] text-slate-400">Signature & Visa</p>
+    </div>
+    <div class="border border-black p-4 h-32 flex flex-col justify-between">
+      <p class="font-bold m-0 uppercase text-[9px] tracking-wider">Le Président de Commission</p>
+      <p class="italic text-[8px] text-slate-400">Signature & Visa</p>
+    </div>
+    <div class="border border-black p-4 h-32 flex flex-col justify-between">
+      <p class="font-bold m-0 uppercase text-[9px] tracking-wider">Le Comptable des Matières</p>
+      <p class="italic text-[8px] text-slate-400">Signature & Visa</p>
+    </div>
+  </div>
+</div>

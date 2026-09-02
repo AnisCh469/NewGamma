@@ -1,0 +1,214 @@
+<p-toast></p-toast>
+<div class="web-container p-4 max-w-[1800px] mx-auto">
+  
+  <!-- En-tête de la Console -->
+  <div class="flex items-center justify-between mb-4 border-b pb-3 shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="p-2 bg-blue-50 rounded-lg">
+        <i class="pi pi-chart-bar text-2xl text-blue-700"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl font-black text-gray-800 m-0">CONSOLE ANALYTIQUE & ÉTATS DE REPORTING</h1>
+        <p class="text-xs text-slate-500 m-0 font-medium">Suivi financier des inventaires, mouvements de soutes et édition de registres réglementaires</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-black tracking-widest uppercase">
+        Division Approvisionnement
+      </span>
+    </div>
+  </div>
+
+  <!-- KPI Grid -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+    
+    <!-- KPI 1: Catalogue Articles -->
+    <div class="bg-white p-4 border border-gray-200 shadow-sm kpi-card card-accent accent-blue flex items-center justify-between">
+      <div>
+        <p class="text-[10px] font-black uppercase text-gray-400 tracking-[0.15em] mb-1">Catalogue Articles</p>
+        <h2 class="text-3xl font-black text-slate-800 m-0" *ngIf="!loadingKpis">{{ kpis?.totalItems }}</h2>
+        <i class="pi pi-spin pi-spinner text-xl text-blue-700" *ngIf="loadingKpis"></i>
+        <span class="text-[10px] font-bold text-blue-600 block mt-1">Articles référencés</span>
+      </div>
+      <div class="w-12 h-12 bg-blue-50 text-blue-700 rounded-xl flex items-center justify-center">
+        <i class="pi pi-box text-xl"></i>
+      </div>
+    </div>
+
+    <!-- KPI 2: Valeur du Stock -->
+    <div class="bg-white p-4 border border-gray-200 shadow-sm kpi-card card-accent accent-teal flex items-center justify-between">
+      <div>
+        <p class="text-[10px] font-black uppercase text-gray-400 tracking-[0.15em] mb-1">Valeur Totale Stock</p>
+        <h2 class="text-3xl font-black text-slate-800 m-0" *ngIf="!loadingKpis">
+          {{ kpis?.totalValue | number:'1.3-3':'fr' }} <span class="text-xs font-bold text-slate-500">TND</span>
+        </h2>
+        <i class="pi pi-spin pi-spinner text-xl text-teal-600" *ngIf="loadingKpis"></i>
+        <span class="text-[10px] font-bold text-teal-600 block mt-1">Valorisation globale</span>
+      </div>
+      <div class="w-12 h-12 bg-teal-50 text-teal-700 rounded-xl flex items-center justify-center">
+        <i class="pi pi-wallet text-xl"></i>
+      </div>
+    </div>
+
+    <!-- KPI 3: Seuils de Sécurité Critiques -->
+    <div class="bg-white p-4 border border-gray-200 shadow-sm kpi-card card-accent accent-red flex items-center justify-between">
+      <div>
+        <p class="text-[10px] font-black uppercase text-gray-400 tracking-[0.15em] mb-1">Alertes Stocks</p>
+        <div class="flex items-center gap-2">
+          <h2 class="text-3xl font-black text-slate-800 m-0" *ngIf="!loadingKpis">{{ kpis?.alertItems }}</h2>
+          <span class="alert-dot" *ngIf="!loadingKpis && kpis && kpis.alertItems > 0"></span>
+        </div>
+        <i class="pi pi-spin pi-spinner text-xl text-red-600" *ngIf="loadingKpis"></i>
+        <span class="text-[10px] font-bold text-red-600 block mt-1">Sous le seuil de sécurité</span>
+      </div>
+      <div class="w-12 h-12 bg-red-50 text-red-700 rounded-xl flex items-center justify-center">
+        <i class="pi pi-exclamation-triangle text-xl"></i>
+      </div>
+    </div>
+
+    <!-- KPI 4: Demandes Client Soumises -->
+    <div class="bg-white p-4 border border-gray-200 shadow-sm kpi-card card-accent accent-amber flex items-center justify-between">
+      <div>
+        <p class="text-[10px] font-black uppercase text-gray-400 tracking-[0.15em] mb-1">Demandes Soumises</p>
+        <h2 class="text-3xl font-black text-slate-800 m-0" *ngIf="!loadingKpis">{{ kpis?.pendingDemandes }}</h2>
+        <i class="pi pi-spin pi-spinner text-xl text-amber-600" *ngIf="loadingKpis"></i>
+        <span class="text-[10px] font-bold text-amber-600 block mt-1">En attente d'arbitrage DA</span>
+      </div>
+      <div class="w-12 h-12 bg-amber-50 text-amber-700 rounded-xl flex items-center justify-center">
+        <i class="pi pi-inbox text-xl"></i>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Charts Row -->
+  <div class="grid grid-cols-12 gap-4 mb-4">
+    
+    <!-- Consommation mensuelle (8/12) -->
+    <div class="col-span-12 lg:col-span-8 bg-white p-4 border border-gray-200 rounded-xl shadow-sm">
+      <div class="flex justify-between items-center mb-3">
+        <div>
+          <h3 class="font-bold text-slate-800 text-sm m-0">Tendances de Distribution Mensuelle</h3>
+          <p class="text-[10px] text-slate-400 m-0 font-medium">Volume physique cumulé des sorties de soute (année {{ selectedYear }})</p>
+        </div>
+        <div>
+          <select [(ngModel)]="selectedYear" (change)="loadConsoChart()">
+            <option [value]="2026">2026</option>
+            <option [value]="2025">2025</option>
+            <option [value]="2024">2024</option>
+          </select>
+        </div>
+      </div>
+      
+      <div *ngIf="loadingConsoChart" class="flex justify-center items-center py-20">
+        <i class="pi pi-spin pi-spinner text-2xl text-blue-700"></i>
+      </div>
+      
+      <div *ngIf="!loadingConsoChart" class="h-[260px]">
+        <p-chart type="line" [data]="consoChartData" [options]="consoChartOptions" height="260px"></p-chart>
+      </div>
+    </div>
+
+    <!-- Répartition financière par magasin (4/12) -->
+    <div class="col-span-12 lg:col-span-4 bg-white p-4 border border-gray-200 rounded-xl shadow-sm flex flex-col">
+      <h3 class="font-bold text-slate-800 text-sm m-0">Répartition Financière par Soute</h3>
+      <p class="text-[10px] text-slate-400 mb-4 font-medium">Valeur financière totale stockée (TND)</p>
+      
+      <div *ngIf="loadingStockChart" class="flex justify-center items-center py-20 my-auto">
+        <i class="pi pi-spin pi-spinner text-2xl text-blue-700"></i>
+      </div>
+      
+      <div *ngIf="!loadingStockChart" class="relative flex-grow flex items-center justify-center max-h-[220px]">
+        <p-chart type="doughnut" [data]="stockChartData" [options]="stockChartOptions" height="200px" width="200px"></p-chart>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Table top 5 items & Editions Panel -->
+  <div class="grid grid-cols-12 gap-4">
+    
+    <!-- Top 5 consumed items (7/12) -->
+    <div class="col-span-12 lg:col-span-7 bg-white p-4 border border-gray-200 rounded-xl shadow-sm">
+      <h3 class="font-bold text-slate-800 text-sm m-0 mb-1">Palmarès des Consommations</h3>
+      <p class="text-[10px] text-slate-400 mb-3 font-medium">Les 5 articles les plus distribués à ce jour</p>
+
+      <div *ngIf="loadingTopItems" class="flex justify-center items-center py-10">
+        <i class="pi pi-spin pi-spinner text-xl text-blue-700"></i>
+      </div>
+
+      <p-table [value]="topItems" styleClass="p-datatable-sm" *ngIf="!loadingTopItems && topItems.length > 0">
+        <ng-template pTemplate="header">
+          <tr>
+            <th class="text-[10px] py-2 px-3 uppercase tracking-wider text-slate-500 font-bold">Nomenclature</th>
+            <th class="text-[10px] py-2 px-3 uppercase tracking-wider text-slate-500 font-bold">Désignation</th>
+            <th class="text-[10px] py-2 px-3 uppercase tracking-wider text-slate-500 font-bold text-right">Volume Total</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-item>
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="font-mono text-xs font-bold text-gamma-primary py-1.5 px-3">{{ item.nomenclature }}</td>
+            <td class="text-xs text-slate-700 font-medium py-1.5 px-3">{{ item.designation }}</td>
+            <td class="text-xs font-bold text-slate-800 text-right py-1.5 px-3">{{ item.volumeTotal | number:'1.0-0' }} u</td>
+          </tr>
+        </ng-template>
+      </p-table>
+
+      <div *ngIf="!loadingTopItems && topItems.length === 0" class="border border-dashed border-slate-200 rounded-xl p-8 text-center bg-slate-50/50 mt-2">
+        <i class="pi pi-inbox text-2xl text-slate-300 mb-1"></i>
+        <p class="text-xs text-slate-500 m-0 font-medium">Aucune sortie physique enregistrée.</p>
+      </div>
+    </div>
+
+    <!-- Panneau éditions de rapports (5/12) -->
+    <div class="col-span-12 lg:col-span-5 bg-white p-4 border border-gray-200 rounded-xl shadow-sm">
+      <h3 class="font-bold text-slate-800 text-sm m-0 mb-1">Panneau d'Éditions de Rapports</h3>
+      <p class="text-[10px] text-slate-400 mb-4 font-medium">Générez et téléchargez les registres logistiques officiels (JasperReports)</p>
+
+      <div class="flex flex-col gap-4">
+        
+        <!-- Section 1: Registre d'inventaire -->
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div>
+            <h4 class="text-xs font-bold text-slate-800 m-0">Registre Général d'Inventaire</h4>
+            <p class="text-[10px] text-slate-400 m-0">Bilan financier complet valorisé de toutes les soutes</p>
+          </div>
+          <div class="flex gap-2 w-full sm:w-auto">
+            <select [(ngModel)]="invFormat" class="text-xs border rounded p-1">
+              <option value="pdf">Format PDF</option>
+              <option value="xlsx">Format Excel</option>
+            </select>
+            <p-button icon="pi pi-download" styleClass="p-button-primary p-button-sm font-bold py-1 px-3" (onClick)="downloadInventaire()"></p-button>
+          </div>
+        </div>
+
+        <!-- Section 2: Mouvements de stock -->
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col gap-3">
+          <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+            <div>
+              <h4 class="text-xs font-bold text-slate-800 m-0">Registre des Mouvements de Soute</h4>
+              <p class="text-[10px] text-slate-400 m-0">Historique chronologique d'entrées et de sorties</p>
+            </div>
+            <select [(ngModel)]="mvtFormat" class="text-xs border rounded p-1">
+              <option value="pdf">Format PDF</option>
+              <option value="xlsx">Format Excel</option>
+            </select>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="flex flex-col gap-1">
+              <label class="text-[9px] font-bold text-slate-400 uppercase">Date Début</label>
+              <input type="date" [(ngModel)]="startDate" class="w-full" />
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-[9px] font-bold text-slate-400 uppercase">Date Fin</label>
+              <input type="date" [(ngModel)]="endDate" class="w-full" />
+            </div>
+          </div>
+          <p-button icon="pi pi-print" label="Générer le Registre" styleClass="p-button-outlined p-button-sm font-bold w-full mt-1" (onClick)="downloadMouvements()"></p-button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
