@@ -1,0 +1,27 @@
+@import "primeng/resources/themes/lara-light-blue/theme.css";
+@import "primeng/resources/primeng.css";
+@import "primeicons/primeicons.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    background-color: #f8fafc;
+    margin: 0;
+    font-family: var(--font-family, 'Inter', sans-serif);
+}
+
+/* Règle générale pour des tableaux ultra-compacts sans scroll vertical */
+.p-datatable.p-datatable-sm .p-datatable-thead > tr > th {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+.p-datatable.p-datatable-sm .p-datatable-tbody > tr > td {
+    padding: 0.15rem 0.5rem;
+    font-size: 0.8rem;
+    height: 32px;
+}
+.p-datatable .p-paginator {
+    padding: 0.25rem;
+}

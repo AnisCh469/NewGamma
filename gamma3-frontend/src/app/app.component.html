@@ -1,0 +1,161 @@
+<div class="flex flex-col min-h-screen bg-slate-100 font-sans">
+  <!-- Topbar minimaliste -->
+  <header class="bg-gamma-dark text-white p-4 shadow-md flex justify-between items-center z-10 relative">
+    <div class="flex items-center space-x-6">
+      <div class="flex items-center space-x-3 cursor-pointer" routerLink="/catalogue">
+        <!-- Un petit icon shield pour le coté militaire -->
+        <i class="pi pi-shield text-gamma-accent text-2xl"></i>
+        <span class="text-xl font-bold tracking-wider">GAMMA 3</span>
+      </div>
+
+      <!-- Liens de navigation (si authentifié) -->
+      <nav *ngIf="authService.isAuthenticated() && authService.currentUser() as currentUser" class="hidden md:flex space-x-4 ml-6">
+        <a routerLink="/catalogue" routerLinkActive="text-gamma-accent font-bold" [routerLinkActiveOptions]="{exact: false}" class="text-slate-300 hover:text-white transition">Catalogue</a>
+        <a *ngIf="currentUser.role === 'UNIT_USER'" routerLink="/demander-dotation" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Demande d'Équipement</a>
+        <a *ngIf="currentUser.role === 'UNIT_USER' && unitId" [routerLink]="['/unites', unitId]" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Mon Plan & Suivi</a>
+        <a *ngIf="currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/fournisseurs" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Fournisseurs</a>
+        <a *ngIf="currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/receptions" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Réceptions</a>
+        <a *ngIf="currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/unites" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Unités Clients</a>
+        <a *ngIf="currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/distribution" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Arbitrage</a>
+        <a *ngIf="currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/reformes" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Réforme</a>
+        <a *ngIf="currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/analytics" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Analyses</a>
+      </nav>
+    </div>
+    
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-2 bg-slate-800 px-3 py-1 rounded-full cursor-pointer hover:bg-slate-700 transition">
+        <i class="pi pi-globe text-sm"></i>
+        <span class="text-sm font-medium">Français</span>
+      </div>
+      <!-- Utilisateur connecté -->
+      <ng-container *ngIf="authService.currentUser() as user">
+        <!-- Cloche de notifications (Style Messenger) -->
+        <div class="relative">
+          <button (click)="toggleDrawer($event)" 
+                  class="relative p-2 rounded-full hover:bg-slate-700 transition duration-300 cursor-pointer flex items-center justify-center focus:outline-none"
+                  [ngClass]="{'bg-slate-700': isDrawerOpen}"
+                  title="Notifications">
+            <i class="pi pi-bell text-xl transition-transform duration-300"
+               [ngClass]="{'animate-wiggle': notificationService.unreadCount() > 0 && !isDrawerOpen, 'text-gamma-accent': notificationService.unreadCount() > 0}"></i>
+            <span *ngIf="notificationService.unreadCount() > 0" 
+                  class="absolute top-0 right-0 transform translate-x-1/3 -translate-y-1/3 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-lg border-2 border-gamma-dark animate-pulse">
+              {{ notificationService.unreadCount() }}
+            </span>
+          </button>
+
+          <!-- Tiroir de notifications style Messenger -->
+          <div *ngIf="isDrawerOpen" 
+               class="absolute right-0 mt-3 w-96 max-h-[500px] bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl overflow-hidden z-50 flex flex-col text-slate-100 backdrop-blur-md bg-opacity-95"
+               (click)="$event.stopPropagation()">
+            
+            <!-- Header du tiroir -->
+            <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950 bg-opacity-50">
+              <div class="flex items-center space-x-2">
+                <i class="pi pi-bell text-gamma-accent text-lg"></i>
+                <span class="font-bold text-base tracking-wide">Notifications</span>
+              </div>
+              <button *ngIf="notificationService.unreadCount() > 0" 
+                      (click)="markAllAsRead($event)"
+                      class="text-xs text-gamma-accent hover:text-white transition duration-300 font-medium cursor-pointer underline decoration-dotted">
+                Tout marquer comme lu
+              </button>
+            </div>
+
+            <!-- Liste des notifications -->
+            <div class="overflow-y-auto max-h-[380px] divide-y divide-slate-800 divide-opacity-50">
+              <!-- Si aucune notification -->
+              <div *ngIf="notificationService.notifications().length === 0" 
+                   class="p-8 text-center text-slate-400 flex flex-col items-center justify-center space-y-3">
+                <i class="pi pi-bell-slash text-4xl text-slate-600"></i>
+                <p class="text-sm font-medium">Aucune notification pour le moment</p>
+              </div>
+
+              <!-- Cartes des notifications -->
+              <div *ngFor="let notif of notificationService.notifications()" 
+                   (click)="handleNotificationClick($event, notif)"
+                   class="p-4 hover:bg-slate-800 hover:bg-opacity-50 transition duration-200 cursor-pointer flex items-start space-x-3 relative"
+                   [ngClass]="{'bg-slate-800 bg-opacity-20 border-l-4 border-gamma-accent': !notif.read}">
+                
+                <!-- Icone spécifique au type de notification -->
+                <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold mt-0.5"
+                     [ngClass]="{
+                       'bg-blue-500 bg-opacity-20 text-blue-400': notif.type === 'DOTATION',
+                       'bg-amber-500 bg-opacity-20 text-amber-400': notif.type === 'MATERIEL',
+                       'bg-rose-500 bg-opacity-20 text-rose-400': notif.type === 'REFORME',
+                       'bg-slate-600 bg-opacity-20 text-slate-400': notif.type === 'SYSTEM'
+                     }">
+                  <i [ngClass]="{
+                    'pi pi-plus-circle': notif.type === 'DOTATION',
+                    'pi pi-box': notif.type === 'MATERIEL',
+                    'pi pi-trash': notif.type === 'REFORME',
+                    'pi pi-info-circle': notif.type === 'SYSTEM'
+                  }"></i>
+                </div>
+
+                <!-- Contenu textuel -->
+                <div class="flex-grow flex flex-col space-y-1">
+                  <div class="flex justify-between items-start">
+                    <span class="font-semibold text-sm" [ngClass]="{'text-white': !notif.read, 'text-slate-300': notif.read}">
+                      {{ notif.title }}
+                    </span>
+                    <span class="text-[10px] text-slate-400 whitespace-nowrap ml-2">
+                      {{ formatTime(notif.createdAt) }}
+                    </span>
+                  </div>
+                  <p class="text-xs text-slate-300 leading-relaxed font-light">
+                    {{ notif.message }}
+                  </p>
+                </div>
+
+                <!-- Pastille bleue pour indicateur non-lu -->
+                <div *ngIf="!notif.read" 
+                     class="flex-shrink-0 self-center">
+                  <span class="block w-2.5 h-2.5 rounded-full bg-gamma-accent shadow-[0_0_8px_#00FF87]"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer du tiroir -->
+            <div class="p-3 bg-slate-950 bg-opacity-50 border-t border-slate-800 text-center">
+              <span class="text-xs text-slate-400 font-medium">Système de Notifications GAMMA 3</span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="user.role === 'UNIT_USER' && unitId; else profileBlock" [routerLink]="['/unites', unitId]" class="flex items-center space-x-3 bg-slate-800 hover:bg-slate-700 transition duration-300 px-3 py-1 rounded-full border border-slate-600 cursor-pointer shadow-sm">
+          <div class="flex flex-col text-right">
+            <span class="text-sm font-bold leading-tight whitespace-nowrap">{{ user.fullName }}</span>
+            <span class="text-xs font-bold text-gamma-accent">Client ({{ user.matricule }})</span>
+          </div>
+          <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold shadow-sm transition-colors duration-300 bg-gamma-accent">
+            {{ user.fullName.charAt(0).toUpperCase() }}
+          </div>
+        </div>
+        <ng-template #profileBlock>
+          <div class="flex items-center space-x-3 bg-slate-800 px-3 py-1 rounded-full border border-slate-600">
+            <div class="flex flex-col text-right">
+              <span class="text-sm font-bold leading-tight whitespace-nowrap">{{ user.fullName }}</span>
+              <span class="text-xs font-bold" [ngClass]="user.role === 'ADMIN' ? 'text-red-500' : 'text-gamma-accent'">
+                {{ user.role === 'ADMIN' ? 'Administrateur' : user.role === 'DA_MANAGER' ? 'Gestionnaire DA' : 'Client' }}
+              </span>
+            </div>
+            <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold shadow-sm transition-colors duration-300"
+                 [ngClass]="user.role === 'ADMIN' ? 'bg-red-500' : 'bg-gamma-accent'">
+              {{ user.fullName.charAt(0).toUpperCase() }}
+            </div>
+          </div>
+        </ng-template>
+        
+        <!-- Bouton Déconnexion -->
+        <button (click)="authService.logout()" class="p-2 text-slate-300 hover:text-white transition cursor-pointer" title="Se déconnecter">
+          <i class="pi pi-sign-out text-xl"></i>
+        </button>
+      </ng-container>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="flex-grow">
+    <router-outlet></router-outlet>
+  </main>
+</div>

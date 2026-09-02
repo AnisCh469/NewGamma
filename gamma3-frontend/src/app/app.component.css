@@ -1,0 +1,43 @@
+/* Animation de vibration (wiggle) pour la cloche des notifications */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  10% { transform: rotate(15deg); }
+  20% { transform: rotate(-10deg); }
+  30% { transform: rotate(12deg); }
+  40% { transform: rotate(-8deg); }
+  50% { transform: rotate(6deg); }
+  60% { transform: rotate(-4deg); }
+  70% { transform: rotate(2deg); }
+  80% { transform: rotate(-1deg); }
+  90% { transform: rotate(0deg); }
+}
+
+.animate-wiggle {
+  animation: wiggle 2.5s ease-in-out infinite;
+  transform-origin: top center;
+  display: inline-block;
+}
+
+/* Effets et animations additionnels premium au survol */
+.relative button:hover i.pi-bell {
+  transform: scale(1.18);
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Personnalisation de la scrollbar pour le tiroir de notifications */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 5px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.3);
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 9999px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.4);
+}
