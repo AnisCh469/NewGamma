@@ -1,0 +1,29 @@
+# INSTRUCTIONS SYSTÈME - PROJET GAMMA 3
+
+## 1. RÈGLES DE SÉCURITÉ ET DE WORKFLOW OPÉRATIONNEL
+* **Séparation stricte des privilèges (Architecture des rôles) :** Lors de la création de modèles de données, de formulaires ou de flux d'approbation, tu dois imposer une séparation rigoureuse des tâches. Par exemple, un compte de niveau "Administrateur" ne doit jamais être programmé pour effectuer des saisies manuelles directes. L'architecture logicielle doit garantir que l'administrateur reçoive les requêtes ou les besoins formulés par les autres corps/unités afin de les réviser et de les valider.
+* **Zero-Trust UI :** Toute donnée provenant d'un champ de saisie doit être sanitée côté client avant envoi, et l'interface ne doit jamais exposer des éléments d'action (boutons de validation, suppression) à un rôle non autorisé.
+
+## 2. RÈGLES DE PERFORMANCE POUR SYSTÈMES CRITIQUES
+* **Optimisation des flux de données :** Pour les interfaces gérant de forts volumes de données (référentiels denses, tableaux de bord tactiques ou de surveillance), tu dois obligatoirement utiliser des techniques d'optimisation : Debouncing sur les champs de recherche (ex: 300ms de délai minimum) et pagination ou virtualisation de listes (ex: react-window) si les enregistrements dépassent 100 éléments.
+* **Stabilité du Rendu :** Évite les rendus superflus de composants. Utilise useMemo et useCallback de manière justifiée pour les calculs lourds ou le filtrage de données critiques côté client.
+* **Densité Visuelle :** Par défaut, les UI générées doivent privilégier la densité d'information (paddings réduits, typographie claire) plutôt que les designs excessivement aérés, afin d'optimiser la prise de décision visuelle.
+
+## 3. RÈGLE ABSOLUE DE DOCUMENTATION (PROTOCOLE ÉDUCATIF)
+À chaque fois que tu génères, modifies ou proposes du code, tu dois OBLIGATOIREMENT inclure à la fin de ta réponse un bloc intitulé "Protocole de Documentation Éducative" structuré exactement comme suit :
+* **A. Guide étape par étape :** Résume logiquement et en français les étapes que le code exécute.
+* **B. Le "Pourquoi" des fonctions clés :** Justifie tes choix d'architecture, de méthodes ou d'optimisation par rapport aux contraintes opérationnelles dictées ci-dessus.
+* **C. Analyse d'Impact :**
+    * *Impact Positif :* Ce que cela améliore pour le système.
+    * *Risques & Points de vigilance :* Identifie les failles potentielles (fuites de mémoire, limites de charge, failles de sécurité) et suggère des pistes d'amélioration.
+
+## 4. GESTION DE LA DOCUMENTATION ET ANTI-ÉCRASEMENT
+* **Interdiction d'écrasement :** Tu ne dois jamais réécrire ou écraser le fichier `docs/IMPLEMENTATION_PLAN.md`. Pour mettre à jour l'avancement, tu es uniquement autorisé à modifier l'état des cases à cocher `[ ]` en `[x]`. Si une modification lourde du plan est nécessaire, tu dois soumettre tes propositions dans un bloc de texte dans le chat, sans toucher au fichier physique.
+* **Mise à jour du Journal de Développement (`docs/DEV_JOURNAL.md`) :** À la fin de chaque tâche ou lors de la résolution d'un problème technique complexe, tu dois ajouter une entrée dans le journal de développement. Cette entrée doit décrire : 1) La difficulté rencontrée, 2) La cause technique racine, 3) La solution retenue.
+* **Mise à jour du Guide Utilisateur (`docs/USER_GUIDE.md`) :** Si la fonctionnalité modifie l'interface visuelle ou le parcours de l'utilisateur final, tu dois ajouter une section simple, rédigée en français non technique, expliquant la nouvelle action disponible (ex: "Comment utiliser la nouvelle barre de recherche").
+
+## 5. EXIGENCE PÉDAGOGIQUE ET TRANSMISSION (CODE SOURCE)
+Tout code généré doit être conçu pour être transmis à une jeune équipe de développeurs. Il doit être exemplaire en termes de lisibilité et de structure.
+* **Structure interne des scripts :** Chaque fichier de code doit commencer par un en-tête JSDoc décrivant le fichier, son rôle et son contexte dans l'application.
+* **Documentation des fonctions :** Chaque fonction doit avoir un bloc de commentaire explicite détaillant son rôle exact, le "pourquoi" de sa logique interne, la description de chaque variable d'entrée (paramètres) et la valeur de retour.
+* **Explications pas-à-pas :** Décompose les algorithmes complexes en étapes numérotées dans les commentaires du code pour faciliter l'apprentissage de la programmation et la maintenance future du système.
