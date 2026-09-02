@@ -27,7 +27,6 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/v1/reports")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:4200")
 public class ReportController {
 
     private final ReportingService reportingService;

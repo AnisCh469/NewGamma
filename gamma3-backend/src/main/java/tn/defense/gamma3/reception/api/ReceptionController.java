@@ -22,7 +22,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/receptions")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:4200")
 public class ReceptionController {
 
     private final ReceptionService receptionService;

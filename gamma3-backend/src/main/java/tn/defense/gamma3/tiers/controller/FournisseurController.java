@@ -19,7 +19,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/fournisseurs")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:4200")
 public class FournisseurController {
 
     private final FournisseurRepository fournisseurRepository;

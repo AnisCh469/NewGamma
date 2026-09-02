@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/v1/analytics")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:4200")
 public class AnalyticsController {
 
     private final ItemRepository itemRepository;

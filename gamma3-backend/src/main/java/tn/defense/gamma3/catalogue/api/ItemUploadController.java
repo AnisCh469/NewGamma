@@ -38,7 +38,6 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/items")
-@CrossOrigin(origins = "http://localhost:4200")
 @org.springframework.transaction.annotation.Transactional
 public class ItemUploadController {
 

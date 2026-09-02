@@ -7,12 +7,28 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.authentication.AuthenticationProvider;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
+
+    /**
+     * Origines autorisées à appeler l'API en CORS, séparées par des virgules.
+     * Pourquoi externalisée : cette valeur était auparavant dupliquée en dur
+     * ("http://localhost:4200") dans SecurityConfig ET dans 13 contrôleurs
+     * via @CrossOrigin — deux mécanismes concurrents pour la même règle.
+     * Seule cette configuration globale fait désormais foi ; les annotations
+     * @CrossOrigin redondantes ont été retirées des contrôleurs. En
+     * production, le frontend est servi par Nginx en reverse-proxy sur la
+     * même origine que l'API (voir gamma3-frontend/nginx.conf), donc CORS
+     * n'intervient qu'en développement local ou pour un futur client tiers
+     * (ex: application mobile) — surchargeable via CORS_ALLOWED_ORIGINS.
+     */
+    @Value("${CORS_ALLOWED_ORIGINS:http://localhost:4200}")
+    private String allowedOrigins;
     
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -38,7 +54,7 @@ public class SecurityConfig {
     @Bean
     public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
-        configuration.setAllowedOrigins(java.util.List.of("http://localhost:4200"));
+        configuration.setAllowedOrigins(java.util.Arrays.stream(allowedOrigins.split(",")).map(String::trim).toList());
         configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(java.util.List.of("Authorization", "Content-Type", "Accept"));
         configuration.setAllowCredentials(true);

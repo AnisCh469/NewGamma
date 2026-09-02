@@ -35,3 +35,6 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# Fichiers téléversés par les utilisateurs (photos/documents) — jamais versionnés
+uploads/

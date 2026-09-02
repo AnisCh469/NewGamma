@@ -24,7 +24,6 @@ import tn.defense.gamma3.tiers.repository.PlanArmementRepository;
 @RestController
 @RequestMapping("/api/v1/unites")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:4200")
 public class UniteUtilisatriceController {
 
     private final UniteUtilisatriceRepository uniteRepository;
