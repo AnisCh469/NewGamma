@@ -52,6 +52,24 @@ Ce journal répertorie les difficultés techniques rencontrées au cours du dév
   4. Création de `gamma3-backend/Dockerfile` (build multi-étapes Gradle/JDK 21 puis JRE 21, utilisateur non-root) et `gamma3-frontend/Dockerfile` (build Node puis service Nginx avec reverse-proxy `/api/**` vers le backend, voir `gamma3-frontend/nginx.conf`). `docker-compose.prod.yml` a été réécrit pour lire tous les secrets depuis un fichier `.env` non versionné (modèle : `.env.example`) et pour monter un volume Docker persistant pour `uploads/`.
   5. Ajout de `src/environments/environment.ts` (dev) et `environment.prod.ts` (prod, `apiUrl: ''` car Nginx fait le reverse-proxy), câblage du `fileReplacements` correspondant dans `angular.json`, et remplacement des 17 occurrences de `http://localhost:8080` par `${environment.apiUrl}` dans les services et composants concernés. Vérifié par compilation TypeScript (`npx tsc --noEmit`) : aucune erreur introduite.
 
+## Entrée : 2026-09-02
+* **Tâche :** Création du dépôt propre `NewGamma` (remplaçant `GAMMA3` bloqué par un historique Git désordonné) et tri des 20 branches distantes de l'ancien dépôt pour en extraire la valeur.
+* **Difficulté rencontrée :**
+  1. Toute commande Git modifiant l'index (`git add`, `git commit`) échouait avec `Unable to create '.git/index.lock': File exists`, y compris sur un dépôt fraîchement initialisé (donc sans processus concurrent réel).
+  2. Une première tentative de copie du projet vers `NewGamma` a été écrite au mauvais endroit : `$HOME/mnt/NewGamma` au lieu de `$HOME/mnt/MyDeveloppement/NewGamma`, créant un dossier local à la session au lieu d'écrire sur le disque réel du poste (`D:\MyDeveloppement\NewGamma`).
+  3. Sur les 20 branches distantes de l'ancien dépôt (hors les 3 déjà fusionnées : correctifs de sécurité), la majorité concernait un prototype Python (`gamma3_system/`) totalement abandonné, et une branche (`fix/ui-performance-design-*`) supprimerait la quasi-totalité du code actuel si fusionnée naïvement.
+  4. 13 contrôleurs dupliquaient chacun `@CrossOrigin(origins = "http://localhost:4200")` en plus de la configuration CORS globale de `SecurityConfig`.
+* **Cause technique racine :**
+  1. Le pont (bridge) vers le poste utilisateur ne permettait pas la suppression de fichiers par défaut dans les dossiers connectés (protection anti-suppression) ; Git crée normalement `.git/index.lock` puis le supprime après chaque commande, mais cette suppression échouait silencieusement (`Operation not permitted`), laissant un verrou orphelin qui bloquait la commande suivante.
+  2. Un dossier nommé "NewGamma" n'était pas un point de montage réel vers le poste tant que le dossier n'avait pas été créé côté disque réel puis explicitement connecté — écrire dedans depuis la session créait un dossier local à la session, invisible du poste.
+  3. Ces branches datent probablement d'un stade antérieur du projet (avant la bascule complète vers Java/Spring Boot + Angular) ou d'exécutions d'outils d'analyse automatique jamais suivies de fusion.
+  4. Duplication historique : le CORS a été ajouté contrôleur par contrôleur au fil du développement au lieu d'être centralisé dès le départ dans `SecurityConfig`.
+* **Solution retenue :**
+  1. Activation explicite de la permission de suppression sur le dossier connecté (`device_request_delete_permission`), qui a immédiatement débloqué toutes les commandes Git.
+  2. Détection de l'erreur via `mount` (seul `MyDeveloppement` apparaissait comme montage FUSE réel), copie corrective du contenu déjà présent vers `$HOME/mnt/MyDeveloppement/NewGamma` (le vrai chemin), puis nettoyage du dossier local erroné.
+  3. Revue individuelle des 20 branches (`git diff <base> <branche> --stat`) : récupération de 2 fichiers de test réellement utiles et compatibles avec le code actuel (`ApplicationConfigTest.java`, `ItemUploadControllerTest.java` — ce dernier valide précisément le correctif anti path-traversal de la session précédente), rejet explicite et documenté de toutes les autres branches (prototype Python abandonné, ou branche dangereuse à base pré-refonte).
+  4. Suppression des 13 annotations `@CrossOrigin` redondantes ; unique source de vérité désormais `SecurityConfig.corsConfigurationSource()`, origine(s) surchargeable(s) via `CORS_ALLOWED_ORIGINS`.
+
 ## [Modèle d'Entrée]
 * **Date :** AAAA-MM-JJ
 * **Tâche :** Description de la tâche ou de la fonctionnalité
