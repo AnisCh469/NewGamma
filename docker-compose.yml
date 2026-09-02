@@ -1,0 +1,29 @@
+version: '3.8'
+services:
+  gamma3-postgres:
+    image: postgres:16-alpine
+    container_name: gamma3_postgres
+    environment:
+      POSTGRES_DB: gamma3_db
+      POSTGRES_USER: gamma3_user
+      POSTGRES_PASSWORD: gamma3_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - gamma3-pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  gamma3-sqlserver:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: gamma3_sqlserver
+    environment:
+      ACCEPT_EULA: Y
+      SA_PASSWORD: Gamma3_Password_123
+    ports:
+      - "1434:1433"
+    volumes:
+      - c:\Users\anisc\Desktop\Gamma3 Claude\Backup GAMMA2:/var/opt/mssql/backup
+    restart: unless-stopped
+
+volumes:
+  gamma3-pgdata:

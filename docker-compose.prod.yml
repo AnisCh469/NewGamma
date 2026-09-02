@@ -1,0 +1,75 @@
+# ============================================================================
+# docker-compose.prod.yml - Déploiement de production GAMMA 3.0
+# ============================================================================
+# Démarre les 3 conteneurs du système (base de données PostgreSQL, backend
+# Spring Boot, frontend Angular/Nginx) sur un même hôte Docker de l'intranet.
+#
+# Sécurité (Zero-Trust, section 1 des instructions système) : AUCUN secret
+# n'est écrit en dur dans ce fichier. Toutes les valeurs sensibles
+# (mots de passe, clé JWT, identifiants admin) sont lues depuis un fichier
+# ".env" placé à côté de ce fichier et JAMAIS commité dans Git (voir
+# .env.example pour la liste des variables à renseigner, et .gitignore).
+#
+# Démarrage :
+#   1) cp .env.example .env
+#   2) éditer .env et renseigner des valeurs FORTES et UNIQUES
+#   3) docker compose -f docker-compose.prod.yml up -d --build
+# ============================================================================
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gamma3-postgres-prod
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-gamma3}
+      POSTGRES_USER: ${POSTGRES_USER:-gamma_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?La variable POSTGRES_PASSWORD doit être définie dans .env}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gamma_admin} -d ${POSTGRES_DB:-gamma3}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./gamma3-backend
+      dockerfile: Dockerfile
+    container_name: gamma3-backend-prod
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-gamma3}
+      DB_USERNAME: ${POSTGRES_USER:-gamma_admin}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?La variable POSTGRES_PASSWORD doit être définie dans .env}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?La variable JWT_SECRET_KEY doit être définie dans .env (256 bits aléatoires minimum)}
+      ADMIN_MATRICULE: ${ADMIN_MATRICULE:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?La variable ADMIN_PASSWORD doit être définie dans .env}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    volumes:
+      # Persiste les photos/documents téléversés en dehors du conteneur.
+      - gamma3_uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
+
+  frontend:
+    build:
+      context: ./gamma3-frontend
+      dockerfile: Dockerfile
+    container_name: gamma3-frontend-prod
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  postgres_prod_data:
+  gamma3_uploads:

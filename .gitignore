@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+*.db
+*.log
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Secrets locaux (jamais commités) — voir .env.example
+.env
