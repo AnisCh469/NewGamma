@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../Users/anisc/Desktop/Gamma3 Claude"
+		},
+		{
+			"path": "../../Users/anisc/Desktop/GAMMA3 CCF"
+		}
+	],
+	"settings": {
+		"java.compile.nullAnalysis.mode": "automatic"
+	}
+}
