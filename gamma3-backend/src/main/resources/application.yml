@@ -1,0 +1,55 @@
+spring:
+  application:
+    name: gamma3-backend
+  
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 15MB
+  
+  # Sécurité (Zero-Trust, section 1 des instructions système) : chaque valeur
+  # sensible ci-dessous accepte une variable d'environnement (${VAR:defaut}).
+  # Les valeurs par défaut reproduisent exactement l'ancienne configuration en
+  # dur, donc `docker-compose up -d` + `./gradlew bootRun` continuent de
+  # fonctionner sans aucune variable d'environnement en local. En production,
+  # l'équipe DOIT définir DB_PASSWORD, LEGACY_DB_PASSWORD, JWT_SECRET_KEY,
+  # ADMIN_MATRICULE et ADMIN_PASSWORD avec des valeurs fortes et uniques
+  # (voir .env.example à la racine du dépôt).
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/gamma3_db}
+    username: ${DB_USERNAME:gamma3_user}
+    password: ${DB_PASSWORD:gamma3_password}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # Connexion à la base de données SQL Server Legacy (Gamma2)
+  legacy:
+    datasource:
+      url: ${LEGACY_DB_URL:jdbc:sqlserver://localhost:1434;databaseName=Gamma2;encrypt=false}
+      username: ${LEGACY_DB_USERNAME:sa}
+      password: ${LEGACY_DB_PASSWORD:Gamma3_Password_123}
+      driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+
+server:
+  port: 8080
+
+application:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET_KEY:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+      expiration: 86400000 # a day
+  # Compte Administrateur créé automatiquement par DataSeeder.java au premier
+  # démarrage (uniquement si la table des utilisateurs est vide). Redéfinir en
+  # production via ADMIN_MATRICULE / ADMIN_PASSWORD.
+  default-admin:
+    matricule: ${ADMIN_MATRICULE:admin}
+    password: ${ADMIN_PASSWORD:admin}
+
