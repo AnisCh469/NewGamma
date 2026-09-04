@@ -45,3 +45,33 @@ Afin d'assurer la traçabilité militaire et la séparation stricte des privilè
 * **Indication et Visibilité :** Dès que l'administrateur (ou le système) valide et attribue un Bon de Sortie à sa soute, la demande apparaît instantanément sur la console d'arbitrage du gestionnaire de cette soute (ex: Magasin Centre).
 * **Confirmation du Retrait Réel :** Le bouton vert `Confirmer Retrait` est visible et activable **uniquement par le magasinier assigné à cette soute**. Cliquer dessus effectue la sortie de stock définitive, enregistre le mouvement de prélèvement et transfère les dotations en service réel à bord.
 
+
+---
+
+## 👤 Administration > Gestion des Utilisateurs
+
+* **Accès :** Un nouveau lien `Utilisateurs` apparaît dans le menu principal, visible **uniquement pour les comptes ADMIN**. Aucun autre rôle ne peut créer, modifier, bloquer ou débloquer un compte — même un Gestionnaire de Magasin (DA_MANAGER) doit passer par un ADMIN.
+* **Pourquoi il n'y a pas d'inscription libre-service :** Pour un système militaire, chaque compte doit être créé sciemment par un administrateur ; il n'existe donc aucun bouton "Créer un compte" sur l'écran de connexion.
+
+### Créer un compte
+1. Cliquez sur `Nouveau Compte` en haut de l'écran `Utilisateurs`.
+2. Renseignez le **Matricule** (identifiant de connexion), un **mot de passe** initial (4 caractères minimum — l'utilisateur pourra le changer via son profil), le **Nom Complet**, et le **Rôle** :
+   * **UNIT_USER** (compte d'une unité cliente) : le **Matricule doit être strictement identique au Code** d'une Unité Utilisatrice déjà créée dans `Tiers > Unités`. Si l'unité n'existe pas encore, créez-la d'abord dans cet écran, puis revenez créer son compte de connexion ici. Un message d'erreur explicite vous guidera si le code ne correspond à aucune unité.
+   * **DA_MANAGER** (gestionnaire de soute) : un **Magasin** doit obligatoirement être sélectionné dans la liste déroulante — ce magasin devient la soute de rattachement de ce gestionnaire.
+   * **ADMIN** : aucun champ supplémentaire requis.
+3. Cliquez sur `Enregistrer`. Un message d'erreur s'affiche si le matricule existe déjà, ou si un champ obligatoire manque.
+
+### Modifier un compte
+* Le bouton crayon (✏️) permet de modifier le Nom Complet, le Rôle et, le cas échéant, le Magasin d'un compte existant. Le **Matricule ne peut pas être changé** depuis cet écran (il faudrait recréer le compte).
+
+### Bloquer / débloquer un compte
+* Le bouton cadenas permet de **bloquer** immédiatement un compte (ex : agent ayant quitté son poste) — la personne ne peut alors plus se connecter, **et son jeton de connexion déjà ouvert est immédiatement invalidé** (effet instantané, pas besoin d'attendre une expiration).
+* Il ne s'agit jamais d'une suppression : tout l'historique du compte (mouvements de stock, demandes, etc.) reste intact, et le compte peut être **débloqué** à tout moment par le même bouton.
+* **Vous ne pouvez pas bloquer votre propre compte** (le bouton est désactivé sur votre propre ligne, identifiée par la mention `(vous)`), afin d'éviter de vous retrouver bloqué hors du système.
+
+### Réinitialiser un mot de passe
+* Le bouton clé permet à un ADMIN de définir directement un nouveau mot de passe pour un compte, par exemple si l'utilisateur l'a oublié (il n'existe pas de fonctionnalité "mot de passe oublié" en libre-service sur ce système cloisonné).
+
+### Colonnes du tableau
+* **2FA** : indique si la double authentification est activée pour ce compte (icône verte) ou non (icône grise) — activée par l'utilisateur lui-même depuis son profil, un ADMIN ne peut pas l'activer à sa place.
+* **Statut** : `Actif` (badge vert) ou `Bloqué` (badge rouge).

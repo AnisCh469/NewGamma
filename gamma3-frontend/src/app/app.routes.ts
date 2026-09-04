@@ -67,5 +67,10 @@ export const routes: Routes = [
     path: 'reformes',
     loadComponent: () => import('./features/reforme/reforme-console.component').then(m => m.ReformeConsoleComponent),
     canActivate: [authGuard]
+  },
+  {
+    path: 'administration/utilisateurs',
+    loadComponent: () => import('./features/administration/gestion-utilisateurs/gestion-utilisateurs.component').then(m => m.GestionUtilisateursComponent),
+    canActivate: [authGuard]
   }
 ];

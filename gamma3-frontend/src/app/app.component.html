@@ -19,6 +19,7 @@
         <a *ngIf="currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/distribution" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Arbitrage</a>
         <a *ngIf="currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/reformes" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Réforme</a>
         <a *ngIf="currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/analytics" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Analyses</a>
+        <a *ngIf="currentUser.role === 'ADMIN'" routerLink="/administration/utilisateurs" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Utilisateurs</a>
       </nav>
     </div>
     

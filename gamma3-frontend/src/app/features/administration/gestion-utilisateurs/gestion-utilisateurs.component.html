@@ -1,0 +1,175 @@
+<div class="min-h-screen bg-slate-50 p-8">
+
+  <!-- En-tête de page -->
+  <div class="mb-8 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+    <div>
+      <h1 class="text-3xl font-extrabold text-gamma-dark tracking-tight">Gestion des Utilisateurs</h1>
+      <p class="text-slate-500 mt-1">
+        Comptes de connexion GAMMA 3 (unités clientes, gestionnaires de magasin, administrateurs)
+        <span *ngIf="users.length > 0" class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
+          {{ users.length }} comptes
+        </span>
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="relative group">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <i class="pi pi-search text-slate-400 group-focus-within:text-blue-500 transition-colors duration-200"
+             style="font-size: 0.8rem"></i>
+        </div>
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="dt.filterGlobal($event, 'contains')"
+          placeholder="Matricule · Nom · Rôle"
+          class="w-72 pl-9 pr-9 py-2 text-sm
+                 bg-slate-50 border border-slate-200 rounded-xl
+                 focus:outline-none focus:ring-2 focus:ring-blue-400/40 focus:border-blue-400
+                 focus:bg-white placeholder:text-slate-400 text-slate-700
+                 transition-all duration-200"
+          id="search-users"
+        />
+        <button
+          *ngIf="searchTerm"
+          (click)="clearSearch(dt)"
+          class="absolute inset-y-0 right-0 pr-3 flex items-center
+                 text-slate-400 hover:text-slate-600 transition-colors duration-150"
+          title="Effacer la recherche" type="button">
+          <i class="pi pi-times" style="font-size: 0.75rem"></i>
+        </button>
+      </div>
+
+      <p-button label="Nouveau Compte" icon="pi pi-user-plus" (onClick)="openNew()"
+        styleClass="p-button-primary"></p-button>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+    <p-table #dt [value]="users" [paginator]="true" [rows]="25"
+      [rowsPerPageOptions]="[25, 50, 100]" responsiveLayout="scroll"
+      [globalFilterFields]="['matricule','fullName','role']"
+      [tableStyle]="{'min-width': '50rem'}"
+      styleClass="p-datatable-striped p-datatable-sm">
+      <ng-template pTemplate="header">
+        <tr class="bg-slate-50 border-b border-slate-200">
+          <th pSortableColumn="matricule" class="font-semibold text-slate-700 py-1 px-4 text-xs">Matricule <p-sortIcon field="matricule"></p-sortIcon></th>
+          <th pSortableColumn="fullName" class="font-semibold text-slate-700 py-1 px-4 text-xs">Nom Complet <p-sortIcon field="fullName"></p-sortIcon></th>
+          <th pSortableColumn="role" class="font-semibold text-slate-700 py-1 px-4 text-xs">Rôle <p-sortIcon field="role"></p-sortIcon></th>
+          <th class="font-semibold text-slate-700 py-1 px-4 text-xs">Magasin</th>
+          <th class="font-semibold text-slate-700 py-1 px-4 text-xs text-center">2FA</th>
+          <th class="font-semibold text-slate-700 py-1 px-4 text-xs text-center">Statut</th>
+          <th class="font-semibold text-slate-700 py-1 px-4 text-xs text-center">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-user>
+        <tr class="hover:bg-blue-50 transition-colors duration-150 border-b border-slate-100">
+          <td class="font-mono font-medium text-gamma-primary py-1 px-4 text-xs">{{ user.matricule }}</td>
+          <td class="font-medium text-slate-700 py-1 px-4 text-xs">
+            {{ user.fullName }}
+            <span *ngIf="isSelf(user)" class="ml-1 text-[10px] text-slate-400">(vous)</span>
+          </td>
+          <td class="py-1 px-4">
+            <p-tag [value]="user.role" [severity]="getRoleSeverity(user.role)"></p-tag>
+          </td>
+          <td class="py-1 px-4 text-slate-600 text-xs">
+            <span *ngIf="user.magasin">{{ user.magasin.code }} — {{ user.magasin.nom }}</span>
+            <span *ngIf="!user.magasin" class="text-slate-400">—</span>
+          </td>
+          <td class="text-center py-1 px-4">
+            <i class="pi" [ngClass]="user.twoFactorEnabled ? 'pi-check-circle text-green-500' : 'pi-minus-circle text-slate-300'"></i>
+          </td>
+          <td class="text-center py-1 px-4">
+            <span *ngIf="user.enabled" class="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Actif</span>
+            <span *ngIf="!user.enabled" class="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-semibold">Bloqué</span>
+          </td>
+          <td class="text-center py-1 px-4 whitespace-nowrap">
+            <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info p-button-sm mr-1 w-7 h-7 p-0"
+              title="Modifier" (click)="editUser(user)"></button>
+            <button pButton icon="pi pi-key" class="p-button-rounded p-button-text p-button-secondary p-button-sm mr-1 w-7 h-7 p-0"
+              title="Réinitialiser le mot de passe" (click)="openResetPassword(user)"></button>
+            <button pButton [icon]="user.enabled ? 'pi pi-lock' : 'pi pi-lock-open'"
+              class="p-button-rounded p-button-text p-button-sm w-7 h-7 p-0"
+              [ngClass]="user.enabled ? 'p-button-danger' : 'p-button-success'"
+              [title]="user.enabled ? 'Bloquer le compte' : 'Débloquer le compte'"
+              [disabled]="isSelf(user)"
+              (click)="toggleEnabled(user)"></button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7" class="text-center p-8 text-slate-500">
+            <i class="pi pi-users text-4xl mb-3 text-slate-300 block"></i>
+            Aucun compte utilisateur trouvé.
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<!-- Dialogue de création / modification -->
+<p-dialog [(visible)]="displayDialog" [style]="{width: '480px'}"
+  [header]="isEditMode ? 'Modifier le Compte' : 'Nouveau Compte Utilisateur'" [modal]="true" class="p-fluid">
+  <ng-template pTemplate="content">
+    <div class="field mb-4">
+      <label for="matricule" class="block font-medium mb-2">Matricule *</label>
+      <input type="text" pInputText id="matricule" [(ngModel)]="selectedUser.matricule"
+        [disabled]="isEditMode" required autofocus />
+      <p class="text-xs text-slate-400 mt-1" *ngIf="selectedUser.role === 'UNIT_USER'">
+        Doit correspondre au code d'une Unité Utilisatrice déjà créée (voir Tiers &gt; Unités).
+      </p>
+    </div>
+    <div class="field mb-4" *ngIf="!isEditMode">
+      <label for="password" class="block font-medium mb-2">Mot de passe *</label>
+      <p-password id="password" [(ngModel)]="selectedUser.password" [toggleMask]="true"
+        [feedback]="false" styleClass="w-full" inputStyleClass="w-full"></p-password>
+    </div>
+    <div class="field mb-4">
+      <label for="fullName" class="block font-medium mb-2">Nom Complet *</label>
+      <input type="text" pInputText id="fullName" [(ngModel)]="selectedUser.fullName" required />
+    </div>
+    <div class="field mb-4">
+      <label for="role" class="block font-medium mb-2">Rôle *</label>
+      <p-dropdown [options]="roleOptions" [(ngModel)]="selectedUser.role" inputId="role"
+        placeholder="Sélectionner un rôle" appendTo="body" styleClass="w-full"></p-dropdown>
+    </div>
+    <div class="field mb-4" *ngIf="selectedUser.role === 'DA_MANAGER'">
+      <label for="magasin" class="block font-medium mb-2">Magasin *</label>
+      <p-dropdown [options]="magasinOptions" [(ngModel)]="selectedUser.magasinId" inputId="magasin"
+        placeholder="Sélectionner un magasin" appendTo="body" styleClass="w-full"></p-dropdown>
+    </div>
+    <div *ngIf="errorMessage" class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+      {{ errorMessage }}
+    </div>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button pButton label="Annuler" icon="pi pi-times" class="p-button-text" (click)="displayDialog = false"></button>
+    <button pButton label="Enregistrer" icon="pi pi-check" (click)="saveUser()"
+      [loading]="isSaving" [disabled]="!isFormValid() || isSaving"></button>
+  </ng-template>
+</p-dialog>
+
+<!-- Dialogue de réinitialisation de mot de passe -->
+<p-dialog [(visible)]="displayPasswordDialog" [style]="{width: '420px'}"
+  header="Réinitialiser le mot de passe" [modal]="true" class="p-fluid">
+  <ng-template pTemplate="content">
+    <p class="text-sm text-slate-500 mb-4" *ngIf="passwordTargetUser">
+      Compte : <span class="font-mono font-medium">{{ passwordTargetUser.matricule }}</span>
+      ({{ passwordTargetUser.fullName }})
+    </p>
+    <div class="field mb-4">
+      <label for="newPassword" class="block font-medium mb-2">Nouveau mot de passe *</label>
+      <p-password id="newPassword" [(ngModel)]="newPassword" [toggleMask]="true"
+        [feedback]="false" styleClass="w-full" inputStyleClass="w-full" autofocus></p-password>
+    </div>
+    <div *ngIf="passwordErrorMessage" class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+      {{ passwordErrorMessage }}
+    </div>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button pButton label="Annuler" icon="pi pi-times" class="p-button-text" (click)="displayPasswordDialog = false"></button>
+    <button pButton label="Réinitialiser" icon="pi pi-check" (click)="saveNewPassword()"
+      [loading]="isSavingPassword" [disabled]="isSavingPassword"></button>
+  </ng-template>
+</p-dialog>
