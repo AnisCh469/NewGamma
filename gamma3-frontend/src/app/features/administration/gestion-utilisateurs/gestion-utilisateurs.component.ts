@@ -45,6 +45,12 @@ export class GestionUtilisateursComponent implements OnInit {
   isSaving = false;
   errorMessage = '';
 
+  /** Erreur de chargement (ex: backend pas encore redémarré après l'ajout de ce nouvel
+   * écran, ou droit ADMIN manquant) — affichée explicitement plutôt que de laisser le
+   * tableau silencieusement vide, ce qui semblait suggérer "aucun compte n'existe". */
+  loadErrorMessage = '';
+  isLoading = false;
+
   displayPasswordDialog = false;
   passwordTargetUser: AdminUser | null = null;
   newPassword = '';
@@ -81,14 +87,40 @@ export class GestionUtilisateursComponent implements OnInit {
   }
 
   loadUsers(): void {
-    this.userAdminService.getUsers().subscribe(data => {
-      this.users = data;
+    this.isLoading = true;
+    this.loadErrorMessage = '';
+    this.userAdminService.getUsers().subscribe({
+      next: (data) => {
+        this.users = data;
+        this.isLoading = false;
+      },
+      error: (err) => {
+        this.isLoading = false;
+        this.users = [];
+        if (err?.status === 404) {
+          this.loadErrorMessage = "Le serveur ne reconnaît pas encore cet écran (404). "
+            + "Le backend doit être redémarré pour prendre en compte cette nouvelle fonctionnalité.";
+        } else if (err?.status === 403) {
+          this.loadErrorMessage = "Accès refusé (403) : seul un compte ADMIN peut consulter cette page.";
+        } else if (err?.status === 0) {
+          this.loadErrorMessage = "Impossible de joindre le serveur backend. Vérifiez qu'il est démarré.";
+        } else {
+          this.loadErrorMessage = err?.error?.message || `Erreur lors du chargement des comptes (${err?.status || '?'}).`;
+        }
+        console.error('Erreur GET /api/v1/admin/users', err);
+      }
     });
   }
 
   loadMagasins(): void {
-    this.userAdminService.getMagasins().subscribe(data => {
-      this.magasins = data;
+    this.userAdminService.getMagasins().subscribe({
+      next: (data) => {
+        this.magasins = data;
+      },
+      error: (err) => {
+        // Non bloquant pour l'écran : seul le formulaire DA_MANAGER en a besoin.
+        console.error('Erreur GET /api/v1/admin/users/magasins', err);
+      }
     });
   }
 

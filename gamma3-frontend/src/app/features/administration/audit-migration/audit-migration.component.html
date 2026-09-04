@@ -1,0 +1,94 @@
+<div class="min-h-screen bg-slate-50 p-8">
+
+  <div class="mb-8 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+    <div>
+      <h1 class="text-3xl font-extrabold text-gamma-dark tracking-tight">Audit Migration Gamma2 → Gamma3</h1>
+      <p class="text-slate-500 mt-1">
+        Compare le contenu de l'ancienne base SQL Server (Gamma2) avec l'état actuel de Gamma3,
+        pour repérer les données jamais reprises.
+      </p>
+    </div>
+    <p-button label="Relancer l'audit" icon="pi pi-refresh" (onClick)="runAudit()" [loading]="isLoading"></p-button>
+  </div>
+
+  <div *ngIf="errorMessage" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+    <i class="pi pi-exclamation-triangle mr-2"></i>{{ errorMessage }}
+  </div>
+
+  <ng-container *ngIf="report">
+
+    <!-- Alerte de connexion à Gamma2 -->
+    <div *ngIf="!report.legacyReachable"
+      class="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
+      <div class="flex items-center gap-2 font-semibold mb-1">
+        <i class="pi pi-exclamation-triangle"></i>
+        Impossible de joindre la base Gamma2 (SQL Server)
+      </div>
+      <p class="text-sm">{{ report.legacyError }}</p>
+      <p class="text-sm mt-2">
+        Vérifiez que le conteneur SQL Server Gamma2 (<code>gamma3-sqlserver</code>) est démarré
+        et que <code>spring.legacy.datasource.url</code> pointe vers la bonne adresse.
+      </p>
+    </div>
+
+    <!-- Mécanismes de migration connus -->
+    <div class="mb-6 bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+      <h2 class="text-lg font-bold text-gamma-dark mb-3">✅ Mécanismes de migration connus</h2>
+      <ul class="space-y-2">
+        <li *ngFor="let m of report.connuMigre" class="text-sm text-slate-700 flex gap-2">
+          <i class="pi pi-check-circle text-green-500 mt-0.5"></i><span>{{ m }}</span>
+        </li>
+      </ul>
+      <h2 class="text-lg font-bold text-gamma-dark mt-5 mb-3">⚠️ À vérifier</h2>
+      <ul class="space-y-2">
+        <li *ngFor="let m of report.aVerifier" class="text-sm text-slate-700 flex gap-2">
+          <i class="pi pi-info-circle text-amber-500 mt-0.5"></i><span>{{ m }}</span>
+        </li>
+      </ul>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+      <!-- Tables Gamma2 (SQL Server) -->
+      <div class="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+        <div class="p-4 border-b border-slate-100 font-semibold text-slate-700">
+          Tables Gamma2 (SQL Server) — {{ report.legacyTables.length }} tables
+        </div>
+        <p-table [value]="report.legacyTables" [paginator]="true" [rows]="15" styleClass="p-datatable-sm p-datatable-striped">
+          <ng-template pTemplate="header">
+            <tr>
+              <th class="text-xs">Schéma</th>
+              <th class="text-xs">Table</th>
+              <th class="text-xs text-right">Lignes</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-t>
+            <tr>
+              <td class="text-xs font-mono">{{ t.schema }}</td>
+              <td class="text-xs font-mono font-medium">{{ t.table }}</td>
+              <td class="text-xs text-right">{{ t.rowCount | number }}</td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="emptymessage">
+            <tr><td colspan="3" class="text-center p-6 text-slate-400 text-sm">Aucune table (base injoignable ?)</td></tr>
+          </ng-template>
+        </p-table>
+      </div>
+
+      <!-- Compteurs Gamma3 (Postgres) -->
+      <div class="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+        <div class="p-4 border-b border-slate-100 font-semibold text-slate-700">
+          État actuel de Gamma3 (PostgreSQL)
+        </div>
+        <table class="w-full">
+          <tbody>
+            <tr *ngFor="let e of gamma3CountsEntries" class="border-b border-slate-50">
+              <td class="text-xs font-medium text-slate-600 py-2 px-4">{{ e.key }}</td>
+              <td class="text-xs text-right py-2 px-4 font-mono">{{ e.value | number }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+</div>

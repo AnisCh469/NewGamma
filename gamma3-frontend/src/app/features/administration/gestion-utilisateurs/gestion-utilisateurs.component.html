@@ -44,6 +44,14 @@
     </div>
   </div>
 
+  <div *ngIf="loadErrorMessage" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <i class="pi pi-exclamation-triangle"></i>
+      <span class="text-sm">{{ loadErrorMessage }}</span>
+    </div>
+    <button pButton label="Réessayer" icon="pi pi-refresh" class="p-button-text p-button-sm" (click)="loadUsers()"></button>
+  </div>
+
   <div class="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
     <p-table #dt [value]="users" [paginator]="true" [rows]="25"
       [rowsPerPageOptions]="[25, 50, 100]" responsiveLayout="scroll"

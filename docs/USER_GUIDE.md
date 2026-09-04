@@ -75,3 +75,12 @@ Afin d'assurer la traçabilité militaire et la séparation stricte des privilè
 ### Colonnes du tableau
 * **2FA** : indique si la double authentification est activée pour ce compte (icône verte) ou non (icône grise) — activée par l'utilisateur lui-même depuis son profil, un ADMIN ne peut pas l'activer à sa place.
 * **Statut** : `Actif` (badge vert) ou `Bloqué` (badge rouge).
+
+---
+
+## 🔍 Administration > Audit Migration Gamma2
+
+* **Accès :** Réservé aux comptes ADMIN, via le lien `Audit Gamma2` du menu principal.
+* **À quoi ça sert :** Cet écran interroge en direct l'ancienne base de données Gamma2 (SQL Server) et liste toutes ses tables avec leur nombre de lignes, à comparer avec les compteurs actuels de Gamma3 affichés juste à côté — pour repérer d'un coup d'œil des données de l'ancien système qui n'auraient jamais été reprises (mouvements de stock historiques, anciens bons de sortie, anciennes réceptions, etc.).
+* **Si le bandeau orange "Impossible de joindre la base Gamma2" apparaît :** cela signifie que le conteneur SQL Server de l'ancien système (Gamma2) n'est pas démarré, ou que son adresse réseau a changé. Vérifiez que ce conteneur tourne, puis cliquez sur `Relancer l'audit`.
+* **Section "Mécanismes de migration connus" :** rappelle les deux seules données déjà reprises depuis Gamma2 à ce jour — le catalogue d'articles (une seule fois, manuellement) et le Plan d'Armement par unité (rejouable à tout moment via l'écran de migration existant).

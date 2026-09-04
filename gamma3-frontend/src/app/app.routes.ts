@@ -72,5 +72,10 @@ export const routes: Routes = [
     path: 'administration/utilisateurs',
     loadComponent: () => import('./features/administration/gestion-utilisateurs/gestion-utilisateurs.component').then(m => m.GestionUtilisateursComponent),
     canActivate: [authGuard]
+  },
+  {
+    path: 'administration/audit-migration',
+    loadComponent: () => import('./features/administration/audit-migration/audit-migration.component').then(m => m.AuditMigrationComponent),
+    canActivate: [authGuard]
   }
 ];
