@@ -191,22 +191,36 @@ export class DemanderDotationComponent implements OnInit {
       this.router.navigate(['/catalogue']);
       return;
     }
+    // RÈGLE MÉTIER (2026-09-04) : seul le Gestionnaire d'une unité compose et soumet des
+    // demandes de matériel — le Commandant ne fait que les valider (voir "Valider les
+    // Demandes"). Le backend refuserait de toute façon la création (403), mais on évite ici
+    // de présenter un écran de composition à un compte qui ne peut pas s'en servir.
+    if (currentUser.fonctionUnite === 'COMMANDANT') {
+      this.router.navigate(['/valider-demandes']);
+      return;
+    }
 
-    // Load unit details using the logged-in user's matricule
-    this.uniteService.getUnites().subscribe({
-      next: (unites) => {
-        const found = unites.find(u => u.code === currentUser.matricule);
-        if (found) {
-          this.currentUnite = found;
-        } else {
+    // Localiser l'unité via le rattachement explicite du compte (voir User.uniteId côté
+    // backend) — NE PLUS supposer que matricule === code de l'unité : ce n'est vrai QUE pour
+    // le Gestionnaire historique, plus pour le Commandant (matricule libre, voir FonctionUnite).
+    if (currentUser.uniteId) {
+      this.uniteService.getUnite(currentUser.uniteId).subscribe({
+        next: (unite) => { this.currentUnite = unite; },
+        error: () => {
           this.messageService.add({
             severity: 'error',
             summary: 'Erreur',
             detail: 'Impossible de localiser votre unité.'
           });
         }
-      }
-    });
+      });
+    } else {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Erreur',
+        detail: "Votre compte n'est rattaché à aucune unité. Contactez un administrateur."
+      });
+    }
 
     // Fetch items with bypassPlanArmement = true to view the entire catalogue
     this.loadItems();

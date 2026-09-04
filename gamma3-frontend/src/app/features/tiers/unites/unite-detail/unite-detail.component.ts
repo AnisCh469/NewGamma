@@ -95,6 +95,13 @@ export class UniteDetailComponent implements OnInit {
     return this.authService.currentUser()?.role === 'UNIT_USER';
   }
 
+  /** Seul le Gestionnaire d'une unité compose des demandes (voir FonctionUnite) — le
+   *  Commandant ne fait que les valider, depuis l'écran "Valider les Demandes". */
+  isGestionnaire(): boolean {
+    const user = this.authService.currentUser();
+    return user?.role === 'UNIT_USER' && user?.fonctionUnite !== 'COMMANDANT';
+  }
+
   unite: UniteUtilisatrice | null = null;
   loading: boolean = true;
   error: string | null = null;

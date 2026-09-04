@@ -36,16 +36,11 @@ export class AppComponent {
       if (user) {
         this.notificationService.startPolling();
         
-        // If client, retrieve their unit ID to enable direct links
-        if (user.role === 'UNIT_USER') {
-          this.uniteService.getUniteByCode(user.matricule).subscribe({
-            next: (u) => {
-              if (u && u.id) {
-                this.unitId = u.id;
-              }
-            },
-            error: (err) => console.error('Error loading client unit ID', err)
-          });
+        // Rattachement Unité explicite (voir AuthResponse.uniteId côté backend, depuis le
+        // 2026-09-04) : ne plus déduire l'unité du compte via son matricule (Gestionnaire ET
+        // Commandant d'une même unité ont désormais des matricules différents et libres).
+        if (user.role === 'UNIT_USER' && user.uniteId) {
+          this.unitId = user.uniteId;
         }
       } else {
         this.notificationService.stopPolling();

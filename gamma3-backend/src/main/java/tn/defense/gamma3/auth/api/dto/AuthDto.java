@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import tn.defense.gamma3.auth.domain.Role;
+import tn.defense.gamma3.auth.domain.FonctionUnite;
 
 public class AuthDto {
 
@@ -27,6 +28,14 @@ public class AuthDto {
         private String fullName;
         private Role role;
         private boolean requires2fa;
+
+        // ─── Rattachement Unité (pour Role.UNIT_USER) ──────────────────────────
+        // RÔLE : Le frontend n'a plus le droit de déduire l'unité d'un compte depuis son
+        //        matricule (voir User.unite) — il a désormais besoin de le savoir dès la
+        //        connexion, sans requête supplémentaire. NULL pour ADMIN/DA_MANAGER.
+        private Long uniteId;
+        private String uniteCode;
+        private FonctionUnite fonctionUnite;
     }
 
     @Data

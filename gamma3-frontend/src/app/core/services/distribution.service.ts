@@ -20,12 +20,19 @@ export interface DemandeMateriel {
   id?: number;
   numeroDemande: string;
   dateDemande: string;
-  statut?: 'SOUMIS' | 'APPROUVE_PARTIEL' | 'APPROUVE_TOTAL' | 'REFUSE';
+  statut?: 'EN_ATTENTE_VALIDATION_COMMANDANT' | 'REFUSE_COMMANDANT' | 'SOUMIS'
+    | 'EN_COURS_ARBITRAGE' | 'ESCALADE_SGS' | 'APPROUVE_PARTIEL' | 'APPROUVE_TOTAL'
+    | 'REFUSE' | 'LIVRE';
   motifRefus?: string;
   unite: UniteUtilisatrice;
   bonSortie?: BonSortie;
   lignes?: LigneDemande[];
   createdAt?: string;
+}
+
+export interface ValidationCommandantRequestDto {
+  accepter: boolean;
+  motifRefus?: string;
 }
 
 export interface LigneDemande {
@@ -73,6 +80,12 @@ export class DistributionService {
 
   arbitrerDemande(demandeId: number, dto: ArbitrageRequestDto): Observable<DemandeMateriel> {
     return this.http.post<DemandeMateriel>(`${this.apiUrl}/${demandeId}/arbitrer`, dto);
+  }
+
+  /** Le Commandant de l'unité valide ou refuse une demande soumise par son Gestionnaire
+   *  (voir StatutDemande : double vérification avant envoi à GAMMA3). */
+  validerCommandant(demandeId: number, dto: ValidationCommandantRequestDto): Observable<DemandeMateriel> {
+    return this.http.post<DemandeMateriel>(`${this.apiUrl}/${demandeId}/valider-commandant`, dto);
   }
 
   getLignesDetailleesByDemande(demandeId: number): Observable<any[]> {

@@ -51,6 +51,9 @@ public class AuthenticationService {
                     .matricule(user.getMatricule())
                     .fullName(user.getFullName())
                     .role(user.getRole())
+                    .uniteId(user.getUnite() != null ? user.getUnite().getId() : null)
+                    .uniteCode(user.getUnite() != null ? user.getUnite().getCode() : null)
+                    .fonctionUnite(user.getFonctionUnite())
                     .build();
         }
 
@@ -60,6 +63,9 @@ public class AuthenticationService {
                 .matricule(user.getMatricule())
                 .fullName(user.getFullName())
                 .role(user.getRole())
+                .uniteId(user.getUnite() != null ? user.getUnite().getId() : null)
+                .uniteCode(user.getUnite() != null ? user.getUnite().getCode() : null)
+                .fonctionUnite(user.getFonctionUnite())
                 .build();
     }
 
@@ -82,6 +88,9 @@ public class AuthenticationService {
                 .matricule(user.getMatricule())
                 .fullName(user.getFullName())
                 .role(user.getRole())
+                .uniteId(user.getUnite() != null ? user.getUnite().getId() : null)
+                .uniteCode(user.getUnite() != null ? user.getUnite().getCode() : null)
+                .fonctionUnite(user.getFonctionUnite())
                 .build();
     }
 

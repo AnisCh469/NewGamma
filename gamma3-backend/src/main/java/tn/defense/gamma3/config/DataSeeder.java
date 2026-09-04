@@ -7,6 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import tn.defense.gamma3.auth.domain.Role;
 import tn.defense.gamma3.auth.domain.User;
+import tn.defense.gamma3.auth.domain.FonctionUnite;
 import tn.defense.gamma3.auth.repository.UserRepository;
 import tn.defense.gamma3.catalogue.domain.Item;
 import tn.defense.gamma3.catalogue.domain.TypeConsommabilite;
@@ -118,6 +119,9 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         // Création/Mise à jour des comptes de connexion pour les unités principales et de test
+        // RÔLE : Compte GESTIONNAIRE (soumet les demandes) de l'unité — voir FonctionUnite.
+        //        Rattaché explicitement via User.unite (voir backfill ci-dessous pour les
+        //        comptes déjà existants avant l'introduction de ce champ, le 2026-09-04).
         List<String> codesATraiter = List.of("DMEN", "DRC", "RPS", "CFISM", "P202");
         for (String code : codesATraiter) {
             uniteRepository.findByCode(code).ifPresent(unite -> {
@@ -127,11 +131,57 @@ public class DataSeeder implements CommandLineRunner {
                             .fullName(unite.getNom())
                             .password(passwordEncoder.encode(code))
                             .role(Role.UNIT_USER)
+                            .unite(unite)
+                            .fonctionUnite(FonctionUnite.GESTIONNAIRE)
                             .build();
                     userRepository.save(unitUser);
-                    System.out.println("✅ Compte client créé pour l'unité " + code + " (Identifiants : " + code + " / " + code + ")");
+                    System.out.println("✅ Compte Gestionnaire créé pour l'unité " + code + " (Identifiants : " + code + " / " + code + ")");
+                }
+
+                // Compte COMMANDANT de la même unité (voir FonctionUnite : chaque unité a
+                // désormais deux comptes distincts) — matricule dérivé pour rester lisible en
+                // environnement de démo/test, sans jamais réutiliser le code de l'unité
+                // lui-même (déjà pris par le Gestionnaire ci-dessus).
+                String matriculeCommandant = code + "_CDT";
+                if (userRepository.findByMatricule(matriculeCommandant).isEmpty()) {
+                    User commandant = User.builder()
+                            .matricule(matriculeCommandant)
+                            .fullName("Commandant — " + unite.getNom())
+                            .password(passwordEncoder.encode(matriculeCommandant))
+                            .role(Role.UNIT_USER)
+                            .unite(unite)
+                            .fonctionUnite(FonctionUnite.COMMANDANT)
+                            .build();
+                    userRepository.save(commandant);
+                    System.out.println("✅ Compte Commandant créé pour l'unité " + code + " (Identifiants : " + matriculeCommandant + " / " + matriculeCommandant + ")");
                 }
             });
+        }
+
+        // ─── Backfill : rattachement Unité pour les comptes UNIT_USER créés AVANT le
+        //     2026-09-04 (avant l'introduction de User.unite/FonctionUnite) ────────────────
+        // RÔLE : Ces comptes existent déjà en base (créés par une exécution précédente de ce
+        //        DataSeeder, ou via l'ancien écran d'inscription) avec la convention historique
+        //        "matricule = code de l'unité" — jamais recréés ci-dessus car `findByMatricule`
+        //        les trouve déjà. Sans ce backfill, ils resteraient avec unite=null et ne
+        //        pourraient plus soumettre de demandes (voir DemandeController.creerDemande,
+        //        qui exige désormais explicitement User.unite). Idempotent : ne touche que les
+        //        comptes dont `unite` est encore null.
+        int backfillCount = 0;
+        for (User u : userRepository.findAll()) {
+            if (u.getRole() == Role.UNIT_USER && u.getUnite() == null) {
+                UniteUtilisatrice correspondante = uniteRepository.findByCode(u.getMatricule()).orElse(null);
+                if (correspondante != null) {
+                    u.setUnite(correspondante);
+                    u.setFonctionUnite(FonctionUnite.GESTIONNAIRE);
+                    userRepository.save(u);
+                    backfillCount++;
+                }
+            }
+        }
+        if (backfillCount > 0) {
+            System.out.println("✅ " + backfillCount + " compte(s) UNIT_USER existant(s) rattaché(s) à leur unité "
+                    + "(fonction Gestionnaire) — voir User.unite/FonctionUnite.");
         }
 
         // Création des comptes de test pour les magasins Centre (SM1) et Sud (SM2)

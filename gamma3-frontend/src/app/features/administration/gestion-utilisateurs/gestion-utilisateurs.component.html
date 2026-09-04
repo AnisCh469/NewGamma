@@ -64,6 +64,7 @@
           <th pSortableColumn="fullName" class="font-semibold text-slate-700 py-1 px-4 text-xs">Nom Complet <p-sortIcon field="fullName"></p-sortIcon></th>
           <th pSortableColumn="role" class="font-semibold text-slate-700 py-1 px-4 text-xs">Rôle <p-sortIcon field="role"></p-sortIcon></th>
           <th class="font-semibold text-slate-700 py-1 px-4 text-xs">Magasin</th>
+          <th class="font-semibold text-slate-700 py-1 px-4 text-xs">Unité / Fonction</th>
           <th class="font-semibold text-slate-700 py-1 px-4 text-xs text-center">2FA</th>
           <th class="font-semibold text-slate-700 py-1 px-4 text-xs text-center">Statut</th>
           <th class="font-semibold text-slate-700 py-1 px-4 text-xs text-center">Actions</th>
@@ -82,6 +83,16 @@
           <td class="py-1 px-4 text-slate-600 text-xs">
             <span *ngIf="user.magasin">{{ user.magasin.code }} — {{ user.magasin.nom }}</span>
             <span *ngIf="!user.magasin" class="text-slate-400">—</span>
+          </td>
+          <td class="py-1 px-4 text-slate-600 text-xs">
+            <span *ngIf="user.unite">
+              {{ user.unite.code }} — {{ user.unite.nom }}
+              <span class="ml-1 px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                [ngClass]="user.fonctionUnite === 'COMMANDANT' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'">
+                {{ user.fonctionUnite === 'COMMANDANT' ? 'Commandant' : 'Gestionnaire' }}
+              </span>
+            </span>
+            <span *ngIf="!user.unite" class="text-slate-400">—</span>
           </td>
           <td class="text-center py-1 px-4">
             <i class="pi" [ngClass]="user.twoFactorEnabled ? 'pi-check-circle text-green-500' : 'pi-minus-circle text-slate-300'"></i>
@@ -106,7 +117,7 @@
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="7" class="text-center p-8 text-slate-500">
+          <td colspan="8" class="text-center p-8 text-slate-500">
             <i class="pi pi-users text-4xl mb-3 text-slate-300 block"></i>
             Aucun compte utilisateur trouvé.
           </td>
@@ -125,7 +136,7 @@
       <input type="text" pInputText id="matricule" [(ngModel)]="selectedUser.matricule"
         [disabled]="isEditMode" required autofocus />
       <p class="text-xs text-slate-400 mt-1" *ngIf="selectedUser.role === 'UNIT_USER'">
-        Doit correspondre au code d'une Unité Utilisatrice déjà créée (voir Tiers &gt; Unités).
+        Libre (le rattachement à l'unité se fait via le champ "Unité Utilisatrice" ci-dessous, pas via le matricule).
       </p>
     </div>
     <div class="field mb-4" *ngIf="!isEditMode">
@@ -146,6 +157,20 @@
       <label for="magasin" class="block font-medium mb-2">Magasin *</label>
       <p-dropdown [options]="magasinOptions" [(ngModel)]="selectedUser.magasinId" inputId="magasin"
         placeholder="Sélectionner un magasin" appendTo="body" styleClass="w-full"></p-dropdown>
+    </div>
+    <div class="field mb-4" *ngIf="selectedUser.role === 'UNIT_USER'">
+      <label for="unite" class="block font-medium mb-2">Unité Utilisatrice *</label>
+      <p-dropdown [options]="uniteOptions" [(ngModel)]="selectedUser.uniteId" inputId="unite"
+        placeholder="Sélectionner une unité" appendTo="body" styleClass="w-full"></p-dropdown>
+      <p class="text-xs text-slate-400 mt-1">
+        L'unité doit déjà exister (voir Tiers &gt; Unités). Chaque unité a un compte Gestionnaire
+        ET un compte Commandant distincts.
+      </p>
+    </div>
+    <div class="field mb-4" *ngIf="selectedUser.role === 'UNIT_USER'">
+      <label for="fonction" class="block font-medium mb-2">Fonction *</label>
+      <p-dropdown [options]="fonctionOptions" [(ngModel)]="selectedUser.fonctionUnite" inputId="fonction"
+        placeholder="Sélectionner une fonction" appendTo="body" styleClass="w-full"></p-dropdown>
     </div>
     <div *ngIf="errorMessage" class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
       {{ errorMessage }}

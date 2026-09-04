@@ -1,0 +1,97 @@
+<div class="min-h-screen bg-slate-50 p-8">
+
+  <div class="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+    <h1 class="text-3xl font-extrabold text-gamma-dark tracking-tight">Valider les Demandes</h1>
+    <p class="text-slate-500 mt-1">
+      Demandes de matériel soumises par le Gestionnaire de votre unité, en attente de votre décision
+      avant transmission à la Division Approvisionnement.
+    </p>
+  </div>
+
+  <div *ngIf="errorMessage" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+    <i class="pi pi-exclamation-triangle mr-2"></i>{{ errorMessage }}
+  </div>
+
+  <!-- En attente de validation -->
+  <div class="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden mb-8">
+    <div class="p-4 border-b border-slate-100 font-semibold text-slate-700 flex items-center gap-2">
+      <i class="pi pi-clock text-amber-500"></i>
+      En attente de votre validation
+      <span *ngIf="demandesEnAttente.length > 0" class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-semibold">
+        {{ demandesEnAttente.length }}
+      </span>
+    </div>
+    <p-table [value]="demandesEnAttente" styleClass="p-datatable-sm p-datatable-striped">
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="text-xs">N° Demande</th>
+          <th class="text-xs">Date</th>
+          <th class="text-xs">Articles</th>
+          <th class="text-xs text-center">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-d>
+        <tr>
+          <td class="text-xs font-mono font-medium">{{ d.numeroDemande }}</td>
+          <td class="text-xs">{{ d.dateDemande }}</td>
+          <td class="text-xs">
+            <div *ngFor="let l of d.lignes">{{ l.item?.designation }} — {{ l.quantiteDemandee }}</div>
+          </td>
+          <td class="text-center whitespace-nowrap">
+            <button pButton label="Accepter" icon="pi pi-check" class="p-button-success p-button-sm mr-2"
+              [disabled]="isSubmitting" (click)="accepter(d)"></button>
+            <button pButton label="Refuser" icon="pi pi-times" class="p-button-danger p-button-outlined p-button-sm"
+              [disabled]="isSubmitting" (click)="openRefus(d)"></button>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr><td colspan="4" class="text-center p-8 text-slate-400 text-sm">Aucune demande en attente.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <!-- Historique -->
+  <div class="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+    <div class="p-4 border-b border-slate-100 font-semibold text-slate-700">Historique de votre unité</div>
+    <p-table [value]="historique" [paginator]="true" [rows]="15" styleClass="p-datatable-sm p-datatable-striped">
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="text-xs">N° Demande</th>
+          <th class="text-xs">Date</th>
+          <th class="text-xs">Statut</th>
+          <th class="text-xs">Motif de refus</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-d>
+        <tr>
+          <td class="text-xs font-mono">{{ d.numeroDemande }}</td>
+          <td class="text-xs">{{ d.dateDemande }}</td>
+          <td class="text-xs"><p-tag [value]="getStatutLabel(d.statut)" [severity]="getStatutSeverity(d.statut)"></p-tag></td>
+          <td class="text-xs text-slate-500">{{ d.motifRefus || '—' }}</td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr><td colspan="4" class="text-center p-8 text-slate-400 text-sm">Aucun historique pour l'instant.</td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-dialog [(visible)]="displayRefusDialog" [style]="{width: '450px'}" header="Refuser la demande" [modal]="true" class="p-fluid">
+  <ng-template pTemplate="content">
+    <p class="text-sm text-slate-500 mb-4" *ngIf="demandeAValiderOuRefuser">
+      Demande <span class="font-mono font-medium">{{ demandeAValiderOuRefuser.numeroDemande }}</span>
+    </p>
+    <div class="field mb-2">
+      <label for="motif" class="block font-medium mb-2">Motif du refus *</label>
+      <textarea pInputTextarea id="motif" [(ngModel)]="motifRefus" rows="4" class="w-full"
+        placeholder="Expliquez pourquoi cette demande est refusée (le Gestionnaire de votre unité le verra)."></textarea>
+    </div>
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button pButton label="Annuler" icon="pi pi-times" class="p-button-text" (click)="displayRefusDialog = false"></button>
+    <button pButton label="Confirmer le Refus" icon="pi pi-check" class="p-button-danger"
+      [disabled]="!motifRefus.trim() || isSubmitting" (click)="confirmerRefus()"></button>
+  </ng-template>
+</p-dialog>

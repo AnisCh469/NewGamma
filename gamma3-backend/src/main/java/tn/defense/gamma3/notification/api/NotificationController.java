@@ -32,7 +32,7 @@ public class NotificationController {
         if (currentUser.getRole() == Role.ADMIN || currentUser.getRole() == Role.DA_MANAGER) {
             notifications = notificationRepository.findByUniteCodeIsNullOrderByCreatedAtDesc();
         } else {
-            notifications = notificationRepository.findByUniteCodeOrderByCreatedAtDesc(currentUser.getMatricule());
+            notifications = notificationRepository.findByUniteCodeOrderByCreatedAtDesc(resolveUniteCode(currentUser));
         }
 
         return ResponseEntity.ok(notifications);
@@ -49,7 +49,7 @@ public class NotificationController {
         if (currentUser.getRole() == Role.ADMIN || currentUser.getRole() == Role.DA_MANAGER) {
             count = notificationRepository.countByUniteCodeIsNullAndReadIsFalse();
         } else {
-            count = notificationRepository.countByUniteCodeAndReadIsFalse(currentUser.getMatricule());
+            count = notificationRepository.countByUniteCodeAndReadIsFalse(resolveUniteCode(currentUser));
         }
 
         return ResponseEntity.ok(Map.of("count", count));
@@ -78,7 +78,7 @@ public class NotificationController {
         if (currentUser.getRole() == Role.ADMIN || currentUser.getRole() == Role.DA_MANAGER) {
             notifications = notificationRepository.findByUniteCodeIsNullOrderByCreatedAtDesc();
         } else {
-            notifications = notificationRepository.findByUniteCodeOrderByCreatedAtDesc(currentUser.getMatricule());
+            notifications = notificationRepository.findByUniteCodeOrderByCreatedAtDesc(resolveUniteCode(currentUser));
         }
 
         for (Notification notif : notifications) {
@@ -89,5 +89,20 @@ public class NotificationController {
         }
 
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Code d'unité à utiliser pour filtrer les notifications d'un compte UNIT_USER.
+     *
+     * AVANT le 2026-09-04, le matricule d'un compte UNIT_USER était TOUJOURS strictement égal
+     * au code de son unité (un seul compte par unité) — cette méthode utilisait donc
+     * directement `currentUser.getMatricule()`. Depuis l'introduction du rattachement explicite
+     * `User.unite` (chaque unité a désormais deux comptes, Gestionnaire ET Commandant, avec des
+     * matricules libres — voir FonctionUnite), ce n'est plus garanti : on privilégie donc
+     * `unite.getCode()` quand il est renseigné, avec repli sur le matricule pour les comptes
+     * historiques pas encore migrés (voir DataSeeder, backfill de `User.unite`).
+     */
+    private String resolveUniteCode(User currentUser) {
+        return currentUser.getUnite() != null ? currentUser.getUnite().getCode() : currentUser.getMatricule();
     }
 }

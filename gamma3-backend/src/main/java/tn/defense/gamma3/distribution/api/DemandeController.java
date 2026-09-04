@@ -7,6 +7,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import tn.defense.gamma3.auth.domain.Role;
 import tn.defense.gamma3.auth.domain.User;
+import tn.defense.gamma3.auth.domain.FonctionUnite;
 import tn.defense.gamma3.distribution.domain.DemandeMateriel;
 import tn.defense.gamma3.distribution.domain.LigneDemande;
 import tn.defense.gamma3.distribution.domain.StatutDemande;
@@ -73,6 +74,9 @@ public class DemandeController {
     /** DTO pour la validation (ou refus) d'un transfert inter-magasin par l'ADMIN */
     public record TransfertValidationDto(boolean accepter, String motifRefus) {}
 
+    /** DTO pour la validation (ou refus) d'une demande par le Commandant de l'unité */
+    public record ValidationCommandantDto(boolean accepter, String motifRefus) {}
+
     public record ReservationDto(
         String numeroBs,
         String numeroDemande,
@@ -89,15 +93,25 @@ public class DemandeController {
     //   - UNIT_USER   → Accès refusé (utiliser /demandes/unite/{id})
     @GetMapping
     public List<DemandeMateriel> getAllDemandes(Authentication authentication) {
+        List<DemandeMateriel> result;
         if (authentication == null || !(authentication.getPrincipal() instanceof User user)) {
-            return demandeRepository.findAllWithUnite();
+            result = demandeRepository.findAllWithUnite();
+        } else if (user.getRole() == Role.DA_MANAGER && user.getMagasin() != null) {
+            // DA_MANAGER filtré par son magasin assigné
+            result = demandeRepository.findByMagasinDesigne_Id(user.getMagasin().getId());
+        } else {
+            // ADMIN : toutes les demandes
+            result = demandeRepository.findAllWithUnite();
         }
-        // DA_MANAGER filtré par son magasin assigné
-        if (user.getRole() == Role.DA_MANAGER && user.getMagasin() != null) {
-            return demandeRepository.findByMagasinDesigne_Id(user.getMagasin().getId());
-        }
-        // ADMIN : toutes les demandes
-        return demandeRepository.findAllWithUnite();
+        // DOUBLE VÉRIFICATION (2026-09-04) : GAMMA3 (DA_MANAGER/ADMIN) ne doit jamais voir une
+        // demande tant qu'elle n'a pas été validée par le Commandant de l'unité, ni celles que
+        // le Commandant a refusées avant envoi. En pratique EN_ATTENTE_VALIDATION_COMMANDANT
+        // n'a pas de magasinDesigne (donc déjà exclue du filtre DA_MANAGER ci-dessus), mais la
+        // vue ADMIN ("toutes les demandes") les inclurait sans ce filtre explicite.
+        return result.stream()
+                .filter(d -> d.getStatut() != StatutDemande.EN_ATTENTE_VALIDATION_COMMANDANT
+                        && d.getStatut() != StatutDemande.REFUSE_COMMANDANT)
+                .collect(Collectors.toList());
     }
 
     // ─── GET /demandes/escalades ─────────────────────────────────────────────────
@@ -109,8 +123,17 @@ public class DemandeController {
     }
 
     @GetMapping("/unite/{uniteId}")
-    public List<DemandeMateriel> getDemandesByUnite(@PathVariable Long uniteId) {
-        return demandeRepository.findByUniteId(uniteId);
+    public ResponseEntity<?> getDemandesByUnite(@PathVariable Long uniteId, Authentication authentication) {
+        // Un compte UNIT_USER (Gestionnaire ou Commandant) ne peut consulter QUE les demandes
+        // de sa PROPRE unité — sans ce contrôle, n'importe quel compte pouvait lire l'historique
+        // de n'importe quelle autre unité en devinant son identifiant.
+        if (authentication != null && authentication.getPrincipal() instanceof User user
+                && user.getRole() == Role.UNIT_USER) {
+            if (user.getUnite() == null || !user.getUnite().getId().equals(uniteId)) {
+                return ResponseEntity.status(403).body("Accès refusé : vous ne pouvez consulter que les demandes de votre propre unité.");
+            }
+        }
+        return ResponseEntity.ok(demandeRepository.findByUniteId(uniteId));
     }
 
     @GetMapping("/{id}/lignes")
@@ -190,11 +213,60 @@ public class DemandeController {
     }
 
     @PostMapping
-    public ResponseEntity<?> creerDemande(@RequestBody DemandeRequestDto requestDto) {
+    public ResponseEntity<?> creerDemande(@RequestBody DemandeRequestDto requestDto, Authentication authentication) {
+        // SÉCURITÉ + RÈGLE MÉTIER (2026-09-04) : seul le Gestionnaire d'une unité peut soumettre
+        // une demande, jamais le Commandant (qui ne fait que valider), et jamais pour une unité
+        // qui n'est pas la sienne — l'unité est donc dérivée du compte authentifié, PAS du corps
+        // de la requête (qui restait auparavant non authentifiée et acceptait n'importe quel
+        // identifiant d'unité fourni par le client).
+        if (authentication == null || !(authentication.getPrincipal() instanceof User user)) {
+            return ResponseEntity.status(401).body("Authentification requise.");
+        }
+        if (user.getRole() != Role.UNIT_USER || user.getFonctionUnite() != FonctionUnite.GESTIONNAIRE) {
+            return ResponseEntity.status(403).body("Seul le Gestionnaire d'une unité peut soumettre une demande de matériel.");
+        }
+        if (user.getUnite() == null) {
+            return ResponseEntity.badRequest().body("Votre compte n'est rattaché à aucune unité. Contactez un administrateur.");
+        }
+        requestDto.demande().setUnite(user.getUnite());
         try {
             DemandeMateriel saved = distributionService.creerDemande(requestDto.demande(), requestDto.lignes());
             return ResponseEntity.ok(saved);
         } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // ─── POST /demandes/{id}/valider-commandant ──────────────────────────────────
+    // RÔLE : Le Commandant (chef d'unité) valide ou refuse une demande soumise par le
+    //        Gestionnaire de SA MÊME unité — la deuxième des deux vérifications requises
+    //        avant qu'une demande n'atteigne GAMMA3 (voir StatutDemande, DistributionService).
+    @PostMapping("/{id}/valider-commandant")
+    public ResponseEntity<?> validerCommandant(
+            @PathVariable Long id,
+            @RequestBody ValidationCommandantDto requestDto,
+            Authentication authentication) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof User user)) {
+            return ResponseEntity.status(401).body("Authentification requise.");
+        }
+        if (user.getRole() != Role.UNIT_USER || user.getFonctionUnite() != FonctionUnite.COMMANDANT) {
+            return ResponseEntity.status(403).body("Seul le Commandant d'une unité peut valider ou refuser ses demandes.");
+        }
+        if (user.getUnite() == null) {
+            return ResponseEntity.badRequest().body("Votre compte n'est rattaché à aucune unité. Contactez un administrateur.");
+        }
+        DemandeMateriel demande = demandeRepository.findById(id).orElse(null);
+        if (demande == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (!user.getUnite().getId().equals(demande.getUnite().getId())) {
+            return ResponseEntity.status(403).body("Vous ne pouvez valider que les demandes de votre propre unité.");
+        }
+        try {
+            DemandeMateriel resultat = distributionService.validerParCommandant(
+                    id, requestDto.accepter(), requestDto.motifRefus(), user.getMatricule());
+            return ResponseEntity.ok(resultat);
+        } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }

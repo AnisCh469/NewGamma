@@ -50,6 +50,24 @@ public class User implements UserDetails {
     @JoinColumn(name = "magasin_id", nullable = true)
     private Magasin magasin;
 
+    // ─── Liaison Unité Utilisatrice (pour Role.UNIT_USER) ──────────────────────────
+    // RÔLE : Rattache un compte UNIT_USER à SON unité, indépendamment de son matricule
+    //        (voir UserAdminController). Remplace l'ancienne convention "matricule = code
+    //        de l'unité", qui ne permettait qu'UN SEUL compte par unité — insuffisante
+    //        depuis que chaque unité dispose de DEUX comptes (Gestionnaire + Commandant,
+    //        voir FonctionUnite). NULL pour ADMIN/DA_MANAGER.
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "unite_id", nullable = true)
+    private tn.defense.gamma3.tiers.domain.UniteUtilisatrice unite;
+
+    // ─── Fonction au sein de l'unité (pour Role.UNIT_USER) ─────────────────────────
+    // RÔLE : Distingue, parmi les deux comptes d'une même unité, celui qui SOUMET les
+    //        demandes de matériel (GESTIONNAIRE) de celui qui les VALIDE avant envoi à
+    //        GAMMA3 (COMMANDANT). NULL pour ADMIN/DA_MANAGER.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "fonction_unite", nullable = true)
+    private FonctionUnite fonctionUnite;
+
     @Builder.Default
     @Column(name = "two_factor_enabled", nullable = false, columnDefinition = "boolean default false")
     private boolean twoFactorEnabled = false;

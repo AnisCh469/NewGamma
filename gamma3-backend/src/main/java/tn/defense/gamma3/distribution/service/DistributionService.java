@@ -69,52 +69,129 @@ public class DistributionService {
         UniteUtilisatrice unite = uniteRepository.findById(demande.getUnite().getId())
                 .orElseThrow(() -> new IllegalArgumentException("Unité non trouvée"));
         demande.setUnite(unite);
-        demande.setStatut(StatutDemande.SOUMIS);
 
-        // ÉTAPE 1 : Routage géographique — déterminer le magasin le plus proche de l'unité cliente
-        Magasin magasinOptimal = routerVersMagasinOptimal(unite);
-        demande.setMagasinDesigne(magasinOptimal);
+        // DOUBLE VÉRIFICATION (règle métier du 2026-09-04) : une demande créée par le
+        // Gestionnaire n'est PAS transmise à GAMMA3 immédiatement — elle attend d'abord la
+        // validation du Commandant de la même unité. Ni routage de magasin, ni réservation
+        // sur le Plan d'Armement, ni notification au DA_MANAGER à ce stade : voir
+        // validerParCommandant(), qui exécute cette logique UNIQUEMENT si le Commandant
+        // accepte. magasinDesigne reste donc volontairement null jusque-là.
+        demande.setStatut(StatutDemande.EN_ATTENTE_VALIDATION_COMMANDANT);
 
         DemandeMateriel savedDemande = demandeRepository.save(demande);
 
-        // ÉTAPE 2 : Valider les lignes de demande par rapport au Plan d'Armement
+        // Persister les lignes telles que soumises, SANS toucher au Plan d'Armement (la
+        // vérification/réservation des quantités a lieu à la validation, pas ici) : le
+        // Commandant doit voir exactement ce qui a été demandé pour pouvoir juger.
         for (LigneDemande ligne : lignes) {
             Item item = itemRepository.findById(ligne.getItem().getId())
                     .orElseThrow(() -> new IllegalArgumentException("Article non trouvé dans le catalogue"));
+            ligne.setItem(item);
+            ligne.setDemande(savedDemande);
+            ligneRepository.save(ligne);
+        }
+        savedDemande.setLignes(lignes);
 
-            // Charger et valider les dotations dans le Plan d'Armement
+        // Notifier le Commandant (et le Gestionnaire, la notification cible l'unité entière
+        // faute de ciblage par compte individuel dans ce système) qu'une validation est
+        // attendue.
+        notificationRepository.save(Notification.builder()
+                .title("Demande de Matériel en Attente de Validation")
+                .message("Une nouvelle demande (" + savedDemande.getNumeroDemande() + ", "
+                        + lignes.size() + " article(s)) a été soumise par le Gestionnaire de votre "
+                        + "unité et attend la validation du Commandant avant envoi à la DA.")
+                .type("MATERIEL")
+                .uniteCode(unite.getCode())
+                .referenceId(unite.getId().toString())
+                .build());
+
+        return savedDemande;
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // MÉTHODE 1bis : validerParCommandant
+    // RÔLE : Le Commandant (chef d'unité) valide ou refuse une demande soumise par le
+    //        Gestionnaire de SA MÊME unité — la deuxième des deux vérifications requises
+    //        avant qu'une demande n'atteigne GAMMA3 (voir StatutDemande).
+    //
+    //        SI ACCEPTÉE : exécute maintenant ce que faisait l'ancien creerDemande() en une
+    //        seule étape — vérification et réservation sur le Plan d'Armement, routage
+    //        géographique vers le magasin optimal, notification du DA_MANAGER/ADMIN.
+    //        SI REFUSÉE : statut REFUSE_COMMANDANT + motif, notifie le Gestionnaire. La
+    //        demande n'atteint jamais GAMMA3.
+    //
+    // PARAMÈTRES :
+    //   demandeId          – Identifiant de la demande à valider
+    //   accepter           – true = validation, false = refus
+    //   motifRefus         – Obligatoire si accepter=false
+    //   commandantMatricule – Matricule du Commandant (audit/traçabilité)
+    // ──────────────────────────────────────────────────────────────────────────
+    @Transactional
+    public DemandeMateriel validerParCommandant(Long demandeId, boolean accepter, String motifRefus, String commandantMatricule) {
+        DemandeMateriel demande = demandeRepository.findById(demandeId)
+                .orElseThrow(() -> new IllegalArgumentException("Demande non trouvée"));
+
+        if (demande.getStatut() != StatutDemande.EN_ATTENTE_VALIDATION_COMMANDANT) {
+            throw new IllegalStateException("Cette demande n'est plus en attente de validation par le Commandant (statut actuel : " + demande.getStatut() + ").");
+        }
+
+        UniteUtilisatrice unite = demande.getUnite();
+        List<LigneDemande> lignes = ligneRepository.findByDemande_Id(demandeId);
+
+        if (!accepter) {
+            demande.setStatut(StatutDemande.REFUSE_COMMANDANT);
+            demande.setMotifRefus(motifRefus);
+            DemandeMateriel refusee = demandeRepository.save(demande);
+
+            notificationRepository.save(Notification.builder()
+                    .title("Demande Refusée par le Commandant")
+                    .message("Votre demande " + refusee.getNumeroDemande() + " a été refusée par le "
+                            + "Commandant de votre unité. Motif : " + (motifRefus != null ? motifRefus : "non précisé") + ".")
+                    .type("MATERIEL")
+                    .uniteCode(unite.getCode())
+                    .referenceId(unite.getId().toString())
+                    .build());
+
+            return refusee;
+        }
+
+        // ÉTAPE 1 : Valider les lignes de demande par rapport au Plan d'Armement et réserver
+        // les quantités (déplacé ici depuis l'ancien creerDemande — voir commentaire ci-dessus)
+        for (LigneDemande ligne : lignes) {
+            Item item = ligne.getItem();
+
             PlanArmement plan = planRepository.findByUniteIdAndItemId(unite.getId(), item.getId())
                     .orElseThrow(() -> new IllegalArgumentException("L'article " + item.getDesignation() + " n'est pas autorisé dans le Plan d'Armement de cette unité."));
 
             BigDecimal totalVirtuel = plan.getQuantiteVirtuelle().add(ligne.getQuantiteDemandee());
             if (totalVirtuel.compareTo(plan.getQuantiteType()) > 0) {
-                throw new IllegalArgumentException("La quantité demandée pour " + item.getDesignation() + " (" + ligne.getQuantiteDemandee() + ") dépasse la dotation maximale restante autorisée (" + plan.getQuantiteType().subtract(plan.getQuantiteVirtuelle()) + ").");
+                throw new IllegalArgumentException("La quantité demandée pour " + item.getDesignation() + " (" + ligne.getQuantiteDemandee() + ") dépasse la dotation maximale restante autorisée (" + plan.getQuantiteType().subtract(plan.getQuantiteVirtuelle()) + "). La demande reste en attente : contactez le Gestionnaire pour la corriger, ou refusez-la.");
             }
 
-            // Réserver la quantité dans la dotation virtuelle
             plan.setQuantiteVirtuelle(totalVirtuel);
             planRepository.save(plan);
-
-            ligne.setItem(item);
-            ligne.setDemande(savedDemande);
-            ligneRepository.save(ligne);
         }
 
-        savedDemande.setLignes(lignes);
+        // ÉTAPE 2 : Routage géographique — déterminer le magasin le plus proche de l'unité cliente
+        Magasin magasinOptimal = routerVersMagasinOptimal(unite);
+        demande.setMagasinDesigne(magasinOptimal);
+        demande.setStatut(StatutDemande.SOUMIS);
+        DemandeMateriel validee = demandeRepository.save(demande);
 
         // ÉTAPE 3 : Notifier le DA_MANAGER du magasin désigné (et l'ADMIN pour information)
         notificationRepository.save(Notification.builder()
                 .title("Nouvelle Demande de Matériel")
-                .message("L'unité " + savedDemande.getUnite().getNom() + " a soumis la demande "
-                        + savedDemande.getNumeroDemande() + " ("
-                        + lignes.size() + " article(s)). Soute désignée : "
+                .message("L'unité " + unite.getNom() + " a soumis la demande "
+                        + validee.getNumeroDemande() + " ("
+                        + lignes.size() + " article(s), validée par son Commandant). Soute désignée : "
                         + magasinOptimal.getNom() + ".")
                 .type("MATERIEL")
                 .uniteCode(null) // visible par l'ADMIN et les DA_MANAGERs
-                .referenceId(savedDemande.getUnite().getId().toString())
+                .referenceId(unite.getId().toString())
                 .build());
 
-        return savedDemande;
+        validee.setLignes(lignes);
+        return validee;
     }
 
     // ──────────────────────────────────────────────────────────────────────────

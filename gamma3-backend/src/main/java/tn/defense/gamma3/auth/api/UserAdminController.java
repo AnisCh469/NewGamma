@@ -9,11 +9,13 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import tn.defense.gamma3.auth.api.dto.UserAdminDto;
+import tn.defense.gamma3.auth.domain.FonctionUnite;
 import tn.defense.gamma3.auth.domain.Role;
 import tn.defense.gamma3.auth.domain.User;
 import tn.defense.gamma3.auth.repository.UserRepository;
 import tn.defense.gamma3.stock.domain.Magasin;
 import tn.defense.gamma3.stock.repository.MagasinRepository;
+import tn.defense.gamma3.tiers.domain.UniteUtilisatrice;
 import tn.defense.gamma3.tiers.repository.UniteUtilisatriceRepository;
 
 import java.util.List;
@@ -28,9 +30,12 @@ import java.util.Map;
  * aux 3 décisions de conception validées par le client :
  *
  *   1) Un compte UNIT_USER doit obligatoirement être rattaché à une Unité Utilisatrice déjà
- *      existante : son matricule doit être STRICTEMENT ÉGAL au code d'une UniteUtilisatrice
- *      déjà créée (écran Tiers > Unités). On ne crée jamais l'unité à la volée ici : il faut
- *      d'abord créer l'unité, puis son compte de connexion.
+ *      existante, via un lien explicite (`User.unite`, sélectionné dans une liste déroulante) —
+ *      PLUS la convention historique "matricule = code de l'unité" (elle ne permettait qu'UN
+ *      SEUL compte par unité). Depuis la règle du 2026-09-04 ("chaque unité dispose de deux
+ *      comptes"), chaque unité a un compte GESTIONNAIRE et un compte COMMANDANT distincts
+ *      (voir FonctionUnite), avec des matricules libres. On ne crée jamais l'unité à la volée
+ *      ici : il faut d'abord créer l'unité (Tiers > Unités), puis ses comptes de connexion.
  *   2) Seul un ADMIN peut créer, modifier, bloquer/débloquer ou réinitialiser le mot de passe
  *      d'un compte (aucune auto-gestion, aucune délégation à un DA_MANAGER).
  *   3) La désactivation d'un compte est un BLOCAGE réversible (User.enabled = false), jamais
@@ -78,6 +83,20 @@ public class UserAdminController {
         return ResponseEntity.ok(magasins);
     }
 
+    /**
+     * Liste des Unités Utilisatrices, pour peupler le sélecteur "Unité" du formulaire de
+     * création/modification d'un compte UNIT_USER (Gestionnaire ou Commandant).
+     */
+    @GetMapping("/unites")
+    public ResponseEntity<?> listUnites(Authentication authentication) {
+        if (!isAdmin(authentication)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("message", "Réservé aux administrateurs."));
+        }
+        List<UniteUtilisatrice> unites = uniteRepository.findAll(Sort.by(Sort.Direction.ASC, "code"));
+        return ResponseEntity.ok(unites);
+    }
+
     // ------------------------------------------------------------------
     // Création
     // ------------------------------------------------------------------
@@ -106,6 +125,8 @@ public class UserAdminController {
         }
 
         Magasin magasin = null;
+        UniteUtilisatrice unite = null;
+        FonctionUnite fonctionUnite = null;
         if (role == Role.DA_MANAGER) {
             if (request.getMagasinId() == null) {
                 return ResponseEntity.badRequest()
@@ -117,12 +138,10 @@ public class UserAdminController {
                         .body(Map.of("message", "Magasin introuvable (id=" + request.getMagasinId() + ")."));
             }
         } else if (role == Role.UNIT_USER) {
-            boolean uniteExiste = uniteRepository.findByCode(matricule).isPresent();
-            if (!uniteExiste) {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("message", "Aucune Unité Utilisatrice avec le code '" + matricule
-                                + "'. Créez d'abord l'unité (Tiers > Unités) avant de créer son compte."));
-            }
+            ResponseEntity<?> uniteError = validerUniteEtFonction(request.getUniteId(), request.getFonctionUnite(), null);
+            if (uniteError != null) return uniteError;
+            unite = uniteRepository.findById(request.getUniteId()).orElseThrow();
+            fonctionUnite = request.getFonctionUnite();
         }
 
         User user = User.builder()
@@ -131,6 +150,8 @@ public class UserAdminController {
                 .fullName(fullName)
                 .role(role)
                 .magasin(magasin)
+                .unite(unite)
+                .fonctionUnite(fonctionUnite)
                 .enabled(true)
                 .build();
 
@@ -170,6 +191,8 @@ public class UserAdminController {
         }
 
         Magasin magasin = null;
+        UniteUtilisatrice unite = null;
+        FonctionUnite fonctionUnite = null;
         if (role == Role.DA_MANAGER) {
             if (request.getMagasinId() == null) {
                 return ResponseEntity.badRequest()
@@ -181,20 +204,53 @@ public class UserAdminController {
                         .body(Map.of("message", "Magasin introuvable (id=" + request.getMagasinId() + ")."));
             }
         } else if (role == Role.UNIT_USER) {
-            boolean uniteExiste = uniteRepository.findByCode(user.getMatricule()).isPresent();
-            if (!uniteExiste) {
-                return ResponseEntity.badRequest()
-                        .body(Map.of("message", "Aucune Unité Utilisatrice avec le code '" + user.getMatricule()
-                                + "'. Ce compte ne peut pas être repassé en UNIT_USER."));
-            }
+            ResponseEntity<?> uniteError = validerUniteEtFonction(request.getUniteId(), request.getFonctionUnite(), id);
+            if (uniteError != null) return uniteError;
+            unite = uniteRepository.findById(request.getUniteId()).orElseThrow();
+            fonctionUnite = request.getFonctionUnite();
         }
 
         user.setFullName(fullName);
         user.setRole(role);
         user.setMagasin(magasin);
+        user.setUnite(unite);
+        user.setFonctionUnite(fonctionUnite);
 
         User saved = userRepository.save(user);
         return ResponseEntity.ok(saved);
+    }
+
+    /**
+     * Valide le couple (Unité, Fonction) d'un compte UNIT_USER : l'unité doit exister, la
+     * fonction doit être renseignée, et AUCUN AUTRE compte actif ne doit déjà occuper cette
+     * fonction pour cette unité (règle métier : un Gestionnaire ET un Commandant par unité,
+     * jamais deux du même). `excludeUserId` exclut le compte en cours de modification de cette
+     * dernière vérification (sinon un compte se bloquerait lui-même à chaque mise à jour).
+     * Retourne une ResponseEntity d'erreur si invalide, ou null si tout est valide.
+     */
+    private ResponseEntity<?> validerUniteEtFonction(Long uniteId, FonctionUnite fonctionUnite, Long excludeUserId) {
+        if (uniteId == null) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Une Unité Utilisatrice doit être sélectionnée pour un compte UNIT_USER."));
+        }
+        if (uniteRepository.findById(uniteId).isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Unité Utilisatrice introuvable (id=" + uniteId + ")."));
+        }
+        if (fonctionUnite == null) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "La fonction (Gestionnaire ou Commandant) doit être précisée."));
+        }
+        boolean dejaOccupe = userRepository.findByUnite_IdAndFonctionUnite(uniteId, fonctionUnite)
+                .filter(User::isEnabled)
+                .filter(u -> excludeUserId == null || !u.getId().equals(excludeUserId))
+                .isPresent();
+        if (dejaOccupe) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("message", "Un compte " + fonctionUnite + " actif existe déjà pour cette unité. "
+                            + "Bloquez-le d'abord si vous souhaitez le remplacer."));
+        }
+        return null;
     }
 
     // ------------------------------------------------------------------

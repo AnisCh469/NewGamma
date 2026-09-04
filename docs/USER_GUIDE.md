@@ -84,3 +84,29 @@ Afin d'assurer la traçabilité militaire et la séparation stricte des privilè
 * **À quoi ça sert :** Cet écran interroge en direct l'ancienne base de données Gamma2 (SQL Server) et liste toutes ses tables avec leur nombre de lignes, à comparer avec les compteurs actuels de Gamma3 affichés juste à côté — pour repérer d'un coup d'œil des données de l'ancien système qui n'auraient jamais été reprises (mouvements de stock historiques, anciens bons de sortie, anciennes réceptions, etc.).
 * **Si le bandeau orange "Impossible de joindre la base Gamma2" apparaît :** cela signifie que le conteneur SQL Server de l'ancien système (Gamma2) n'est pas démarré, ou que son adresse réseau a changé. Vérifiez que ce conteneur tourne, puis cliquez sur `Relancer l'audit`.
 * **Section "Mécanismes de migration connus" :** rappelle les deux seules données déjà reprises depuis Gamma2 à ce jour — le catalogue d'articles (une seule fois, manuellement) et le Plan d'Armement par unité (rejouable à tout moment via l'écran de migration existant).
+
+---
+
+## ✅ Double Vérification des Demandes de Matériel (Gestionnaire + Commandant)
+
+* **Principe :** Chaque unité navigante ou corps dispose désormais de **deux comptes de connexion distincts** :
+  * Le **Gestionnaire** compose et soumet les demandes de matériel (catalogue, panier, "Demander du Matériel").
+  * Le **Commandant** (chef d'unité) valide ou refuse chaque demande soumise par le Gestionnaire de SA unité, **avant** qu'elle n'atteigne la Division Approvisionnement (DA_MANAGER/ADMIN).
+* **Une demande subit donc toujours deux vérifications** avant d'être traitée par GAMMA3 : celle du Commandant de l'unité, puis celle du gestionnaire de soute GAMMA3.
+
+### Pour le Gestionnaire
+* Compose sa demande depuis le Catalogue comme auparavant. Après soumission, la demande apparaît avec le statut "En attente de validation du Commandant" — **elle n'est pas encore visible de la DA**.
+* Si le Commandant refuse, la demande apparaît dans l'historique avec le motif du refus. Le Gestionnaire peut alors soumettre une nouvelle demande corrigée.
+
+### Pour le Commandant
+* Nouvel écran **`Valider les Demandes`**, visible uniquement pour les comptes Commandant, listant les demandes de sa propre unité en attente de décision.
+* **Accepter** : la demande est transmise à la DA (Division Approvisionnement) exactement comme avant cette évolution — routage vers le magasin le plus proche, réservation sur le Plan d'Armement.
+* **Refuser** : un motif est obligatoire. La demande n'atteint jamais la DA ; elle reste visible dans l'historique de l'unité avec ce motif.
+* Le Commandant ne peut PAS composer de demande lui-même (le bouton "Demander du Matériel" ne lui est pas proposé) — sa fonction se limite à la validation.
+
+### Pour l'Administrateur (création des comptes)
+* Dans `Administration > Gestion des Utilisateurs`, un compte UNIT_USER exige maintenant de préciser :
+  * l'**Unité Utilisatrice** (liste déroulante — l'unité doit déjà exister dans `Tiers > Unités`),
+  * la **Fonction** : Gestionnaire ou Commandant.
+* Le matricule est libre pour les deux comptes (il n'est plus obligatoirement égal au code de l'unité).
+* Un seul compte actif par (unité, fonction) est autorisé : impossible de créer deux Gestionnaires ou deux Commandants actifs pour la même unité — bloquez d'abord l'ancien compte pour en créer un nouveau.

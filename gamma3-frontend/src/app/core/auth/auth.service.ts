@@ -10,6 +10,12 @@ export interface AuthResponse {
   fullName: string;
   role: string;
   requires2fa?: boolean;
+  /** Rattachement Unité (UNIT_USER uniquement) — voir User.unite côté backend. Depuis le
+   *  2026-09-04, chaque unité a deux comptes (Gestionnaire + Commandant) avec des matricules
+   *  libres : ne plus supposer que matricule === code de l'unité. */
+  uniteId?: number | null;
+  uniteCode?: string | null;
+  fonctionUnite?: 'GESTIONNAIRE' | 'COMMANDANT' | null;
 }
 
 export interface LoginRequest {

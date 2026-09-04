@@ -11,7 +11,8 @@
       <!-- Liens de navigation (si authentifié) -->
       <nav *ngIf="authService.isAuthenticated() && authService.currentUser() as currentUser" class="hidden md:flex space-x-4 ml-6">
         <a routerLink="/catalogue" routerLinkActive="text-gamma-accent font-bold" [routerLinkActiveOptions]="{exact: false}" class="text-slate-300 hover:text-white transition">Catalogue</a>
-        <a *ngIf="currentUser.role === 'UNIT_USER'" routerLink="/demander-dotation" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Demande d'Équipement</a>
+        <a *ngIf="currentUser.role === 'UNIT_USER' && currentUser.fonctionUnite !== 'COMMANDANT'" routerLink="/demander-dotation" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Demande d'Équipement</a>
+        <a *ngIf="currentUser.role === 'UNIT_USER' && currentUser.fonctionUnite === 'COMMANDANT'" routerLink="/valider-demandes" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Valider les Demandes</a>
         <a *ngIf="currentUser.role === 'UNIT_USER' && unitId" [routerLink]="['/unites', unitId]" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Mon Plan & Suivi</a>
         <a *ngIf="currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/fournisseurs" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Fournisseurs</a>
         <a *ngIf="currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/receptions" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Réceptions</a>

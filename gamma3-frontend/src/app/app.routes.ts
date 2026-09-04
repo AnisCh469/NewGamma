@@ -19,6 +19,11 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   { 
+    path: 'valider-demandes', 
+    loadComponent: () => import('./features/distribution/validation-commandant/validation-commandant.component').then(m => m.ValidationCommandantComponent),
+    canActivate: [authGuard]
+  },
+  { 
     path: 'catalogue/:id', 
     loadComponent: () => import('./features/catalogue/item-detail/item-detail.component').then(m => m.ItemDetailComponent),
     canActivate: [authGuard]

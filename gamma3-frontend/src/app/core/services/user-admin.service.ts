@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export type Role = 'ADMIN' | 'DA_MANAGER' | 'UNIT_USER';
+export type FonctionUnite = 'GESTIONNAIRE' | 'COMMANDANT';
 
 export interface Magasin {
   id?: number;
@@ -13,12 +14,20 @@ export interface Magasin {
   localisation?: string;
 }
 
+export interface UniteUtilisatriceRef {
+  id?: number;
+  code: string;
+  nom: string;
+}
+
 export interface AdminUser {
   id?: number;
   matricule: string;
   fullName: string;
   role: Role;
   magasin?: Magasin | null;
+  unite?: UniteUtilisatriceRef | null;
+  fonctionUnite?: FonctionUnite | null;
   enabled?: boolean;
   twoFactorEnabled?: boolean;
 }
@@ -29,12 +38,16 @@ export interface CreateUserRequest {
   fullName: string;
   role: Role;
   magasinId?: number | null;
+  uniteId?: number | null;
+  fonctionUnite?: FonctionUnite | null;
 }
 
 export interface UpdateUserRequest {
   fullName: string;
   role: Role;
   magasinId?: number | null;
+  uniteId?: number | null;
+  fonctionUnite?: FonctionUnite | null;
 }
 
 @Injectable({
@@ -51,6 +64,10 @@ export class UserAdminService {
 
   getMagasins(): Observable<Magasin[]> {
     return this.http.get<Magasin[]>(`${this.apiUrl}/magasins`);
+  }
+
+  getUnites(): Observable<UniteUtilisatriceRef[]> {
+    return this.http.get<UniteUtilisatriceRef[]>(`${this.apiUrl}/unites`);
   }
 
   createUser(request: CreateUserRequest): Observable<AdminUser> {

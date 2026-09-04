@@ -59,7 +59,7 @@
       </div>
 
       <!-- Sécurité & Double Facteur (2FA) (Client uniquement ou si c'est son propre profil) -->
-      <div *ngIf="isClient() && authService.currentUser()?.matricule === unite.code" 
+      <div *ngIf="isClient() && authService.currentUser()?.uniteId === unite.id" 
            class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 flex flex-col items-center gap-2 no-print">
         <h3 class="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] w-full mb-2">Double Facteur (2FA)</h3>
         
@@ -162,9 +162,9 @@
                     <input pInputText type="text" (input)="onPlansSearch($event)" placeholder="Rechercher un article..." class="w-full text-xs pl-8 pr-3 py-1.5 rounded-lg border-gray-200 focus:border-gamma-primary" />
                   </div>
                   <p-button *ngIf="!isClient()" icon="pi pi-plus" label="Ajouter Dotation" styleClass="p-button-outlined p-button-sm shrink-0 font-bold" (onClick)="openNewPlanDialog()"></p-button>
-                  <p-button *ngIf="isClient()" icon="pi pi-plus-circle" label="Demander Dotation" styleClass="p-button-outlined p-button-sm shrink-0 font-bold" (onClick)="openDemandeDotationDialog()"></p-button>
+                  <p-button *ngIf="isGestionnaire()" icon="pi pi-plus-circle" label="Demander Dotation" styleClass="p-button-outlined p-button-sm shrink-0 font-bold" (onClick)="openDemandeDotationDialog()"></p-button>
                   <!-- Le panier de demande de matériel est dans la page Catalogue -->
-                  <p-button *ngIf="isClient()" icon="pi pi-shopping-cart" label="Demander du Matériel" styleClass="p-button-success p-button-sm shrink-0 font-bold" routerLink="/catalogue" title="Aller au catalogue pour composer votre demande de matériel"></p-button>
+                  <p-button *ngIf="isGestionnaire()" icon="pi pi-shopping-cart" label="Demander du Matériel" styleClass="p-button-success p-button-sm shrink-0 font-bold" routerLink="/catalogue" title="Aller au catalogue pour composer votre demande de matériel"></p-button>
 
                 </div>
               </div>
@@ -305,7 +305,7 @@
               <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                 <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider m-0">HISTORIQUE DES DEMANDES DE L'UNITÉ</h4>
                 <div class="flex items-center gap-2 flex-wrap">
-                  <p-button *ngIf="isClient()" icon="pi pi-shopping-cart" label="Nouvelle Demande (Catalogue)" 
+                  <p-button *ngIf="isGestionnaire()" icon="pi pi-shopping-cart" label="Nouvelle Demande (Catalogue)" 
                             styleClass="p-button-success p-button-sm font-bold" routerLink="/catalogue"
                             title="Composez votre demande via le catalogue d'articles"></p-button>
                 </div>

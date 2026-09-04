@@ -14,7 +14,9 @@ import {
   UserAdminService,
   AdminUser,
   Magasin,
+  UniteUtilisatriceRef,
   Role,
+  FonctionUnite,
   CreateUserRequest,
   UpdateUserRequest
 } from '../../../core/services/user-admin.service';
@@ -22,9 +24,11 @@ import { AuthService } from '../../../core/auth/auth.service';
 
 /**
  * Console d'administration des comptes utilisateurs (écran Administration > Gestion des
- * Utilisateurs). Voir UserAdminController (backend) pour les 3 règles de gestion appliquées :
- * un compte UNIT_USER doit correspondre à une Unité Utilisatrice déjà créée (même code), seul
- * un ADMIN accède à cet écran, et la désactivation d'un compte est un blocage réversible.
+ * Utilisateurs). Voir UserAdminController (backend) pour les règles de gestion appliquées :
+ * seul un ADMIN accède à cet écran, la désactivation d'un compte est un blocage réversible,
+ * et depuis le 2026-09-04 chaque Unité Utilisatrice dispose de DEUX comptes UNIT_USER
+ * distincts — un Gestionnaire (soumet les demandes) et un Commandant (les valide avant envoi
+ * à GAMMA3) — chacun explicitement rattaché à son unité via un sélecteur dédié (FonctionUnite).
  */
 @Component({
   selector: 'app-gestion-utilisateurs',
@@ -37,6 +41,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 export class GestionUtilisateursComponent implements OnInit {
   users: AdminUser[] = [];
   magasins: Magasin[] = [];
+  unites: UniteUtilisatriceRef[] = [];
 
   searchTerm = '';
 
@@ -64,7 +69,9 @@ export class GestionUtilisateursComponent implements OnInit {
     fullName: string;
     role: Role | null;
     magasinId: number | null;
-  } = { matricule: '', password: '', fullName: '', role: null, magasinId: null };
+    uniteId: number | null;
+    fonctionUnite: FonctionUnite | null;
+  } = { matricule: '', password: '', fullName: '', role: null, magasinId: null, uniteId: null, fonctionUnite: null };
 
   roleOptions: { label: string; value: Role }[] = [
     { label: 'Administrateur (ADMIN)', value: 'ADMIN' },
@@ -72,8 +79,17 @@ export class GestionUtilisateursComponent implements OnInit {
     { label: "Utilisateur d'Unité (UNIT_USER)", value: 'UNIT_USER' }
   ];
 
+  fonctionOptions: { label: string; value: FonctionUnite }[] = [
+    { label: 'Gestionnaire (soumet les demandes)', value: 'GESTIONNAIRE' },
+    { label: 'Commandant (valide les demandes)', value: 'COMMANDANT' }
+  ];
+
   get magasinOptions(): { label: string; value: number }[] {
     return this.magasins.map(m => ({ label: `${m.code} — ${m.nom}`, value: m.id! }));
+  }
+
+  get uniteOptions(): { label: string; value: number }[] {
+    return this.unites.map(u => ({ label: `${u.code} — ${u.nom}`, value: u.id! }));
   }
 
   constructor(
@@ -84,6 +100,7 @@ export class GestionUtilisateursComponent implements OnInit {
   ngOnInit(): void {
     this.loadUsers();
     this.loadMagasins();
+    this.loadUnites();
   }
 
   loadUsers(): void {
@@ -114,13 +131,15 @@ export class GestionUtilisateursComponent implements OnInit {
 
   loadMagasins(): void {
     this.userAdminService.getMagasins().subscribe({
-      next: (data) => {
-        this.magasins = data;
-      },
-      error: (err) => {
-        // Non bloquant pour l'écran : seul le formulaire DA_MANAGER en a besoin.
-        console.error('Erreur GET /api/v1/admin/users/magasins', err);
-      }
+      next: (data) => { this.magasins = data; },
+      error: (err) => console.error('Erreur GET /api/v1/admin/users/magasins', err)
+    });
+  }
+
+  loadUnites(): void {
+    this.userAdminService.getUnites().subscribe({
+      next: (data) => { this.unites = data; },
+      error: (err) => console.error('Erreur GET /api/v1/admin/users/unites', err)
     });
   }
 
@@ -134,7 +153,7 @@ export class GestionUtilisateursComponent implements OnInit {
   }
 
   openNew(): void {
-    this.selectedUser = { matricule: '', password: '', fullName: '', role: null, magasinId: null };
+    this.selectedUser = { matricule: '', password: '', fullName: '', role: null, magasinId: null, uniteId: null, fonctionUnite: null };
     this.isEditMode = false;
     this.errorMessage = '';
     this.displayDialog = true;
@@ -147,7 +166,9 @@ export class GestionUtilisateursComponent implements OnInit {
       password: '',
       fullName: user.fullName,
       role: user.role,
-      magasinId: user.magasin?.id ?? null
+      magasinId: user.magasin?.id ?? null,
+      uniteId: user.unite?.id ?? null,
+      fonctionUnite: user.fonctionUnite ?? null
     };
     this.isEditMode = true;
     this.errorMessage = '';
@@ -160,6 +181,7 @@ export class GestionUtilisateursComponent implements OnInit {
       if (!this.selectedUser.matricule || this.selectedUser.password.length < 4) return false;
     }
     if (this.selectedUser.role === 'DA_MANAGER' && !this.selectedUser.magasinId) return false;
+    if (this.selectedUser.role === 'UNIT_USER' && (!this.selectedUser.uniteId || !this.selectedUser.fonctionUnite)) return false;
     return true;
   }
 
@@ -171,7 +193,9 @@ export class GestionUtilisateursComponent implements OnInit {
       const request: UpdateUserRequest = {
         fullName: this.selectedUser.fullName,
         role: this.selectedUser.role!,
-        magasinId: this.selectedUser.role === 'DA_MANAGER' ? this.selectedUser.magasinId : null
+        magasinId: this.selectedUser.role === 'DA_MANAGER' ? this.selectedUser.magasinId : null,
+        uniteId: this.selectedUser.role === 'UNIT_USER' ? this.selectedUser.uniteId : null,
+        fonctionUnite: this.selectedUser.role === 'UNIT_USER' ? this.selectedUser.fonctionUnite : null
       };
       this.userAdminService.updateUser(this.selectedUser.id, request).subscribe({
         next: () => {
@@ -190,7 +214,9 @@ export class GestionUtilisateursComponent implements OnInit {
         password: this.selectedUser.password,
         fullName: this.selectedUser.fullName,
         role: this.selectedUser.role!,
-        magasinId: this.selectedUser.role === 'DA_MANAGER' ? this.selectedUser.magasinId : null
+        magasinId: this.selectedUser.role === 'DA_MANAGER' ? this.selectedUser.magasinId : null,
+        uniteId: this.selectedUser.role === 'UNIT_USER' ? this.selectedUser.uniteId : null,
+        fonctionUnite: this.selectedUser.role === 'UNIT_USER' ? this.selectedUser.fonctionUnite : null
       };
       this.userAdminService.createUser(request).subscribe({
         next: () => {
