@@ -440,16 +440,63 @@
 
   <ng-template pTemplate="content">
     <div class="field mb-4">
-      <label for="new-nomenclature" class="block font-medium mb-2">Nomenclature (12 caractères) *</label>
-      <input type="text" pInputText id="new-nomenclature" maxlength="12"
-             [(ngModel)]="newItem.nomenclature" placeholder="Ex : 130514123456" autofocus />
-      <small class="text-slate-400">Classe + Sous-classe + Catégorie + Série + Code Article, sans espace.</small>
-    </div>
-
-    <div class="field mb-4">
       <label for="new-designation" class="block font-medium mb-2">Désignation *</label>
       <input type="text" pInputText id="new-designation" maxlength="254"
-             [(ngModel)]="newItem.designation" placeholder="Ex : GUARD DRIVESHAFT BASE MOUNT 19&quot;" />
+             [(ngModel)]="newItem.designation" placeholder="Ex : GUARD DRIVESHAFT BASE MOUNT 19&quot;" autofocus />
+    </div>
+
+    <!-- ─── Classification en cascade ───────────────────────────────────── -->
+    <!-- Chaque article doit appartenir à une classe/sous-classe/catégorie/série bien
+         définie (règle CCF). Sous-classe/Catégorie/Série sont éditables : on peut
+         choisir un code déjà utilisé dans le catalogue (proposé automatiquement) ou
+         taper un nouveau code pour un équipement jamais catalogué. -->
+    <div class="p-3 mb-4 bg-slate-50 rounded-xl border border-slate-200">
+      <p class="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wide">Classification (Nomenclature)</p>
+
+      <div class="field mb-3">
+        <label for="new-classe" class="block font-medium mb-2 text-sm">Classe *</label>
+        <p-dropdown [options]="classeOptions" [(ngModel)]="newItemClasse" (onChange)="onClasseChange()"
+          inputId="new-classe" appendTo="body" placeholder="Choisir une classe" [style]="{width: '100%'}"></p-dropdown>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4 mb-3">
+        <div class="field">
+          <label for="new-sous-classe" class="block font-medium mb-2 text-sm">Sous-classe *</label>
+          <p-dropdown [options]="sousClasseOptions" [(ngModel)]="newItemSousClasse" (ngModelChange)="onSousClasseChange()"
+            [editable]="true" [disabled]="!newItemClasse" [loading]="isLoadingSousClasse"
+            inputId="new-sous-classe" appendTo="body" placeholder="Ex : 00" [style]="{width: '100%'}"></p-dropdown>
+        </div>
+        <div class="field">
+          <label for="new-categorie" class="block font-medium mb-2 text-sm">Catégorie *</label>
+          <p-dropdown [options]="categorieOptions" [(ngModel)]="newItemCategorie" (ngModelChange)="onCategorieChange()"
+            [editable]="true" [disabled]="newItemSousClasse.length !== 2" [loading]="isLoadingCategorie"
+            inputId="new-categorie" appendTo="body" placeholder="Ex : MT" [style]="{width: '100%'}"></p-dropdown>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <div class="field">
+          <label for="new-serie" class="block font-medium mb-2 text-sm">Série *</label>
+          <p-dropdown [options]="serieOptions" [(ngModel)]="newItemSerie" (ngModelChange)="onSerieChange()"
+            [editable]="true" [disabled]="newItemCategorie.length !== 2" [loading]="isLoadingSerie"
+            inputId="new-serie" appendTo="body" placeholder="Ex : 01" [style]="{width: '100%'}"></p-dropdown>
+        </div>
+        <div class="field">
+          <label for="new-item-code" class="block font-medium mb-2 text-sm">Code Article *</label>
+          <div class="flex gap-2">
+            <input type="text" pInputText id="new-item-code" maxlength="4" class="flex-1"
+                   [(ngModel)]="newItemItemCode" [disabled]="newItemSerie.length !== 2" placeholder="0001" />
+            <button pButton type="button" icon="pi pi-refresh" class="p-button-outlined p-button-sm"
+                    pTooltip="Suggérer le prochain code libre" tooltipPosition="top"
+                    [disabled]="newItemSerie.length !== 2" [loading]="isLoadingItemSuggestion"
+                    (click)="suggestItemCode()"></button>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-400 mt-3" *ngIf="newItemClasse && newItemSousClasse.length === 2 && newItemCategorie.length === 2 && newItemSerie.length === 2 && newItemItemCode">
+        Nomenclature : <span class="font-mono font-semibold text-slate-600">{{ newItemClasse }}{{ newItemSousClasse }}{{ newItemCategorie }}{{ newItemSerie }}{{ newItemItemCode }}</span>
+      </p>
     </div>
 
     <div class="grid grid-cols-2 gap-4 mb-4">
@@ -481,8 +528,22 @@
         inputId="new-danger" appendTo="body" [style]="{width: '100%'}"></p-dropdown>
     </div>
 
+    <div class="grid grid-cols-2 gap-4 mb-2">
+      <div class="field">
+        <label class="block font-medium mb-2">Photo</label>
+        <p-fileUpload mode="basic" chooseLabel="Choisir une photo" accept="image/*" maxFileSize="15000000"
+          [auto]="false" (onSelect)="onNewPhotoSelected($event)" styleClass="p-button-outlined p-button-sm w-full"></p-fileUpload>
+        <small class="text-slate-400" *ngIf="newItemPhotoFile">{{ newItemPhotoFile.name }}</small>
+      </div>
+      <div class="field">
+        <label class="block font-medium mb-2">Document (PDF)</label>
+        <p-fileUpload mode="basic" chooseLabel="Choisir un PDF" accept="application/pdf" maxFileSize="15000000"
+          [auto]="false" (onSelect)="onNewDocSelected($event)" styleClass="p-button-outlined p-button-sm w-full"></p-fileUpload>
+        <small class="text-slate-400" *ngIf="newItemDocFile">{{ newItemDocFile.name }}</small>
+      </div>
+    </div>
     <p class="text-xs text-slate-400">
-      La photo et les documents techniques peuvent être ajoutés une fois l'article créé, depuis sa fiche détaillée.
+      La photo et le document seront envoyés juste après la création de l'article.
     </p>
   </ng-template>
 

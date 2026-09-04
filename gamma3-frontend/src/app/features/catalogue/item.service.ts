@@ -117,6 +117,26 @@ export class ItemService {
     return this.http.post<Item>(this.apiUrl, item);
   }
 
+  // ─── getNomenclatureNextLevel ──────────────────────────────────────────────
+  // RÔLE : Alimente les listes déroulantes en cascade du formulaire "Nouvel
+  //        Article" (Sous-classe > Catégorie > Série > Code Article) avec les
+  //        codes déjà utilisés dans le catalogue existant, niveau par niveau.
+  // PARAMÈTRES : classe/sousClasse/categorie/serie — segments déjà choisis, dans
+  //              l'ordre ; ne pas fournir un segment sans avoir fourni les
+  //              précédents (voir ItemController.getNomenclatureNextLevel).
+  // RETOUR : Observable de {level, options: [{code, exempleDesignation,
+  //          nombreArticles}]} pour un niveau intermédiaire, ou
+  //          {level: 'item', existingCount, suggestedCode} une fois les 4
+  //          segments de classification renseignés.
+  getNomenclatureNextLevel(classe?: string, sousClasse?: string, categorie?: string, serie?: string): Observable<any> {
+    let params = new HttpParams();
+    if (classe) params = params.set('classe', classe);
+    if (sousClasse) params = params.set('sousClasse', sousClasse);
+    if (categorie) params = params.set('categorie', categorie);
+    if (serie) params = params.set('serie', serie);
+    return this.http.get<any>(`${this.apiUrl}/nomenclature/next-level`, { params });
+  }
+
   getItemReservations(itemId: string): Observable<any[]> {
     return this.http.get<any[]>(`${environment.apiUrl}/api/v1/demandes/item/${itemId}/reservations`);
   }

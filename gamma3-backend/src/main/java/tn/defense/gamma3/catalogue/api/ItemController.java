@@ -250,7 +250,86 @@ public class ItemController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
- 
+
+    /**
+     * RÔLE :
+     * Alimente les listes déroulantes en cascade du formulaire "Nouvel Article"
+     * (Sous-classe > Catégorie > Série > Code Article) avec les codes déjà utilisés dans
+     * le catalogue existant, niveau par niveau.
+     *
+     * POURQUOI CETTE LOGIQUE :
+     * Le référentiel de classification (classe/sous-classe/catégorie/série) n'est pas
+     * modélisé comme des tables de référence séparées : il est directement encodé dans les
+     * 12 caractères de `nomenclature` (voir Item.getClasseCode()/getSousClasseCode()/...).
+     * Plutôt que de dupliquer un référentiel figé qui se périmerait, cet endpoint interroge
+     * en direct les nomenclatures déjà enregistrées pour proposer les codes réellement en
+     * usage, tout en laissant le champ éditable côté interface pour permettre l'ajout d'un
+     * nouveau code (nouvel équipement jamais catalogué).
+     *
+     * PARAMÈTRES :
+     * @param classe     code classe déjà choisi (2 caractères), ou absent pour le niveau racine
+     * @param sousClasse code sous-classe déjà choisi (2 caractères)
+     * @param categorie  code catégorie déjà choisi (2 caractères)
+     * @param serie      code série déjà choisi (2 caractères)
+     *
+     * RETOUR :
+     * @return si moins de 4 segments sont fournis : {"level": <nom>, "options": [{code,
+     *         exempleDesignation, nombreArticles}, ...]} pour le niveau suivant à choisir ;
+     *         si les 4 segments sont fournis : {"level": "item", "existingCount": <n>,
+     *         "suggestedCode": <prochain code à 4 chiffres libre>}.
+     *         400 si un segment fourni ne fait pas exactement 2 caractères.
+     */
+    @GetMapping("/nomenclature/next-level")
+    public ResponseEntity<?> getNomenclatureNextLevel(
+            @RequestParam(required = false) String classe,
+            @RequestParam(required = false) String sousClasse,
+            @RequestParam(required = false) String categorie,
+            @RequestParam(required = false) String serie) {
+
+        StringBuilder prefix = new StringBuilder();
+        int providedCount = 0;
+        for (String segment : new String[]{classe, sousClasse, categorie, serie}) {
+            if (segment == null || segment.isBlank()) {
+                break;
+            }
+            String trimmed = segment.trim().toUpperCase();
+            if (trimmed.length() != 2) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Chaque segment de nomenclature doit contenir exactement 2 caractères."));
+            }
+            prefix.append(trimmed);
+            providedCount++;
+        }
+
+        if (providedCount == 4) {
+            List<Object[]> rows = itemRepository.findMaxItemCode(prefix.toString());
+            Object[] row = rows.isEmpty() ? new Object[]{null, 0L} : rows.get(0);
+            String maxCode = (String) row[0];
+            long existingCount = row[1] != null ? ((Number) row[1]).longValue() : 0L;
+            int nextNumber = (maxCode != null ? Integer.parseInt(maxCode) : 0) + 1;
+            String suggestedCode = String.format("%04d", Math.min(nextNumber, 9999));
+            return ResponseEntity.ok(Map.of(
+                    "level", "item",
+                    "existingCount", existingCount,
+                    "suggestedCode", suggestedCode
+            ));
+        }
+
+        int start = providedCount * 2 + 1; // position SQL 1-based du segment suivant
+        List<Object[]> rows = itemRepository.findDistinctNomenclatureSegments(prefix.toString(), start);
+        List<Map<String, Object>> options = new ArrayList<>();
+        for (Object[] r : rows) {
+            Map<String, Object> option = new LinkedHashMap<>();
+            option.put("code", r[0]);
+            option.put("exempleDesignation", r[1]);
+            option.put("nombreArticles", ((Number) r[2]).longValue());
+            options.add(option);
+        }
+
+        String[] levels = {"classe", "sousClasse", "categorie", "serie"};
+        return ResponseEntity.ok(Map.of("level", levels[providedCount], "options", options));
+    }
+
     /**
      * RÔLE :
      * Crée un nouvel article dans le catalogue.
