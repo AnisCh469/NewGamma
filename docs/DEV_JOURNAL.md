@@ -70,6 +70,18 @@ Ce journal répertorie les difficultés techniques rencontrées au cours du dév
   3. Revue individuelle des 20 branches (`git diff <base> <branche> --stat`) : récupération de 2 fichiers de test réellement utiles et compatibles avec le code actuel (`ApplicationConfigTest.java`, `ItemUploadControllerTest.java` — ce dernier valide précisément le correctif anti path-traversal de la session précédente), rejet explicite et documenté de toutes les autres branches (prototype Python abandonné, ou branche dangereuse à base pré-refonte).
   4. Suppression des 13 annotations `@CrossOrigin` redondantes ; unique source de vérité désormais `SecurityConfig.corsConfigurationSource()`, origine(s) surchargeable(s) via `CORS_ALLOWED_ORIGINS`.
 
+## Entrée : 2026-09-04
+* **Tâche :** Premier lancement local du frontend `NewGamma` par l'équipe (test manuel de l'application après le clonage du nouveau dépôt).
+* **Difficulté rencontrée :**
+  1. `npm start` échouait avec `'ng' is not recognized as an internal or external command`.
+  2. Après un `npm install` lancé une première fois de façon interrompue (limite de temps de l'outil d'assistance à distance utilisé), un second `npm install` s'est terminé sans erreur apparente, mais `npm start` échouait ensuite avec `Error [ERR_MODULE_NOT_FOUND]: Cannot find module '.../node_modules/@angular/compiler/fesm2022/compiler.mjs'` et plusieurs erreurs `Could not resolve` sur les polices de `node_modules/primeicons`.
+* **Cause technique racine :**
+  1. `node_modules/` est exclu du dépôt Git (voir `.gitignore`) — c'est la pratique standard (les dépendances ne doivent jamais être versionnées), mais cela signifie qu'après tout nouveau clonage du dépôt, `npm install` est une étape obligatoire avant de pouvoir exécuter `ng serve` : `ng` (Angular CLI) n'existe que dans `node_modules/.bin/ng`, généré par cette commande.
+  2. La première tentative de `npm install`, interrompue avant sa fin, a laissé sur disque des paquets partiellement écrits (fichiers manquants) dans `node_modules/`. Un `npm install` classique ne redétecte pas toujours qu'un dossier de paquet déjà présent est en réalité incomplet et ne le retélécharge donc pas — la corruption est restée après le second `npm install`.
+* **Solution retenue :**
+  1. Documentation de l'étape `npm install` obligatoire après clonage, ajoutée dans `gamma3-frontend/README.md` (section "Installation", nouvelle).
+  2. En cas de `node_modules/` suspecté corrompu (erreurs `Cannot find module` ou `Could not resolve` portant sur des fichiers qui devraient exister), la commande de réparation recommandée est `npm ci` : elle supprime intégralement `node_modules/` avant de réinstaller exactement les versions figées dans `package-lock.json`, garantissant un état propre et reproductible. C'est cette commande qui a résolu l'incident ; `npm start` a ensuite démarré sans erreur (`http://localhost:4200`).
+
 ## [Modèle d'Entrée]
 * **Date :** AAAA-MM-JJ
 * **Tâche :** Description de la tâche ou de la fonctionnalité
