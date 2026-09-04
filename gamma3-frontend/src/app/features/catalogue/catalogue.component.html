@@ -135,7 +135,7 @@
       </div>
 
       <!-- Bouton Admin -->
-      <p-button *ngIf="!isClient()" label="Nouvel Article" icon="pi pi-plus" styleClass="p-button-success shadow-md transition-transform hover:scale-105 shrink-0"></p-button>
+      <p-button *ngIf="!isClient()" label="Nouvel Article" icon="pi pi-plus" (onClick)="openNewItemDialog()" styleClass="p-button-success shadow-md transition-transform hover:scale-105 shrink-0"></p-button>
 
     </div>
   </div>
@@ -424,5 +424,75 @@
           [disabled]="cartService.totalLines() === 0"></p-button>
       </div>
     </div>
+  </ng-template>
+</p-dialog>
+
+<!-- ===================================================== -->
+<!-- DIALOG DE CRÉATION D'ARTICLE (ADMIN / DA MANAGER)      -->
+<!-- ===================================================== -->
+<p-dialog
+  header="Nouvel Article"
+  [(visible)]="displayNewItemDialog"
+  [modal]="true"
+  [style]="{width: '600px', maxWidth: '95vw'}"
+  styleClass="p-fluid"
+  [closable]="!isSavingNewItem">
+
+  <ng-template pTemplate="content">
+    <div class="field mb-4">
+      <label for="new-nomenclature" class="block font-medium mb-2">Nomenclature (12 caractères) *</label>
+      <input type="text" pInputText id="new-nomenclature" maxlength="12"
+             [(ngModel)]="newItem.nomenclature" placeholder="Ex : 130514123456" autofocus />
+      <small class="text-slate-400">Classe + Sous-classe + Catégorie + Série + Code Article, sans espace.</small>
+    </div>
+
+    <div class="field mb-4">
+      <label for="new-designation" class="block font-medium mb-2">Désignation *</label>
+      <input type="text" pInputText id="new-designation" maxlength="254"
+             [(ngModel)]="newItem.designation" placeholder="Ex : GUARD DRIVESHAFT BASE MOUNT 19&quot;" />
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div class="field">
+        <label for="new-prix" class="block font-medium mb-2">Prix Unitaire (TND)</label>
+        <input type="number" pInputText id="new-prix" min="0" step="0.001" [(ngModel)]="newItem.prixUnitaire" />
+      </div>
+      <div class="field">
+        <label for="new-seuil" class="block font-medium mb-2">Stock de Sécurité</label>
+        <input type="number" pInputText id="new-seuil" min="0" [(ngModel)]="newItem.stockSecurite" />
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div class="field">
+        <label for="new-unite-gestion" class="block font-medium mb-2">Unité de Gestion</label>
+        <input type="text" pInputText id="new-unite-gestion" maxlength="2" [(ngModel)]="newItem.uniteGestionCode" placeholder="Ex : PC, KG..." />
+      </div>
+      <div class="field">
+        <label for="new-type" class="block font-medium mb-2">Type</label>
+        <p-dropdown [options]="typeConsommabiliteOptions" [(ngModel)]="newItem.typeConsommabilite"
+          inputId="new-type" appendTo="body"></p-dropdown>
+      </div>
+    </div>
+
+    <div class="field mb-4">
+      <label for="new-danger" class="block font-medium mb-2">Classe de Danger (GHS)</label>
+      <p-dropdown [options]="dangerClassOptions" [(ngModel)]="newItem.dangerClass"
+        inputId="new-danger" appendTo="body" [style]="{width: '100%'}"></p-dropdown>
+    </div>
+
+    <p class="text-xs text-slate-400">
+      La photo et les documents techniques peuvent être ajoutés une fois l'article créé, depuis sa fiche détaillée.
+    </p>
+  </ng-template>
+
+  <ng-template pTemplate="footer">
+    <button pButton label="Annuler" icon="pi pi-times" class="p-button-text"
+      [disabled]="isSavingNewItem"
+      (click)="displayNewItemDialog = false"></button>
+    <button pButton label="Enregistrer" icon="pi pi-check"
+      [loading]="isSavingNewItem"
+      [disabled]="!isNewItemValid()"
+      (click)="saveNewItem()"></button>
   </ng-template>
 </p-dialog>

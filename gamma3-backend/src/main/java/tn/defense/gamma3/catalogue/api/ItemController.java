@@ -5,6 +5,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -255,16 +257,52 @@ public class ItemController {
      *
      * POURQUOI CETTE LOGIQUE :
      * Permet à l'administration d'enregistrer de nouvelles références de matériel.
+     * Une validation minimale est appliquée ici : la nomenclature est la clé
+     * fonctionnelle de tout le système (recherche, jointures de stock, dotations
+     * du Plan d'Armement) — une valeur absente ou mal formée casserait ces
+     * fonctionnalités silencieusement, bien après la création, loin de l'écran où
+     * l'erreur a été commise. Seuls les rôles autres que UNIT_USER (client d'unité)
+     * peuvent créer un article, à l'image de la restriction déjà appliquée côté
+     * interface (voir catalogue.component.html, bouton "Nouvel Article").
      *
      * PARAMÈTRES :
      * @param item L'objet JSON décrivant l'article complet.
      *
      * RETOUR :
-     * @return L'article persistant créé et son UUID généré automatiquement.
+     * @return 200 + l'article créé (avec son UUID généré) en cas de succès ;
+     *         400 si la nomenclature ou la désignation sont absentes/invalides ;
+     *         403 si l'utilisateur connecté est un client d'unité (UNIT_USER) ;
+     *         409 si la nomenclature existe déjà (contrainte unique en base).
      */
     @PostMapping
-    public ResponseEntity<Item> createItem(@RequestBody Item item) {
-        Item savedItem = itemRepository.save(item);
-        return ResponseEntity.ok(savedItem);
+    public ResponseEntity<?> createItem(@RequestBody Item item) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof User currentUser && currentUser.getRole() == Role.UNIT_USER) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Seule l'administration peut créer un article du catalogue."));
+        }
+
+        if (item.getNomenclature() == null || item.getNomenclature().trim().length() != 12) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "La nomenclature est obligatoire et doit contenir exactement 12 caractères."));
+        }
+        if (item.getDesignation() == null || item.getDesignation().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "La désignation est obligatoire."));
+        }
+        item.setNomenclature(item.getNomenclature().trim());
+
+        // Un nouvel article n'a jamais d'identifiant, de documents ni d'horodatage fournis
+        // par le client : ces champs sont exclusivement gérés par le serveur (UUID généré
+        // par @GeneratedValue, horodatages par @CreationTimestamp / @UpdateTimestamp).
+        item.setId(null);
+        item.setDocuments(new ArrayList<>());
+
+        try {
+            Item savedItem = itemRepository.save(item);
+            return ResponseEntity.ok(savedItem);
+        } catch (DataIntegrityViolationException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", "Un article avec la nomenclature '" + item.getNomenclature() + "' existe déjà."));
+        }
     }
 }

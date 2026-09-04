@@ -107,6 +107,16 @@ export class ItemService {
     return this.http.get<Item>(`${this.apiUrl}/${id}`);
   }
 
+  // ─── createItem ───────────────────────────────────────────────────────────
+  // RÔLE : Crée un nouvel article dans le catalogue (bouton "Nouvel Article").
+  // PARAMÈTRES : item — objet partiel décrivant l'article (nomenclature et
+  //              désignation obligatoires ; id/documents/dates sont ignorés,
+  //              le backend les gère lui-même).
+  // RETOUR : Observable de l'article persistant, avec son UUID généré.
+  createItem(item: Partial<Item>): Observable<Item> {
+    return this.http.post<Item>(this.apiUrl, item);
+  }
+
   getItemReservations(itemId: string): Observable<any[]> {
     return this.http.get<any[]>(`${environment.apiUrl}/api/v1/demandes/item/${itemId}/reservations`);
   }

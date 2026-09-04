@@ -16,6 +16,16 @@ Ce guide est destiné aux utilisateurs finaux pour les accompagner dans la prise
 * **Debouncing intelligent :** Pour garantir la réactivité de l'application, la recherche est déclenchée automatiquement 300 millisecondes après la saisie du dernier caractère, évitant ainsi les ralentissements.
 * **Exclusion mutuelle :** Saisir un texte dans la barre de recherche par nomenclature efface automatiquement la recherche par désignation, et inversement, afin de vous garantir une navigation claire et ciblée.
 
+## ➕ Création d'un Nouvel Article (Administration)
+
+* **Qui peut créer un article :** Le bouton `Nouvel Article`, situé en haut à droite du Catalogue, n'est visible que pour les utilisateurs de l'administration (il est masqué pour les comptes d'unité clientes).
+* **Champs obligatoires :** La **Nomenclature** (exactement 12 caractères, ex : `130514123456`) et la **Désignation** sont indispensables — le bouton `Enregistrer` reste désactivé tant qu'ils ne sont pas renseignés correctement.
+* **Nomenclature unique :** Chaque article doit avoir une nomenclature différente. Si vous saisissez une nomenclature déjà utilisée par un autre article, un message d'erreur explicite vous l'indique et la création est refusée.
+* **Champs optionnels :** Prix unitaire, stock de sécurité, unité de gestion, type (Consommable / Non Consommable) et classe de danger (GHS) peuvent être renseignés à la création ou complétés plus tard.
+* **Photo et documents :** Ils ne sont pas gérés depuis ce formulaire de création — une fois l'article créé, ouvrez sa fiche détaillée depuis le catalogue pour ajouter une photo ou un document technique.
+
+---
+
 ---
 
 ## 📦 Arbitrage & Retrait Physique des Matériels (Zero-Trust)

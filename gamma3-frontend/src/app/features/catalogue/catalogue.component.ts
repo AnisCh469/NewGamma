@@ -31,8 +31,9 @@ import { ToastModule } from 'primeng/toast';
 import { DialogModule } from 'primeng/dialog';
 import { BadgeModule } from 'primeng/badge';
 import { TooltipModule } from 'primeng/tooltip';
+import { DropdownModule } from 'primeng/dropdown';
 import { MessageService } from 'primeng/api';
-import { ItemService } from './item.service';
+import { ItemService, Item } from './item.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { CartService } from '../../core/services/cart.service';
 import { PlanArmementService, PlanArmement } from '../../core/services/plan-armement.service';
@@ -52,7 +53,8 @@ import { Magasin } from '../../core/models/stock.model';
     ToastModule,
     DialogModule,
     BadgeModule,
-    TooltipModule
+    TooltipModule,
+    DropdownModule
   ],
   providers: [MessageService],
   templateUrl: './catalogue.component.html',
@@ -106,6 +108,31 @@ export class CatalogueComponent implements OnInit {
   // Cart/Panier dialog
   displayCartDialog: boolean = false;
   isSubmittingCart: boolean = false;
+
+  // ─── Dialog de création d'article (Admin / DA Manager) ────────────────────
+  // RÔLE : État du formulaire modal "Nouvel Article" (bouton visible pour tout
+  //        rôle autre que UNIT_USER, voir isClient()).
+  displayNewItemDialog: boolean = false;
+  isSavingNewItem: boolean = false;
+  newItem: Partial<Item> = {};
+
+  readonly typeConsommabiliteOptions = [
+    { label: 'Consommable', value: 'CONSOMMABLE' },
+    { label: 'Non Consommable', value: 'NON_CONSOMMABLE' }
+  ];
+
+  readonly dangerClassOptions = [
+    { label: 'Aucun', value: 'NONE' },
+    { label: 'Explosif', value: 'EXPLOSIVE' },
+    { label: 'Inflammable', value: 'FLAMMABLE' },
+    { label: 'Toxique', value: 'TOXIC' },
+    { label: 'Corrosif', value: 'CORROSIVE' },
+    { label: 'Radioactif', value: 'RADIOACTIVE' },
+    { label: 'Danger Environnemental', value: 'ENVIRONMENTAL_HAZARD' },
+    { label: 'Comburant', value: 'OXIDIZING' },
+    { label: 'Gaz Comprimé', value: 'COMPRESSED_GAS' },
+    { label: 'Nocif', value: 'HARMFUL' }
+  ];
 
   ngOnInit(): void {
     // ÉTAPE 1 : Charger la liste des magasins pour le sélecteur
@@ -434,6 +461,82 @@ export class CatalogueComponent implements OnInit {
         const errorMsg = typeof err.error === 'string' ? err.error : 'Impossible de soumettre la demande.';
         this.messageService.add({ severity: 'error', summary: 'Erreur', detail: errorMsg, life: 5000 });
         this.isSubmittingCart = false;
+      }
+    });
+  }
+
+  // ===== CRÉATION D'ARTICLE (ADMIN / DA MANAGER) =====
+
+  /**
+   * RÔLE :
+   * Ouvre le formulaire modal de création d'un nouvel article avec des valeurs par défaut.
+   *
+   * PARAMÈTRES : Aucun
+   * RETOUR : void
+   */
+  openNewItemDialog(): void {
+    this.newItem = {
+      nomenclature: '',
+      designation: '',
+      prixUnitaire: 0,
+      stockSecurite: 0,
+      uniteGestionCode: '',
+      typeConsommabilite: 'CONSOMMABLE',
+      dangerClass: 'NONE'
+    };
+    this.displayNewItemDialog = true;
+  }
+
+  /**
+   * RÔLE :
+   * Vérifie que le formulaire de création d'article contient les champs obligatoires
+   * avant d'activer le bouton "Enregistrer" (garde-fou côté client, en complément de
+   * la validation serveur dans ItemController.createItem).
+   *
+   * RETOUR : true si le formulaire peut être soumis.
+   */
+  isNewItemValid(): boolean {
+    return !!this.newItem.nomenclature
+      && this.newItem.nomenclature.trim().length === 12
+      && !!this.newItem.designation
+      && this.newItem.designation.trim().length > 0;
+  }
+
+  /**
+   * RÔLE :
+   * Soumet le nouvel article au backend puis rafraîchit la liste du catalogue.
+   *
+   * POURQUOI CETTE LOGIQUE :
+   * - Le backend est la source de vérité pour la validation (nomenclature à 12
+   *   caractères, unicité) : les erreurs qu'il renvoie (400/409) sont affichées
+   *   telles quelles à l'utilisateur plutôt que dupliquées côté client.
+   * - Le catalogue est rechargé sur la page courante pour que le nouvel article
+   *   apparaisse immédiatement si le tri/la recherche active le fait remonter.
+   *
+   * PARAMÈTRES : Aucun
+   * RETOUR : void
+   */
+  saveNewItem(): void {
+    if (!this.isNewItemValid()) return;
+
+    this.isSavingNewItem = true;
+    this.itemService.createItem(this.newItem).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Article Créé ✓',
+          detail: `L'article « ${this.newItem.designation} » a été ajouté au catalogue.`,
+          life: 4000
+        });
+        this.displayNewItemDialog = false;
+        this.isSavingNewItem = false;
+        this.itemService.fetchItems(this.currentPage, this.pageSize, this.searchTerm || this.nomenclatureSearchTerm || undefined,
+          this.sortField, this.sortOrder, false, this.filterType || undefined, this.selectedMagasinId ?? undefined);
+      },
+      error: (err: any) => {
+        const errorMsg = err?.error?.error || `Impossible de créer l'article.`;
+        this.messageService.add({ severity: 'error', summary: 'Erreur', detail: errorMsg, life: 5000 });
+        this.isSavingNewItem = false;
       }
     });
   }
