@@ -464,12 +464,14 @@
           <label for="new-sous-classe" class="block font-medium mb-2 text-sm">Sous-classe *</label>
           <p-dropdown [options]="sousClasseOptions" [(ngModel)]="newItemSousClasse" (ngModelChange)="onSousClasseChange()"
             [editable]="true" [disabled]="!newItemClasse" [loading]="isLoadingSousClasse"
+            emptyFilterMessage="Nouveau code (sera créé à l'enregistrement)"
             inputId="new-sous-classe" appendTo="body" placeholder="Ex : 00" [style]="{width: '100%'}"></p-dropdown>
         </div>
         <div class="field">
           <label for="new-categorie" class="block font-medium mb-2 text-sm">Catégorie *</label>
           <p-dropdown [options]="categorieOptions" [(ngModel)]="newItemCategorie" (ngModelChange)="onCategorieChange()"
             [editable]="true" [disabled]="newItemSousClasse.length !== 2" [loading]="isLoadingCategorie"
+            emptyFilterMessage="Nouveau code (sera créé à l'enregistrement)"
             inputId="new-categorie" appendTo="body" placeholder="Ex : MT" [style]="{width: '100%'}"></p-dropdown>
         </div>
       </div>
@@ -479,6 +481,7 @@
           <label for="new-serie" class="block font-medium mb-2 text-sm">Série *</label>
           <p-dropdown [options]="serieOptions" [(ngModel)]="newItemSerie" (ngModelChange)="onSerieChange()"
             [editable]="true" [disabled]="newItemCategorie.length !== 2" [loading]="isLoadingSerie"
+            emptyFilterMessage="Nouveau code (sera créé à l'enregistrement)"
             inputId="new-serie" appendTo="body" placeholder="Ex : 01" [style]="{width: '100%'}"></p-dropdown>
         </div>
         <div class="field">

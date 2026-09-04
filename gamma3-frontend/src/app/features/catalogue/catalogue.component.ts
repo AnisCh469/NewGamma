@@ -614,6 +614,7 @@ export class CatalogueComponent implements OnInit {
    * que 2 caractères valides sont saisis.
    */
   onSousClasseChange(): void {
+    this.newItemSousClasse = (this.newItemSousClasse || '').toUpperCase().slice(0, 2);
     this.newItemCategorie = '';
     this.newItemSerie = '';
     this.newItemItemCode = '';
@@ -639,6 +640,7 @@ export class CatalogueComponent implements OnInit {
    * codes Série correspondants dès que 2 caractères valides sont saisis.
    */
   onCategorieChange(): void {
+    this.newItemCategorie = (this.newItemCategorie || '').toUpperCase().slice(0, 2);
     this.newItemSerie = '';
     this.newItemItemCode = '';
     this.serieOptions = [];
@@ -662,6 +664,7 @@ export class CatalogueComponent implements OnInit {
    * automatiquement la suggestion du prochain code libre dans cette série.
    */
   onSerieChange(): void {
+    this.newItemSerie = (this.newItemSerie || '').toUpperCase().slice(0, 2);
     this.newItemItemCode = '';
     if (this.newItemSerie.length !== 2) return;
     this.suggestItemCode();

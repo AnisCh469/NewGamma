@@ -36,7 +36,15 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .cors(org.springframework.security.config.Customizer.withDefaults())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/auth/**").permitAll()
+                // SÉCURITÉ (correctif 2026-09-04) : seules "/login" et "/verify-2fa" sont
+                // accessibles sans jeton JWT — ce sont les deux seules étapes du protocole
+                // où l'appelant n'en possède pas encore un. "/register" (création de compte,
+                // réservée aux ADMIN) et "/2fa/setup|enable|disable" (2FA du compte CONNECTÉ)
+                // exigeaient auparavant AUCUNE authentification, une faille critique
+                // permettant à quiconque de créer un compte ADMIN ou de désactiver la 2FA
+                // d'un tiers (voir AuthenticationController) — ils tombent désormais sous la
+                // règle .anyRequest().authenticated() ci-dessous.
+                .requestMatchers("/api/v1/auth/login", "/api/v1/auth/verify-2fa").permitAll()
                 .requestMatchers("/api/v1/items/photos/**").permitAll()
                 .requestMatchers("/api/v1/items/documents/**").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
