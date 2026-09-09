@@ -4,6 +4,38 @@ Ce guide est destiné aux utilisateurs finaux pour les accompagner dans la prise
 
 ---
 
+## 🖨️ Impression des documents officiels
+
+Depuis 2026-09-09, **tous les documents officiels sont produits sous forme de fichier PDF
+par le serveur** — plus d'impression directe de la page web.
+
+**Comment ça marche :** quand vous cliquez sur un bouton d'impression (par ex. « Imprimer le BS »,
+« Étiquette », « Bon de commande », « Imprimer PV »…), un **nouvel onglet** s'ouvre avec le
+document en PDF. Depuis le lecteur PDF, vous pouvez :
+* **imprimer** (bouton imprimante du lecteur) — le rendu sur papier est identique à l'écran,
+  sans en-tête ni pied de page ajoutés par le navigateur ;
+* **enregistrer** le fichier (pour l'archiver ou le joindre à un courriel).
+
+> Si votre navigateur bloque l'ouverture de l'onglet, autorisez les fenêtres pop-up pour
+> l'adresse de GAMMA 3.
+
+**Documents disponibles :**
+
+| Document | Où le trouver |
+|---|---|
+| Bon de Sortie Matériels | Console d'arbitrage / Fiche unité — sur une demande approuvée |
+| Bon d'Entrée en Magasin | Détail d'une réception |
+| Procès-Verbal de Réforme | Console de réforme / Fiche unité |
+| Bon de Commande Fournisseur | Fiche fournisseur → historique des commandes |
+| Fiche Article / Fiche Fournisseur / Fiche Unité | Bouton « Imprimer » de la fiche |
+| Étiquette article / Étiquette unité | Bouton « Étiquette » de la fiche — petit format autocollant (70 × 40 mm) avec code QR et code-barres, à apposer sur l'équipement |
+
+Chaque document porte l'en-tête institutionnel (Ministère de la Défense Nationale / Marine
+Nationale Tunisienne / Division de l'Approvisionnement), un numéro de référence, un code QR
+de traçabilité et les cases de visa. Le PDF peut être ré-imprimé à l'identique à tout moment.
+
+---
+
 ## 🔍 Recherche d'Articles dans le Catalogue
 
 ### Recherche Générale
