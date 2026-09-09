@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title th:text="'Bon de commande ' + ${numero}">Bon de commande</title>
+  <style th:replace="~{documents/fragments/common :: styles}"></style>
+</head>
+<body>
+
+  <div th:replace="~{documents/fragments/common :: entete(${titre}, ${sousTitre}, ${numero}, ${dateDoc}, ${qr})}"></div>
+
+  <table class="bloc-infos">
+    <tr>
+      <td class="k">Fournisseur</td>
+      <td><span class="bold" th:text="${fournisseurNom}">Fournisseur</span>
+        <span class="mono small" th:text="'(' + ${fournisseurCode} + ')'">(F001)</span></td>
+      <td class="k">Matricule fiscal</td>
+      <td class="mono" th:text="${fournisseurMf}">—</td>
+    </tr>
+    <tr>
+      <td class="k">Adresse</td>
+      <td th:text="${fournisseurAdresse}">—</td>
+      <td class="k">Contact</td>
+      <td>
+        <span th:text="${fournisseurTel}">—</span>
+        <span class="muted small" th:text="' · ' + ${fournisseurEmail}"> · —</span>
+      </td>
+    </tr>
+    <tr>
+      <td class="k">Marché de rattachement</td>
+      <td><span class="mono" th:text="${marcheNumero}">M-...</span>
+        <span class="muted small" th:text="${marcheDesignation}">—</span></td>
+      <td class="k">Statut de la commande</td>
+      <td th:text="${statut}">—</td>
+    </tr>
+  </table>
+
+  <h4 class="mt-4">Objet de l'engagement</h4>
+  <table class="articles">
+    <thead>
+      <tr>
+        <th style="width:70%">Désignation de la commande</th>
+        <th style="width:30%" class="right">Montant total</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          Commande <span class="mono bold" th:text="${numero}">CMD-...</span>
+          passée auprès de <span class="bold" th:text="${fournisseurNom}">Fournisseur</span>
+          au titre de <span th:text="${marcheNumero}">M-...</span>.
+        </td>
+        <td class="right bold" th:text="${montantTotal}">0,000 DT</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td class="right">Montant total de l'engagement (TTC)</td>
+        <td class="right" th:text="${montantTotal}">0,000 DT</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="note-securite">
+    <span class="bold">Mention réglementaire :</span>
+    le présent bon de commande vaut engagement de dépense de la Division de l'Approvisionnement.
+    Le règlement est subordonné à la réception conforme du matériel (bon d'entrée) et au visa du
+    contrôleur des dépenses.
+  </div>
+
+  <table class="visas">
+    <tr>
+      <td th:each="v : ${visas}">
+        <div class="visa-titre" th:text="${v.titre}">Visa</div>
+        <div class="visa-sous" th:utext="${v.sous}">Signature</div>
+        <div class="visa-box"></div>
+      </td>
+    </tr>
+  </table>
+
+  <div th:replace="~{documents/fragments/common :: pied(${genereLe})}"></div>
+
+</body>
+</html>

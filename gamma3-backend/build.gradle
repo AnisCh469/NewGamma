@@ -39,11 +39,24 @@ dependencies {
 	implementation 'org.flywaydb:flyway-database-postgresql'
 	implementation 'com.microsoft.sqlserver:mssql-jdbc'
 	
-	// JasperReports Engine & Functions for PDF/Excel Exports
+	// JasperReports Engine & Functions for PDF/Excel Exports (registres analytiques :
+	// inventaire, mouvements, consommation — voir ReportController)
 	implementation 'net.sf.jasperreports:jasperreports:6.21.3'
 	implementation 'net.sf.jasperreports:jasperreports-functions:6.21.3'
 	implementation 'org.apache.poi:poi:5.2.5'
 	implementation 'org.apache.poi:poi-ooxml:5.2.5'
+
+	// Documents officiels (bon de sortie, bon d'entrée, PV réforme, facture, fiches,
+	// étiquettes) : modèles HTML/CSS Thymeleaf -> PDF via openhtmltopdf. Voir
+	// tn.defense.gamma3.document.* et docs/AUDIT_IMPRESSION.md.
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	implementation 'io.github.openhtmltopdf:openhtmltopdf-pdfbox:1.1.28'
+	implementation 'io.github.openhtmltopdf:openhtmltopdf-slf4j:1.1.28'
+	// jsoup : nettoie le HTML5 produit par Thymeleaf en XHTML strict attendu par openhtmltopdf
+	implementation 'org.jsoup:jsoup:1.18.1'
+	// Génération des codes QR / code-barres imprimés sur les documents et étiquettes
+	implementation 'com.google.zxing:core:3.5.3'
+	implementation 'com.google.zxing:javase:3.5.3'
 	
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'

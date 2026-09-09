@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title th:text="'PV de réforme ' + ${numero}">PV de réforme</title>
+  <style th:replace="~{documents/fragments/common :: styles}"></style>
+</head>
+<body>
+
+  <div th:replace="~{documents/fragments/common :: entete(${titre}, ${sousTitre}, ${numero}, ${dateDoc}, ${qr})}"></div>
+
+  <table class="bloc-infos">
+    <tr>
+      <td class="k">Unité détentrice</td>
+      <td><span class="bold" th:text="${uniteNom}">Unité</span>
+        <span class="mono small" th:text="'(' + ${uniteCode} + ')'">(CODE)</span></td>
+      <td class="k">Dossier n°</td>
+      <td class="mono" th:text="${numero}">RF-...</td>
+    </tr>
+    <tr>
+      <td class="k">Date de la demande</td>
+      <td th:text="${dateDemande}">--</td>
+      <td class="k">Date de la commission</td>
+      <td th:text="${dateCommission}">--</td>
+    </tr>
+    <tr>
+      <td class="k">Statut du dossier</td>
+      <td th:text="${statut}">—</td>
+      <td class="k">Décision de la commission</td>
+      <td class="bold" th:text="${decisionCommission}">—</td>
+    </tr>
+    <tr>
+      <td class="k">Motif de la demande</td>
+      <td colspan="3" th:text="${motif}">—</td>
+    </tr>
+    <tr>
+      <td class="k">Membres de la commission</td>
+      <td colspan="3" th:text="${membresCommission}">—</td>
+    </tr>
+  </table>
+
+  <h4 class="mt-4">Matériels proposés à la réforme</h4>
+  <table class="articles">
+    <thead>
+      <tr>
+        <th style="width:4%">#</th>
+        <th style="width:16%">Nomenclature</th>
+        <th style="width:30%">Désignation</th>
+        <th style="width:9%" class="right">Quantité</th>
+        <th style="width:12%" class="right">P.U. HT</th>
+        <th style="width:13%" class="right">Valeur HT</th>
+        <th style="width:16%">Observations</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="l : ${lignes}">
+        <td th:text="${l.rang}">1</td>
+        <td class="num-cell" th:text="${l.nomenclature}">0100AL000002</td>
+        <td th:text="${l.designation}">Désignation</td>
+        <td class="right bold" th:text="${l.quantite}">0</td>
+        <td class="right" th:text="${l.prixUnitaire}">0,000 DT</td>
+        <td class="right" th:text="${l.valeur}">0,000 DT</td>
+        <td class="small" th:text="${l.observations}">—</td>
+      </tr>
+      <tr th:if="${#lists.isEmpty(lignes)}">
+        <td colspan="7" class="center muted">Aucun article.</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="5" class="right">Valeur comptable totale des matériels réformés</td>
+        <td class="right" th:text="${totalValeur}">0,000 DT</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="note-securite">
+    <span class="bold">Observations de la commission de réforme :</span>
+    <span th:text="${observationsCommission}">—</span>
+  </div>
+
+  <table class="visas">
+    <tr>
+      <td th:each="v : ${visas}">
+        <div class="visa-titre" th:text="${v.titre}">Visa</div>
+        <div class="visa-sous" th:utext="${v.sous}">Signature</div>
+        <div class="visa-box"></div>
+      </td>
+    </tr>
+  </table>
+
+  <div th:replace="~{documents/fragments/common :: pied(${genereLe})}"></div>
+
+</body>
+</html>

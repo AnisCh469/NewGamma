@@ -52,6 +52,12 @@ spring:
       password: ${LEGACY_DB_PASSWORD:Gamma3_Password_123}
       driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
 
+  # Modèles de documents (templates/documents/*.html) : cache désactivé pour que l'équipe
+  # puisse ajuster une mise en page sans redémarrer le backend. Le coût de re-parsing d'un
+  # modèle à chaque impression est négligeable (quelques ms).
+  thymeleaf:
+    cache: false
+
 server:
   port: 8080
 

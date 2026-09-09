@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title th:text="'Fiche article ' + ${numero}">Fiche article</title>
+  <style th:replace="~{documents/fragments/common :: styles}"></style>
+</head>
+<body>
+
+  <div th:replace="~{documents/fragments/common :: entete(${titre}, ${sousTitre}, ${numero}, ${dateDoc}, ${qr})}"></div>
+
+  <table class="bloc-infos">
+    <tr>
+      <td class="k">Nomenclature (NNO 12)</td>
+      <td class="mono bold" th:text="${nomenclature}">0100AL000002</td>
+      <td class="k">Unité de gestion</td>
+      <td th:text="${uniteGestion}">EA</td>
+    </tr>
+    <tr>
+      <td class="k">Désignation</td>
+      <td colspan="3" class="bold" th:text="${designation}">Désignation</td>
+    </tr>
+    <tr>
+      <td class="k">Classe</td>
+      <td class="mono" th:text="${classe}">01</td>
+      <td class="k">Sous-classe</td>
+      <td class="mono" th:text="${sousClasse}">00</td>
+    </tr>
+    <tr>
+      <td class="k">Catégorie / Constructeur</td>
+      <td class="mono" th:text="${categorie}">AL</td>
+      <td class="k">Série</td>
+      <td class="mono" th:text="${serie}">00</td>
+    </tr>
+    <tr>
+      <td class="k">Code article</td>
+      <td class="mono" th:text="${codeArticle}">0002</td>
+      <td class="k">Type de consommabilité</td>
+      <td th:text="${typeConsommabilite}">—</td>
+    </tr>
+    <tr>
+      <td class="k">Prix unitaire (référence)</td>
+      <td th:text="${prixUnitaire}">0,000 DT</td>
+      <td class="k">Stock de sécurité</td>
+      <td th:text="${stockSecurite}">0</td>
+    </tr>
+    <tr>
+      <td class="k">Classe de danger (SGH)</td>
+      <td colspan="3" class="bold" th:text="${classeDanger}">Aucune</td>
+    </tr>
+  </table>
+
+  <table style="width:100%; margin-top:24px">
+    <tr>
+      <td class="center" style="width:40%">
+        <img th:src="${qr}" alt="QR" style="width:120px;height:120px"/>
+        <div class="tiny muted">Traçabilité QR</div>
+      </td>
+      <td class="center" style="width:60%">
+        <img th:src="${code128}" alt="code-barres" style="height:70px"/>
+        <div class="tiny muted mono" th:text="${nomenclature}">0100AL000002</div>
+      </td>
+    </tr>
+  </table>
+
+  <div th:replace="~{documents/fragments/common :: pied(${genereLe})}"></div>
+
+</body>
+</html>

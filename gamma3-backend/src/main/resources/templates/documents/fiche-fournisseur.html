@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title th:text="'Fiche fournisseur ' + ${numero}">Fiche fournisseur</title>
+  <style th:replace="~{documents/fragments/common :: styles}"></style>
+</head>
+<body>
+
+  <div th:replace="~{documents/fragments/common :: entete(${titre}, ${sousTitre}, ${numero}, ${dateDoc}, ${qr})}"></div>
+
+  <table class="bloc-infos">
+    <tr>
+      <td class="k">Code interne</td>
+      <td class="mono bold" th:text="${code}">F001</td>
+      <td class="k">Raison sociale</td>
+      <td class="bold" th:text="${nom}">Nom</td>
+    </tr>
+    <tr>
+      <td class="k">Matricule fiscal</td>
+      <td class="mono" th:text="${matriculeFiscal}">—</td>
+      <td class="k">Statut d'homologation</td>
+      <td class="bold" th:text="${statut}">—</td>
+    </tr>
+    <tr>
+      <td class="k">Adresse</td>
+      <td colspan="3" th:text="${adresse}">—</td>
+    </tr>
+    <tr>
+      <td class="k">Personne de contact</td>
+      <td th:text="${contactNom}">—</td>
+      <td class="k">Note d'évaluation</td>
+      <td th:text="${note}">—</td>
+    </tr>
+    <tr>
+      <td class="k">Téléphone</td>
+      <td class="mono" th:text="${telephone}">—</td>
+      <td class="k">Fax</td>
+      <td class="mono" th:text="${fax}">—</td>
+    </tr>
+    <tr>
+      <td class="k">Courriel</td>
+      <td colspan="3" th:text="${email}">—</td>
+    </tr>
+  </table>
+
+  <div class="mt-6 center">
+    <img th:src="${code128}" alt="code-barres" style="height:60px"/>
+    <div class="tiny muted" th:text="${code}">F001</div>
+  </div>
+
+  <table class="visas">
+    <tr>
+      <td>
+        <div class="visa-titre">Le Chef de la Division Approvisionnement</div>
+        <div class="visa-sous">Signature &amp; Cachet</div>
+        <div class="visa-box"></div>
+      </td>
+      <td>
+        <div class="visa-titre">Bureau des Marchés</div>
+        <div class="visa-sous">Visa</div>
+        <div class="visa-box"></div>
+      </td>
+    </tr>
+  </table>
+
+  <div th:replace="~{documents/fragments/common :: pied(${genereLe})}"></div>
+
+</body>
+</html>

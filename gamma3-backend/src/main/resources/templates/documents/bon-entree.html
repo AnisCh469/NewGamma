@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Bon d'entree</title>
+  <style th:replace="~{documents/fragments/common :: styles}"></style>
+</head>
+<body>
+
+  <div th:replace="~{documents/fragments/common :: entete(${titre}, ${sousTitre}, ${numero}, ${dateDoc}, ${qr})}"></div>
+
+  <table class="bloc-infos">
+    <tr>
+      <td class="k">Fournisseur</td>
+      <td><span class="bold" th:text="${fournisseurNom}">Fournisseur</span>
+        <span class="mono small" th:text="'(' + ${fournisseurCode} + ')'">(F001)</span></td>
+      <td class="k">Bon provisoire (BPR)</td>
+      <td><span class="mono" th:text="${bprNumero}">BPR-...</span> du <span th:text="${bprDate}">--</span></td>
+    </tr>
+    <tr>
+      <td class="k">Commande d'origine</td>
+      <td class="mono" th:text="${commandeNumero}">CMD-...</td>
+      <td class="k">Magasin de prise en charge</td>
+      <td><span class="bold" th:text="${magasinNom}">Magasin</span>
+        <span class="mono small" th:text="'(' + ${magasinCode} + ')'">(SGS)</span></td>
+    </tr>
+    <tr>
+      <td class="k">P.V. de commission</td>
+      <td><span class="mono" th:text="${pvNumero}">PV-...</span> du <span th:text="${pvDate}">--</span></td>
+      <td class="k">Décision commission</td>
+      <td th:text="${pvDecision}">—</td>
+    </tr>
+    <tr>
+      <td class="k">Membres de la commission</td>
+      <td colspan="3" th:text="${pvMembres}">—</td>
+    </tr>
+  </table>
+
+  <h4 class="mt-4">Détail des articles pris en charge</h4>
+  <table class="articles">
+    <thead>
+      <tr>
+        <th style="width:4%">#</th>
+        <th style="width:16%">Nomenclature</th>
+        <th style="width:37%">Désignation</th>
+        <th style="width:8%">U.G.</th>
+        <th style="width:11%" class="right">Qté livrée</th>
+        <th style="width:12%" class="right">P.U. HT</th>
+        <th style="width:12%" class="right">Valeur HT</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="l : ${lignes}">
+        <td th:text="${l.rang}">1</td>
+        <td class="num-cell" th:text="${l.nomenclature}">0100AL000002</td>
+        <td th:text="${l.designation}">Désignation</td>
+        <td th:text="${l.uniteGestion}">EA</td>
+        <td class="right bold" th:text="${l.qteLivree}">0</td>
+        <td class="right" th:text="${l.prixUnitaire}">0,000 DT</td>
+        <td class="right" th:text="${l.valeur}">0,000 DT</td>
+      </tr>
+      <tr th:if="${#lists.isEmpty(lignes)}">
+        <td colspan="7" class="center muted">Aucun article.</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="6" class="right">Valeur totale de la réception</td>
+        <td class="right" th:text="${totalValeur}">0,000 DT</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="note-securite" th:if="${pvObservations != ''}">
+    <span class="bold">Observations de la commission :</span>
+    <span th:text="${pvObservations}">—</span>
+  </div>
+
+  <table class="visas">
+    <tr>
+      <td th:each="v : ${visas}">
+        <div class="visa-titre" th:text="${v.titre}">Visa</div>
+        <div class="visa-sous" th:utext="${v.sous}">Signature</div>
+        <div class="visa-box"></div>
+      </td>
+    </tr>
+  </table>
+
+  <div th:replace="~{documents/fragments/common :: pied(${genereLe})}"></div>
+
+</body>
+</html>

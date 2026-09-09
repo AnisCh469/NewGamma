@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Fiche unite</title>
+  <style th:replace="~{documents/fragments/common :: styles}"></style>
+</head>
+<body>
+
+  <div th:replace="~{documents/fragments/common :: entete(${titre}, ${sousTitre}, ${numero}, ${dateDoc}, ${qr})}"></div>
+
+  <table class="bloc-infos">
+    <tr>
+      <td class="k">Code de l'unité</td>
+      <td class="mono bold" th:text="${code}">RPS</td>
+      <td class="k">Base navale de rattachement</td>
+      <td th:text="${baseNavale}">Bizerte</td>
+    </tr>
+    <tr>
+      <td class="k">Désignation complète</td>
+      <td colspan="3" class="bold" th:text="${nom}">Nom de l'unité</td>
+    </tr>
+    <tr>
+      <td class="k">Dossiers de réforme enregistrés</td>
+      <td th:text="${nbDossiersReforme}">0</td>
+      <td class="k">Soute de rattachement (routage)</td>
+      <td>Déterminée automatiquement selon la base navale</td>
+    </tr>
+  </table>
+
+  <div class="mt-6 center">
+    <img th:src="${code128}" alt="code-barres" style="height:60px"/>
+    <div class="tiny muted mono" th:text="${code}">RPS</div>
+  </div>
+
+  <table class="visas">
+    <tr>
+      <td>
+        <div class="visa-titre">Le Commandant de l'Unité</div>
+        <div class="visa-sous">Signature &amp; Cachet</div>
+        <div class="visa-box"></div>
+      </td>
+      <td>
+        <div class="visa-titre">Le Chef de la Division Approvisionnement</div>
+        <div class="visa-sous">Visa</div>
+        <div class="visa-box"></div>
+      </td>
+    </tr>
+  </table>
+
+  <div th:replace="~{documents/fragments/common :: pied(${genereLe})}"></div>
+
+</body>
+</html>

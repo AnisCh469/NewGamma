@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<!--
+  Fragments partagés par tous les documents officiels A4 (bon de sortie, bon d'entrée,
+  PV de réforme, facture, fiches). Trois fragments :
+    - styles  : la feuille de style commune (cartouche institutionnel, tableaux, visas)
+    - entete(titre, numero, date, sousTitre, qr)  : bandeau haut
+    - pied(mentions)                              : bas de page
+  Les ÉTIQUETTES (petit format) n'utilisent PAS ces fragments : elles ont leur propre
+  mise en page dans etiquette-*.html.
+-->
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+
+<style th:fragment="styles">
+  @page {
+    size: A4 portrait;
+    margin: 14mm 15mm 16mm 15mm;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 10pt;
+    color: #1a1a1a;
+    margin: 0;
+    line-height: 1.35;
+  }
+  h1, h2, h3, h4 { margin: 0; font-weight: bold; }
+  table { border-collapse: collapse; width: 100%; }
+  .muted { color: #555; }
+  .small { font-size: 8.5pt; }
+  .tiny { font-size: 7.5pt; }
+  .right { text-align: right; }
+  .center { text-align: center; }
+  .bold { font-weight: bold; }
+  .mono { font-family: Courier, monospace; }
+  .mt-2 { margin-top: 6px; }
+  .mt-4 { margin-top: 12px; }
+  .mt-6 { margin-top: 20px; }
+
+  /* ---- Cartouche institutionnel ---- */
+  .doc-entete {
+    width: 100%;
+    border-bottom: 2px solid #0b3d2c;
+    padding-bottom: 8px;
+  }
+  .doc-entete td { vertical-align: top; }
+  .org-bloc { width: 50%; }
+  .org-bloc .ministere { font-size: 10pt; font-weight: bold; text-transform: uppercase; letter-spacing: .3px; }
+  .org-bloc .corps { font-size: 9pt; font-weight: bold; color: #0b3d2c; }
+  .org-bloc .service { font-size: 8pt; color: #555; text-transform: uppercase; margin-top: 2px; }
+  .titre-bloc { width: 34%; text-align: right; padding-right: 8px; }
+  .titre-bloc .doc-titre {
+    font-size: 14pt; font-weight: bold; text-transform: uppercase; color: #0b3d2c;
+    line-height: 1.1;
+  }
+  .titre-bloc .doc-soustitre { font-size: 8pt; color: #555; margin-top: 2px; }
+  .ref-cartouche {
+    margin-top: 6px; display: inline-block; border: 1px solid #999; padding: 3px 8px;
+    font-size: 8.5pt; white-space: nowrap;
+  }
+  .ref-cartouche .num { font-weight: bold; font-family: Courier, monospace; }
+  .qr-entete { width: 80px; text-align: right; vertical-align: top; }
+  .qr-entete img { width: 74px; height: 74px; }
+
+  /* ---- Blocs d'informations ---- */
+  .bloc-infos {
+    width: 100%; margin-top: 12px; border: 1px solid #ccc;
+  }
+  .bloc-infos td {
+    padding: 5px 9px; vertical-align: top; font-size: 9pt;
+    border-bottom: 1px solid #e3e3e3;
+  }
+  .bloc-infos td.k {
+    width: 26%; background: #f4f6f5; font-weight: bold; color: #333;
+    border-right: 1px solid #e3e3e3;
+  }
+  .bloc-infos tr:last-child td { border-bottom: none; }
+
+  /* ---- Tableau des articles ---- */
+  table.articles { margin-top: 14px; border: 1px solid #333; }
+  table.articles thead th {
+    background: #0b3d2c; color: #fff; font-size: 8pt; text-transform: uppercase;
+    padding: 6px 7px; text-align: left; border-right: 1px solid #2c5a48;
+  }
+  table.articles tbody td {
+    padding: 5px 7px; font-size: 9pt; border-bottom: 1px solid #ddd; border-right: 1px solid #eee;
+    vertical-align: top;
+  }
+  table.articles tbody tr:nth-child(even) td { background: #f8faf9; }
+  table.articles tfoot td {
+    padding: 7px; font-weight: bold; font-size: 9.5pt; border-top: 2px solid #333;
+    background: #f0f3f2;
+  }
+  table.articles .num-cell { font-family: Courier, monospace; white-space: nowrap; }
+  table.articles td.right, table.articles th.right { white-space: nowrap; }
+
+  /* ---- Note / mention ---- */
+  .note-securite {
+    margin-top: 12px; border-left: 3px solid #b08900; background: #fdf9ec;
+    padding: 6px 10px; font-size: 8pt; color: #6b5400;
+  }
+
+  /* ---- Cases de visa / signature ---- */
+  .visas { width: 100%; margin-top: 26px; }
+  .visas td {
+    width: 33.33%; text-align: center; vertical-align: top; padding: 0 6px;
+  }
+  .visa-box {
+    border: 1px solid #999; height: 92px; margin-top: 4px; border-radius: 2px;
+  }
+  .visa-titre { font-size: 8pt; font-weight: bold; text-transform: uppercase; }
+  .visa-sous { font-size: 7pt; color: #777; }
+
+  /* ---- Pied de page ---- */
+  .doc-pied {
+    position: running(pied);
+    border-top: 1px solid #ccc; padding-top: 4px; font-size: 7pt; color: #777;
+  }
+  @page { @bottom-center { content: element(pied); } }
+  .doc-pied .diffusion { font-weight: bold; color: #a33; letter-spacing: .5px; }
+  .pagination:after { content: "Page " counter(page) " / " counter(pages); }
+</style>
+
+</head>
+<body>
+
+<!-- ================= EN-TÊTE ================= -->
+<table th:fragment="entete(titre, sousTitre, numero, dateDoc, qr)" class="doc-entete">
+  <tr>
+    <td class="org-bloc">
+      <div class="ministere">Ministère de la Défense Nationale</div>
+      <div class="corps">Marine Nationale Tunisienne</div>
+      <div class="corps">Division de l'Approvisionnement (DA)</div>
+      <div class="service">Système GAMMA 3 &mdash; Distribution &amp; Logistique</div>
+    </td>
+    <td class="titre-bloc">
+      <div class="doc-titre" th:text="${titre}">TITRE DU DOCUMENT</div>
+      <div class="doc-soustitre" th:text="${sousTitre}" th:if="${sousTitre}">sous-titre</div>
+      <div class="ref-cartouche">
+        Réf. <span class="num" th:text="${numero}">N/A</span>
+        &nbsp;&middot;&nbsp; du <span th:text="${dateDoc}">--/--/----</span>
+      </div>
+    </td>
+    <td class="qr-entete" th:if="${qr}">
+      <img th:src="${qr}" alt="QR"/>
+    </td>
+  </tr>
+</table>
+
+<!-- ================= PIED ================= -->
+<div th:fragment="pied(mentions)" class="doc-pied">
+  <table style="width:100%">
+    <tr>
+      <td class="diffusion" style="width:33%">DIFFUSION RESTREINTE</td>
+      <td class="center" style="width:34%">
+        <span th:text="${mentions}">Document généré par GAMMA 3</span>
+      </td>
+      <td class="right pagination" style="width:33%"></td>
+    </tr>
+  </table>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Etiquette article</title>
+  <!--
+    Étiquette autocollante à apposer sur l'équipement.
+    Format 70 x 40 mm (taille standard d'étiquette matériel), marge d'impression 2 mm,
+    soit une zone utile de 66 x 36 mm. Pour un autre format (rouleau 62 mm, planche A4…),
+    ajuster @page ET les dimensions du tableau ci-dessous.
+  -->
+  <style>
+    @page { size: 70mm 40mm; margin: 2mm; }
+    html, body { margin: 0; padding: 0; }
+    body { font-family: Helvetica, Arial, sans-serif; color: #000; }
+    table.etq { width: 66mm; height: 36mm; border-collapse: collapse; table-layout: fixed; }
+    td.qr { width: 22mm; vertical-align: middle; text-align: center; }
+    td.qr img { width: 21mm; height: 21mm; }
+    td.info { vertical-align: top; padding-left: 2mm; }
+    td.bc { vertical-align: bottom; text-align: center; height: 8mm; }
+    td.bc img { width: 62mm; height: 6.5mm; }
+    .org { font-size: 5.5pt; color: #0b3d2c; font-weight: bold; text-transform: uppercase; }
+    .nno { font-family: Courier, monospace; font-size: 12pt; font-weight: bold; letter-spacing: .3px; line-height: 1.05; }
+    .desig { font-size: 6.5pt; line-height: 1.1; margin-top: 0.6mm; }
+    .meta { font-size: 6pt; color: #333; margin-top: 0.6mm; }
+    .danger {
+      display: inline-block; margin-top: 0.6mm; padding: 0.3mm 1.2mm;
+      border: 0.7pt solid #a00; color: #a00; font-size: 5.5pt; font-weight: bold; text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <table class="etq">
+    <tr>
+      <td class="qr" rowspan="2"><img th:src="${qr}" alt="QR"/></td>
+      <td class="info">
+        <div class="org">Marine Nationale &mdash; DA</div>
+        <div class="nno" th:text="${nomenclature}">0100AL000002</div>
+        <div class="desig" th:text="${designation}">Désignation de l'article</div>
+        <div class="meta">
+          Classe <span th:text="${classe}">01</span><span th:if="${uniteGestion != ''}" th:text="' &middot; U.G. ' + ${uniteGestion}"> · U.G. EA</span>
+        </div>
+        <span class="danger" th:if="${classeDanger}" th:text="'SGH ' + ${classeDanger}">SGH</span>
+      </td>
+    </tr>
+    <tr>
+      <td class="bc"><img th:src="${code128}" alt="code-barres"/></td>
+    </tr>
+  </table>
+</body>
+</html>

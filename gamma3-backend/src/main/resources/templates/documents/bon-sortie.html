@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title th:text="'Bon de sortie ' + ${numero}">Bon de sortie</title>
+  <style th:replace="~{documents/fragments/common :: styles}"></style>
+</head>
+<body>
+
+  <div th:replace="~{documents/fragments/common :: entete(${titre}, ${sousTitre}, ${numero}, ${dateDoc}, ${qr})}"></div>
+
+  <table class="bloc-infos">
+    <tr>
+      <td class="k">Unité bénéficiaire</td>
+      <td><span class="bold" th:text="${uniteNom}">Unité</span>
+        <span class="mono small" th:text="'(' + ${uniteCode} + ')'">(CODE)</span></td>
+      <td class="k">Demande d'origine</td>
+      <td><span class="mono" th:text="${demandeNumero}">DEM-...</span> du <span th:text="${demandeDate}">--</span></td>
+    </tr>
+    <tr>
+      <td class="k">Base navale</td>
+      <td th:text="${uniteBase}">Base</td>
+      <td class="k">Statut du dossier</td>
+      <td th:text="${statut}">—</td>
+    </tr>
+    <tr>
+      <td class="k">Soute de prélèvement</td>
+      <td><span class="bold" th:text="${magasinNom}">Magasin</span>
+        <span class="mono small" th:text="'(' + ${magasinCode} + ')'">(SM1)</span></td>
+      <td class="k">État du bon</td>
+      <td th:text="${bsStatut}">—</td>
+    </tr>
+    <tr>
+      <td class="k">Transporteur affecté</td>
+      <td th:text="${transporteur}">Service Transit DA</td>
+      <td class="k">Véhicule logistique</td>
+      <td class="mono" th:text="${vehicule}">—</td>
+    </tr>
+  </table>
+
+  <h4 class="mt-4">Détail des articles sortis de stock</h4>
+  <table class="articles">
+    <thead>
+      <tr>
+        <th style="width:4%">#</th>
+        <th style="width:15%">Nomenclature</th>
+        <th style="width:29%">Désignation</th>
+        <th style="width:7%">U.G.</th>
+        <th style="width:9%" class="right">Qté dem.</th>
+        <th style="width:9%" class="right">Qté acc.</th>
+        <th style="width:13%" class="right">P.U. HT</th>
+        <th style="width:14%" class="right">Valeur HT</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="l : ${lignes}">
+        <td th:text="${l.rang}">1</td>
+        <td class="num-cell" th:text="${l.nomenclature}">0100AL000002</td>
+        <td th:text="${l.designation}">Désignation</td>
+        <td th:text="${l.uniteGestion}">EA</td>
+        <td class="right" th:text="${l.qteDemandee}">0</td>
+        <td class="right bold" th:text="${l.qteAccordee}">0</td>
+        <td class="right" th:text="${l.prixUnitaire}">0,000 DT</td>
+        <td class="right" th:text="${l.valeur}">0,000 DT</td>
+      </tr>
+      <tr th:if="${#lists.isEmpty(lignes)}">
+        <td colspan="8" class="center muted">Aucun article.</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="7" class="right">Valeur totale estimée de la dotation logistique</td>
+        <td class="right" th:text="${totalValeur}">0,000 DT</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="note-securite">
+    <span class="bold">Note de sécurité — convoi :</span>
+    le présent bon de sortie vaut autorisation de transport réglementaire des matériels énumérés
+    ci-dessus. Tout contrôle de convoi ou de transit en base navale militaire doit vérifier la
+    conformité des plaques d'immatriculation du véhicule logistique mentionné.
+  </div>
+
+  <table class="visas">
+    <tr>
+      <td th:each="v : ${visas}">
+        <div class="visa-titre" th:text="${v.titre}">Visa</div>
+        <div class="visa-sous" th:utext="${v.sous}">Signature</div>
+        <div class="visa-box"></div>
+      </td>
+    </tr>
+  </table>
+
+  <div th:replace="~{documents/fragments/common :: pied(${genereLe})}"></div>
+
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Etiquette unite</title>
+  <style>
+    @page { size: 70mm 40mm; margin: 2mm; }
+    html, body { margin: 0; padding: 0; }
+    body { font-family: Helvetica, Arial, sans-serif; color: #000; }
+    table.etq { width: 66mm; height: 36mm; border-collapse: collapse; table-layout: fixed; }
+    td.qr { width: 22mm; vertical-align: middle; text-align: center; }
+    td.qr img { width: 21mm; height: 21mm; }
+    td.info { vertical-align: middle; padding-left: 2mm; }
+    td.bc { vertical-align: bottom; text-align: center; height: 8mm; }
+    td.bc img { width: 62mm; height: 6.5mm; }
+    .org { font-size: 5.5pt; color: #0b3d2c; font-weight: bold; text-transform: uppercase; }
+    .code { font-family: Courier, monospace; font-size: 14pt; font-weight: bold; line-height: 1; }
+    .nom { font-size: 7pt; line-height: 1.15; margin-top: 1mm; }
+    .base { font-size: 6pt; color: #333; margin-top: 0.8mm; }
+  </style>
+</head>
+<body>
+  <table class="etq">
+    <tr>
+      <td class="qr" rowspan="2"><img th:src="${qr}" alt="QR"/></td>
+      <td class="info">
+        <div class="org">Marine Nationale Tunisienne</div>
+        <div class="code" th:text="${code}">RPS</div>
+        <div class="nom" th:text="${nom}">Nom de l'unité</div>
+        <div class="base" th:text="'Base : ' + ${baseNavale}">Base : Bizerte</div>
+      </td>
+    </tr>
+    <tr>
+      <td class="bc"><img th:src="${code128}" alt="code-barres"/></td>
+    </tr>
+  </table>
+</body>
+</html>
