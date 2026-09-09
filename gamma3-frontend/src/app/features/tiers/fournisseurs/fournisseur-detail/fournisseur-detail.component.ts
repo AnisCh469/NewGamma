@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FournisseurService, Fournisseur } from '../../../../core/services/fournisseur.service';
+import { DocumentService } from '../../../../core/services/document.service';
 import { CardModule } from 'primeng/card';
 import { PanelModule } from 'primeng/panel';
 import { DividerModule } from 'primeng/divider';
@@ -52,6 +53,7 @@ export class FournisseurDetailComponent implements OnInit {
   private fournisseurService = inject(FournisseurService);
   private messageService = inject(MessageService);
   private marcheService = inject(MarcheService);
+  private documentService = inject(DocumentService);
 
   fournisseur: Fournisseur | null = null;
   loading: boolean = true;
@@ -236,18 +238,22 @@ export class FournisseurDetailComponent implements OnInit {
     }
   }
 
+  /** Fiche fournisseur officielle en PDF (serveur). Remplace l'impression navigateur. */
   printPage(): void {
-    document.body.classList.add('print-document-mode');
-    setTimeout(() => {
-      window.print();
-    }, 100);
+    if (!this.fournisseur?.id) return;
+    this.documentService.ouvrir('fiche-fournisseur/' + this.fournisseur.id);
   }
 
+  /** Un fournisseur ne reçoit pas d'étiquette physique : ce bouton ouvre aussi la fiche.
+   *  (Le bouton « Étiquette » du gabarit fournisseur peut être retiré par l'équipe.) */
   printLabel(): void {
-    document.body.classList.add('print-label-mode');
-    setTimeout(() => {
-      window.print();
-    }, 100);
+    this.printPage();
+  }
+
+  /** Bon de commande fournisseur officiel en PDF (serveur). */
+  imprimerBonCommande(cmd: { id?: number }): void {
+    if (!cmd?.id) return;
+    this.documentService.ouvrir('facture/' + cmd.id);
   }
 
   loadMarchesAndCommandes(): void {

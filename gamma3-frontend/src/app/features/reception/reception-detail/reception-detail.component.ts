@@ -14,6 +14,7 @@ import {
 import { FournisseurService, Fournisseur } from '../../../core/services/fournisseur.service';
 import { MarcheService } from '../../../core/services/marche.service';
 import { AuthService } from '../../../core/auth/auth.service';
+import { DocumentService } from '../../../core/services/document.service';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { StepsModule } from 'primeng/steps';
@@ -56,6 +57,7 @@ export class ReceptionDetailComponent implements OnInit {
   private authService = inject(AuthService);
   private messageService = inject(MessageService);
   private http = inject(HttpClient);
+  private documentService = inject(DocumentService);
 
   bpr: BonProvisoireReception | null = null;
   lignes: LigneReception[] = [];
@@ -374,8 +376,10 @@ export class ReceptionDetailComponent implements OnInit {
     return user ? user.role === 'UNIT_USER' : false;
   }
 
+  /** Bon d'Entrée en magasin officiel en PDF (serveur). Remplace l'impression navigateur. */
   printBE(): void {
-    window.print();
+    if (!this.bpr?.id) return;
+    this.documentService.ouvrir('bon-entree/' + this.bpr.id);
   }
 
   getLigneTotal(ligne: any): number {

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ReformeService, DossierReforme, LigneReforme } from '../../core/services/reforme.service';
+import { DocumentService } from '../../core/services/document.service';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
@@ -36,6 +37,7 @@ import { MessageService } from 'primeng/api';
 export class ReformeConsoleComponent implements OnInit {
   private reformeService = inject(ReformeService);
   private messageService = inject(MessageService);
+  private documentService = inject(DocumentService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
@@ -173,16 +175,10 @@ export class ReformeConsoleComponent implements OnInit {
     });
   }
 
+  /** PV de réforme officiel en PDF (serveur). Remplace l'impression navigateur. */
   declencherImpression(dossier: DossierReforme): void {
-    this.printDossier = dossier;
-    this.reformeService.getLignesByDossier(dossier.id!).subscribe({
-      next: (list) => {
-        this.printLignes = list;
-        setTimeout(() => {
-          window.print();
-        }, 150);
-      }
-    });
+    if (!dossier?.id) return;
+    this.documentService.ouvrir('pv-reforme/' + dossier.id);
   }
 
   getStatutSeverity(statut: string | undefined): 'success' | 'secondary' | 'info' | 'warning' | 'danger' | undefined {

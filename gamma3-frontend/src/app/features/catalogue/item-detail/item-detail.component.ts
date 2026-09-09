@@ -20,6 +20,7 @@ import { InputTextareaModule } from 'primeng/inputtextarea';
 import { StockService } from '../../stock/stock.service';
 import { Stock, MouvementDto } from '../../../core/models/stock.model';
 import { AuthService } from '../../../core/auth/auth.service';
+import { DocumentService } from '../../../core/services/document.service';
 import * as JsBarcode from 'jsbarcode';
 
 import { environment } from '../../../../environments/environment';
@@ -37,6 +38,7 @@ export class ItemDetailComponent implements OnInit {
   private stockService = inject(StockService);
   private messageService = inject(MessageService);
   authService = inject(AuthService);
+  private documentService = inject(DocumentService);
 
   isClient(): boolean {
     return this.authService.currentUser()?.role === 'UNIT_USER';
@@ -187,18 +189,16 @@ export class ItemDetailComponent implements OnInit {
     }
   }
 
+  /** Fiche article officielle en PDF (serveur). Remplace l'impression navigateur. */
   printPage() {
-    document.body.classList.add('print-document-mode');
-    setTimeout(() => {
-      window.print();
-    }, 100);
+    if (!this.item) return;
+    this.documentService.ouvrir('fiche-article/' + encodeURIComponent(this.item.nomenclature));
   }
 
+  /** Étiquette autocollante (petit format, QR + code-barres) en PDF (serveur). */
   printLabel() {
-    document.body.classList.add('print-label-mode');
-    setTimeout(() => {
-      window.print();
-    }, 100);
+    if (!this.item) return;
+    this.documentService.ouvrir('etiquette/article/' + encodeURIComponent(this.item.nomenclature));
   }
 
   loadStock() {

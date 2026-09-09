@@ -18,6 +18,7 @@ import { TabViewModule } from 'primeng/tabview';
 import { QRCodeModule } from 'angularx-qrcode';
 import { PlanArmementService, DemandeDotation } from '../../../core/services/plan-armement.service';
 import { AuthService } from '../../../core/auth/auth.service';
+import { DocumentService } from '../../../core/services/document.service';
 
 @Component({
   selector: 'app-console-arbitrage',
@@ -50,6 +51,7 @@ export class ConsoleArbitrageComponent implements OnInit {
 
   private planArmementService = inject(PlanArmementService);
   public authService = inject(AuthService);
+  private documentService = inject(DocumentService);
 
   demandes: DemandeMateriel[] = [];
   allDemandes: DemandeMateriel[] = [];
@@ -332,16 +334,12 @@ export class ConsoleArbitrageComponent implements OnInit {
     });
   }
 
+  /**
+   * Ouvre le Bon de Sortie officiel en PDF (généré par le serveur, gabarit institutionnel).
+   * Remplace l'ancienne impression navigateur (window.print) — voir docs/AUDIT_IMPRESSION.md.
+   */
   declencherImpression(dem: DemandeMateriel): void {
-    this.printDemande = dem;
-    this.distributionService.getLignesByDemande(dem.id!).subscribe({
-      next: (list) => {
-        this.printLignes = list;
-        setTimeout(() => {
-          window.print();
-        }, 150);
-      }
-    });
+    this.documentService.ouvrir('bon-sortie/' + dem.id);
   }
 
   getStatutSeverity(statut: string | undefined): 'success' | 'secondary' | 'info' | 'warning' | 'danger' | 'contrast' | undefined {

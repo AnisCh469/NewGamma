@@ -185,6 +185,7 @@
                         <th class="text-xs">Liaison Marché</th>
                         <th class="text-xs">Montant TTC</th>
                         <th class="text-xs">Statut</th>
+                        <th class="text-xs text-right">Document</th>
                       </tr>
                     </ng-template>
                     <ng-template pTemplate="body" let-cmd>
@@ -195,6 +196,9 @@
                         <td class="font-bold text-slate-800">{{ cmd.montantTotal | number:'1.3-3' }} DT</td>
                         <td>
                           <p-tag [value]="cmd.statut || 'EN_ATTENTE'" [severity]="cmd.statut === 'LIVRE' ? 'success' : (cmd.statut === 'ANNULE' ? 'danger' : 'warning')"></p-tag>
+                        </td>
+                        <td class="text-right">
+                          <p-button icon="pi pi-file-pdf" label="Bon de commande" styleClass="p-button-text p-button-secondary p-button-sm" (onClick)="imprimerBonCommande(cmd)"></p-button>
                         </td>
                       </tr>
                     </ng-template>

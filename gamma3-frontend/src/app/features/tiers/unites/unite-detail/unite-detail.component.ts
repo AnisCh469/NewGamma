@@ -24,6 +24,7 @@ import { AuthService } from '../../../../core/auth/auth.service';
 import { DistributionService, DemandeMateriel, LigneDemande } from '../../../../core/services/distribution.service';
 import { AnalyticsService } from '../../../../core/services/analytics.service';
 import { ReformeService, DossierReforme, LigneReforme } from '../../../../core/services/reforme.service';
+import { DocumentService } from '../../../../core/services/document.service';
 
 import { environment } from '../../../../../environments/environment';
 @Component({
@@ -62,6 +63,7 @@ export class UniteDetailComponent implements OnInit {
   private distributionService = inject(DistributionService);
   private analyticsService = inject(AnalyticsService);
   private reformeService = inject(ReformeService);
+  private documentService = inject(DocumentService);
 
   activeTabIndex: number = 0;
 
@@ -288,18 +290,16 @@ export class UniteDetailComponent implements OnInit {
     }
   }
 
+  /** Fiche unité officielle en PDF (serveur). Remplace l'impression navigateur. */
   printPage(): void {
-    document.body.classList.add('print-document-mode');
-    setTimeout(() => {
-      window.print();
-    }, 100);
+    if (!this.unite?.id) return;
+    this.documentService.ouvrir('fiche-unite/' + this.unite.id);
   }
 
+  /** Étiquette unité (petit format, QR) en PDF (serveur). */
   printLabel(): void {
-    document.body.classList.add('print-label-mode');
-    setTimeout(() => {
-      window.print();
-    }, 100);
+    if (!this.unite?.id) return;
+    this.documentService.ouvrir('etiquette/unite/' + this.unite.id);
   }
 
   loadPlanArmement(): void {
@@ -773,16 +773,10 @@ export class UniteDetailComponent implements OnInit {
     });
   }
 
+  /** PV de réforme officiel en PDF (serveur). */
   printCertificatReforme(dossier: DossierReforme): void {
-    this.printDossierReforme = dossier;
-    this.reformeService.getLignesByDossier(dossier.id!).subscribe({
-      next: (list) => {
-        this.printLignesReforme = list;
-        setTimeout(() => {
-          window.print();
-        }, 150);
-      }
-    });
+    if (!dossier?.id) return;
+    this.documentService.ouvrir('pv-reforme/' + dossier.id);
   }
 
   // --- SPRINT 15 2FA USER CONTROL ---
@@ -845,16 +839,10 @@ export class UniteDetailComponent implements OnInit {
   printDemande: DemandeMateriel | null = null;
   printLignes: LigneDemande[] = [];
 
+  /** Bon de Sortie officiel en PDF (serveur). */
   declencherImpression(dem: DemandeMateriel): void {
-    this.printDemande = dem;
-    this.distributionService.getLignesByDemande(dem.id!).subscribe({
-      next: (list) => {
-        this.printLignes = list;
-        setTimeout(() => {
-          window.print();
-        }, 150);
-      }
-    });
+    if (!dem?.id) return;
+    this.documentService.ouvrir('bon-sortie/' + dem.id);
   }
 
   getLigneTotal(l: LigneDemande): number {
