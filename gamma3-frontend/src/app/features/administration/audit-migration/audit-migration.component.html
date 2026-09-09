@@ -1,6 +1,7 @@
+<p-toast></p-toast>
 <div class="min-h-screen bg-slate-50 p-8">
 
-  <div class="mb-8 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+  <div class="mb-6 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
     <div>
       <h1 class="text-3xl font-extrabold text-gamma-dark tracking-tight">Audit Migration Gamma2 → Gamma3</h1>
       <p class="text-slate-500 mt-1">
@@ -9,6 +10,28 @@
       </p>
     </div>
     <p-button label="Relancer l'audit" icon="pi pi-refresh" (onClick)="runAudit()" [loading]="isLoading"></p-button>
+  </div>
+
+  <!-- Actions de reprise de données -->
+  <div class="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-600 mb-3">Reprise de données Gamma 2</h2>
+    <div class="flex flex-wrap gap-3">
+      <div class="flex flex-col gap-1">
+        <p-button label="Importer l'historique des mouvements" icon="pi pi-history"
+                  styleClass="p-button-primary" (onClick)="migrerMouvements()" [loading]="migratingMouvements"></p-button>
+        <span class="text-[11px] text-slate-400 max-w-xs">
+          Alimente la vue « Historique » de la fiche article (~160 000 mouvements 2008→2026).
+          Archives uniquement : n'affecte pas les stocks actuels. Ré-exécutable.
+        </span>
+      </div>
+      <div class="flex flex-col gap-1">
+        <p-button label="Recharger le Plan d'Armement" icon="pi pi-refresh"
+                  styleClass="p-button-outlined p-button-secondary" (onClick)="migrerPlanArmement()" [loading]="migratingPlan"></p-button>
+        <span class="text-[11px] text-slate-400 max-w-xs">
+          Remplace l'intégralité des plans d'armement par ceux de Gamma 2.
+        </span>
+      </div>
+    </div>
   </div>
 
   <div *ngIf="errorMessage" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">

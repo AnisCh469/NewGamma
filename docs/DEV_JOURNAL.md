@@ -269,6 +269,20 @@ Ce journal répertorie les difficultés techniques rencontrées au cours du dév
 * **Vérifié :** `compileJava` + `ng build` OK. Par `curl` : `GET /items` renvoie le **même nombre d'articles** pour `RPS` (Gestionnaire) et `RPS_CDT` (Commandant) — plus zéro ; `GET /stocks/item/{id}/historique` renvoie la liste des mouvements avec tous les champs. Les workflows Réception et Réforme confirmés fonctionnels de bout en bout par l'utilisateur en recette IHM.
 * **À faire :** généraliser les numéros cliquables ; l'historique n'est proposé que sur la fiche article (une vue « journal » globale des mouvements par magasin/période existe déjà via `/reports/mouvements`, mais ce rapport Jasper est cassé — voir `AUDIT_IMPRESSION.md`).
 
+## Entrée : 2026-09-09 (7)
+* **Tâche :** Rapatrier l'historique des mouvements de stock de Gamma 2 (SQL Server) pour alimenter la vue « Historique » de la fiche article (demande utilisateur, suite de l'entrée (6)).
+* **Difficulté rencontrée :** Aucune trace de reprise de cet historique dans le code (le script `pgloader` ne migre que `dbo.Item`, `PlanArmementMigrationService` que `dbo.Catalogue`). Volume important (~164 000 lignes), et il fallait absolument que l'opération n'altère PAS les niveaux de stock actuels de Gamma 3.
+* **Cause technique racine :** Reprise Gamma 2 → Gamma 3 historiquement partielle et non documentée (déjà noté dans `DATABASE_ARCHITECTURE.md` §7).
+* **Solution retenue :** Nouveau `MouvementMigrationService` + endpoint `POST /api/v1/migration/mouvements-stock` (ADMIN), sur le même patron que `PlanArmementMigrationService` (connexion JDBC directe à SQL Server via `spring.legacy.datasource.*`).
+  1. **Source Gamma 2** : jointure `dbo.LBMvt` (lignes) × `dbo.BonMvt` (en-têtes), filtrée `LBMvtQtitItemAcc > 0` et `BonMvtDate ∈ [2000, 2026]` (la table contient des dates parasites jusqu'en 2064).
+  2. **Correspondances** : article ← nomenclature 12 caractères reconstituée (helper `PlanArmementMigrationService.pad` rendu `static` package) et recherchée dans `items` (ligne ignorée si l'article n'a pas été migré) ; magasin ← `BonMvtMag` `MDA` → `SGS`, défaut `SGS` ; type ← `TypeBonCode` `D`→`SORTIE` / `R`→`ENTREE` ; quantité ← `LBMvtQtitItemAcc` ; date ← `BonMvtDate` ; `reference_bon` ← `'G2-' + BonMvtCode` (préfixe = marqueur d'archive) ; `motif` ← « Distribution/Remise … unité <code> — archive Gamma 2 ».
+  3. **`cree_par`** (FK NOT NULL) : compte système `SYS-MIGRATION-G2` créé au premier appel — rôle ADMIN mais `enabled = false` et mot de passe non-bcrypt → **connexion impossible** (bloqué par `JwtAuthenticationFilter` + `matches()` échoue toujours).
+  4. **Archives seulement** : insertion JDBC directe dans `mouvements_stock` (PAS via `StockService.effectuerMouvement`) → les niveaux de `stock` ne bougent pas. Insertion par lots de 1 000 avec commits intermédiaires (pas de contexte de persistance Hibernate qui gonfle).
+  5. **Idempotent** : `DELETE FROM mouvements_stock WHERE reference_bon LIKE 'G2-%'` en préambule, puis réinjection. Les mouvements réels de Gamma 3 (référence sans `G2-`) ne sont jamais touchés.
+  6. **IHM** : boutons « Importer l'historique des mouvements » et « Recharger le Plan d'Armement » ajoutés à l'écran `Administration > Audit Gamma2` (jusque-là le seul endpoint sans déclencheur IHM était `plan-armement`).
+* **Vérifié (exécution réelle) :** 163 853 lignes lues, **163 594 mouvements insérés**, 259 ignorées (article non migré), en **33 s**. `mouvements_stock` : 8 → 163 602 (8 mouvements Gamma 3 réels **intacts**). Période couverte 2008-01-02 → 2026-03-05, **22 645 articles** distincts avec historique. Re-exécution → mêmes compteurs, total inchangé (idempotence OK). `GET /stocks/item/{id}/historique` sur `0720RP000001` (ROULEAU DE PEINTURE) renvoie ses **2 351 mouvements** (2008→2026), agent « Migration Gamma 2 (historique) ». `compileJava` + `ng build` OK.
+* **À faire :** les documents anciens (bons de sortie / réceptions Gamma 2) et `dbo.Demande` (721 lignes) restent non repris — voir `DATABASE_ARCHITECTURE.md` §7.4.
+
 ## [Modèle d'Entrée]
 * **Date :** AAAA-MM-JJ
 * **Tâche :** Description de la tâche ou de la fonctionnalité

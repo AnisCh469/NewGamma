@@ -30,4 +30,22 @@ export class MigrationAuditService {
   getAudit(): Observable<AuditReport> {
     return this.http.get<AuditReport>(`${this.apiUrl}/audit`);
   }
+
+  /** Rapatrie l'historique des mouvements de stock de Gamma 2 (idempotent, archives seulement). */
+  migrerMouvements(): Observable<MigrationMouvementsResult> {
+    return this.http.post<MigrationMouvementsResult>(`${this.apiUrl}/mouvements-stock`, {});
+  }
+
+  /** Recharge le Plan d'Armement depuis Gamma 2 (idempotent : remplace tout). */
+  migrerPlanArmement(): Observable<string> {
+    return this.http.post(`${this.apiUrl}/plan-armement`, {}, { responseType: 'text' });
+  }
+}
+
+export interface MigrationMouvementsResult {
+  message: string;
+  lignesLues: number;
+  mouvementsInseres: number;
+  ignoresArticleNonMigre: number;
+  dureeMs: number;
 }

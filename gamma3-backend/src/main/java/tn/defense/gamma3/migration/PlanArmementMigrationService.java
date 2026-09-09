@@ -136,7 +136,12 @@ public class PlanArmementMigrationService {
         }
     }
 
-    private String pad(String s, int len) {
+    /**
+     * Complète (à gauche par des zéros) ou tronque un segment de nomenclature à la longueur
+     * voulue. Partagé avec {@link MouvementMigrationService} qui reconstitue la même
+     * nomenclature 12 caractères depuis Gamma 2.
+     */
+    static String pad(String s, int len) {
         if (s == null) return "0".repeat(len);
         s = s.trim();
         if (s.length() >= len) return s.substring(0, len);

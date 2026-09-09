@@ -882,6 +882,31 @@ et **remplace intégralement** la table `plan_armement` (`deleteAllInBatch()` pu
 `saveAll()` — idempotent, rejouable à volonté). Ignore silencieusement (avec compteur de log)
 toute ligne dont l'unité ou l'article correspondant n'existe pas déjà côté Gamma3.
 
+### 7.2bis `MouvementMigrationService` — historique des mouvements de stock (ajouté 2026-09-09)
+
+Endpoint `POST /api/v1/migration/mouvements-stock` (ADMIN ; bouton dans `Administration >
+Audit Gamma2`). Lit en direct (JDBC) la jointure Gamma2 `dbo.LBMvt` (lignes) × `dbo.BonMvt`
+(en-têtes) — ~164 000 lignes, période 2008→2026 — et insère chaque mouvement dans
+`mouvements_stock` :
+
+| Champ Gamma3 | Source Gamma2 |
+|---|---|
+| `item_id` | nomenclature 12 car. reconstruite (`ClasseCode`+`SousClasseCode`+`CategorieCode`+`SerieCode`+`ItemCode`), recherchée dans `items` — ligne **ignorée** si l'article n'a pas été migré (~260 cas) |
+| `magasin_id` | `BonMvt.BonMvtMag` : `MDA` → **SGS** ; tout autre → SGS par défaut (Gamma2 ne connaît que 2 codes sur cette table) |
+| `type_mouvement` | `BonMvt.TypeBonCode` : `D` (Distribution) → `SORTIE`, `R` (Remise) → `ENTREE` |
+| `quantite` | `LBMvt.LBMvtQtitItemAcc` (quantité accordée) |
+| `date_mouvement` | `BonMvt.BonMvtDate` |
+| `reference_bon` | `'G2-' + BonMvtCode` |
+| `motif` | `"Distribution/Remise … unité <code> — archive Gamma 2"` |
+| `cree_par` | compte système `SYS-MIGRATION-G2` (rôle ADMIN mais `enabled = false`, mot de passe non-bcrypt → **connexion impossible**), créé au premier appel |
+
+**ARCHIVES uniquement** : insertion directe dans `mouvements_stock` (pas via
+`StockService.effectuerMouvement`) → **les niveaux de `stock` actuels ne sont pas modifiés**.
+**Idempotent** : purge d'abord `DELETE FROM mouvements_stock WHERE reference_bon LIKE 'G2-%'`
+puis réinjecte — les mouvements réels de Gamma3 (référence sans préfixe `G2-`) ne sont jamais
+touchés. Insertion par lots JDBC de 1 000 (~30 s pour 164 000 lignes). Alimente la vue
+« Historique » de la fiche article (`GET /api/v1/stocks/item/{id}/historique`).
+
 ### 7.3 `LegacyAuditController` — outil d'audit ajouté le 2026-09-04
 
 Endpoint `GET /api/v1/migration/audit` (ADMIN). Puisqu'aucune trace fiable des tables Gamma2
@@ -895,11 +920,12 @@ nouvelles tables apparaissent côté Gamma2.
 
 ### 7.4 Ce qui n'a très probablement jamais été migré
 
-Sur la seule base de ce qui a un mécanisme de migration connu dans le code (7.1 et 7.2),
-**aucune autre donnée de Gamma2 n'a de chemin de reprise identifié** — notamment :
-historique des mouvements de stock, anciens bons de sortie, anciennes réceptions, anciens
-comptes utilisateurs, historique des demandes de matériel. À confirmer/infirmer table par
-table via `Administration > Audit Gamma2`.
+Sur la seule base de ce qui a un mécanisme de migration connu dans le code (7.1, 7.2, 7.2bis),
+les données Gamma2 suivantes **n'ont toujours pas de chemin de reprise identifié** :
+anciens bons de sortie (documents), anciennes réceptions (documents), anciens comptes
+utilisateurs, historique détaillé des demandes de matériel (`dbo.Demande`, 721 lignes).
+L'**historique des mouvements de stock** est désormais repris (voir 7.2bis). À confirmer/
+infirmer table par table via `Administration > Audit Gamma2`.
 
 ---
 
