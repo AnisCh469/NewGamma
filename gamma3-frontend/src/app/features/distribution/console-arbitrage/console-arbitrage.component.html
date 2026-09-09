@@ -41,7 +41,11 @@
           </ng-template>
           <ng-template pTemplate="body" let-dem>
             <tr class="hover:bg-blue-50/50 transition-colors">
-              <td class="py-3 px-4 text-sm font-mono font-bold text-gamma-primary">{{ dem.numeroDemande }}</td>
+              <td class="py-3 px-4 text-sm font-mono font-bold">
+                <button type="button" class="text-gamma-primary hover:underline focus:underline"
+                        (click)="openArbitrageModal(dem)"
+                        title="Voir le détail de la demande">{{ dem.numeroDemande }}</button>
+              </td>
               <td class="py-3 px-4 text-sm font-bold text-slate-800">
                 {{ dem.unite?.nom }} <span class="text-xs text-slate-400 font-mono font-bold ml-1">({{ dem.unite?.code }})</span>
               </td>

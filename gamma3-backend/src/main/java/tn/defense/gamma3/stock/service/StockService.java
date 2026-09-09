@@ -46,6 +46,37 @@ public class StockService {
                 .collect(Collectors.toList());
     }
 
+    private static final java.time.format.DateTimeFormatter HIST_DTF =
+            java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+    /**
+     * Historique complet des mouvements de stock d'un article, toutes soutes confondues,
+     * du plus récent au plus ancien. Alimente le bouton « Historique » de la fiche article.
+     */
+    @Transactional(readOnly = true)
+    public List<tn.defense.gamma3.stock.api.dto.MouvementHistoriqueDto> getHistoriqueByItemId(java.util.UUID itemId) {
+        return mouvementStockRepository.findByItem_IdOrderByDateMouvementDesc(itemId).stream()
+                .map(m -> new tn.defense.gamma3.stock.api.dto.MouvementHistoriqueDto(
+                        m.getDateMouvement() != null ? m.getDateMouvement().format(HIST_DTF) : "—",
+                        m.getTypeMouvement().name(),
+                        switch (m.getTypeMouvement()) {
+                            case ENTREE -> "+";
+                            case SORTIE, REFORME -> "-";
+                            default -> "=";
+                        },
+                        m.getQuantite(),
+                        m.getMagasin() != null ? m.getMagasin().getCode() : "—",
+                        m.getMagasin() != null ? m.getMagasin().getNom() : "—",
+                        m.getReferenceBon(),
+                        m.getMotif() != null ? m.getMotif() : "",
+                        m.getCreePar() != null
+                                ? (m.getCreePar().getFullName() != null && !m.getCreePar().getFullName().isBlank()
+                                    ? m.getCreePar().getFullName() : m.getCreePar().getMatricule())
+                                : "—"
+                ))
+                .collect(Collectors.toList());
+    }
+
     @Transactional
     public void effectuerMouvement(MouvementDto dto, String userMatricule) {
         Item item = itemRepository.findById(dto.getItemId())

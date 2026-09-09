@@ -250,9 +250,13 @@ export class CatalogueComponent implements OnInit {
 
   loadClientPlans(): void {
     const user = this.authService.currentUser();
-    if (!user?.matricule) return;
+    // CORRECTIF (2026-09-09) : ne plus supposer « matricule = code unité » — faux pour le
+    // Commandant (RPS_CDT ≠ RPS), d'où un panier / catalogue vide. On utilise le
+    // rattachement explicite (uniteCode) renvoyé au login, avec repli sur le matricule.
+    const uniteCode = user?.uniteCode || user?.matricule;
+    if (!uniteCode) return;
 
-    this.planArmementService.getPlansByUniteCode(user.matricule).subscribe({
+    this.planArmementService.getPlansByUniteCode(uniteCode).subscribe({
       next: (plans) => {
         // Récupérer l'ID de l'unité à partir du premier plan
         const uniteId = plans[0]?.unite?.id;

@@ -55,6 +55,11 @@ export class ItemDetailComponent implements OnInit {
   displayMouvementModal: boolean = false;
   mouvementDto: Partial<MouvementDto> = { typeMouvement: 'ENTREE', quantite: 1 };
 
+  // Historique des mouvements (bouton « Historique »)
+  displayHistoriqueModal = false;
+  loadingHistorique = false;
+  historique: import('../../stock/stock.service').MouvementHistorique[] = [];
+
   // Variables de Réservations (Transit)
   reservations: any[] = [];
   loadingReservations: boolean = false;
@@ -187,6 +192,20 @@ export class ItemDetailComponent implements OnInit {
         error: () => this.messageService.add({severity:'error', summary:'Erreur', detail:'Impossible d\'ajouter le document'})
       });
     }
+  }
+
+  /** Ouvre l'historique complet des mouvements de stock de l'article (in-app, pas de PDF). */
+  openHistorique(): void {
+    if (!this.item) return;
+    this.displayHistoriqueModal = true;
+    this.loadingHistorique = true;
+    this.stockService.getItemHistorique(this.item.id).subscribe({
+      next: (list) => { this.historique = list; this.loadingHistorique = false; },
+      error: () => {
+        this.loadingHistorique = false;
+        this.messageService.add({ severity: 'error', summary: 'Erreur', detail: "Impossible de charger l'historique." });
+      }
+    });
   }
 
   /** Fiche article officielle en PDF (serveur). Remplace l'impression navigateur. */

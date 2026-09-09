@@ -61,6 +61,21 @@ public class ItemController {
         this.planArmementRepository = planArmementRepository;
         this.ligneDemandeRepository = ligneDemandeRepository;
     }
+
+    /**
+     * Code de l'unité d'un compte UNIT_USER, pour filtrer le catalogue sur son Plan d'Armement.
+     * CORRECTIF (audit 2026-09-09) : on utilisait ici {@code currentUser.getMatricule()} en
+     * supposant « matricule = code unité ». C'est vrai pour le Gestionnaire historique, mais
+     * PAS pour le Commandant ({@code RPS_CDT} ≠ {@code RPS}) — résultat : un Commandant voyait
+     * un catalogue VIDE. On privilégie désormais le rattachement explicite {@code User.unite}
+     * (voir {@code FonctionUnite}), avec repli sur le matricule pour le compte générique
+     * {@code client} sans unité.
+     */
+    private static String uniteCodeDe(User u) {
+        return (u.getUnite() != null && u.getUnite().getCode() != null)
+                ? u.getUnite().getCode()
+                : u.getMatricule();
+    }
  
     /**
      * RÔLE :
@@ -121,7 +136,7 @@ public class ItemController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.getPrincipal() instanceof User currentUser) {
             if (currentUser.getRole() == Role.UNIT_USER && !bypassPlanArmement) {
-                spec = ItemSpecification.belongsToPlanArmement(currentUser.getMatricule());
+                spec = ItemSpecification.belongsToPlanArmement(uniteCodeDe(currentUser));
             }
         }
         
@@ -189,7 +204,7 @@ public class ItemController {
         // ÉTAPE 11 : Chargement des dotations de l'unité (Plan d'Armement) pour l'utilisateur connecté
         Map<UUID, PlanArmement> plansMap = new HashMap<>();
         if (auth != null && auth.getPrincipal() instanceof User currentUser && currentUser.getRole() == Role.UNIT_USER) {
-            List<PlanArmement> plans = planArmementRepository.findByUniteCode(currentUser.getMatricule());
+            List<PlanArmement> plans = planArmementRepository.findByUniteCode(uniteCodeDe(currentUser));
             for (PlanArmement p : plans) {
                 plansMap.put(p.getItem().getId(), p);
             }

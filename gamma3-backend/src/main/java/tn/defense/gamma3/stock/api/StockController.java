@@ -22,6 +22,13 @@ public class StockController {
         return ResponseEntity.ok(stockService.getStockByItemId(itemId));
     }
 
+    /** Historique des mouvements de stock d'un article (réceptions, sorties, transferts, réformes). */
+    @GetMapping("/item/{itemId}/historique")
+    public ResponseEntity<List<tn.defense.gamma3.stock.api.dto.MouvementHistoriqueDto>> getHistoriqueByItemId(
+            @PathVariable java.util.UUID itemId) {
+        return ResponseEntity.ok(stockService.getHistoriqueByItemId(itemId));
+    }
+
     @PostMapping("/mouvement")
     public ResponseEntity<Void> effectuerMouvement(
             @RequestBody MouvementDto dto,
