@@ -809,7 +809,20 @@ suit la convention de démonstration `<CODE_UNITE>_CDT`, mais rien ne l'impose e
 
 ### 6.6 Implication de `ddl-auto: update` pour l'équipe entrante
 
-**Aucun historique de migration versionné n'existe.** Conséquences concrètes :
+> **MISE À JOUR 2026-09-09 — Flyway introduit (étape de transition).**
+> Flyway est désormais actif au démarrage du backend (`spring-boot-flyway` +
+> `flyway-database-postgresql`, config dans `application.yml`). Il s'exécute **avant**
+> Hibernate. Les bases déjà existantes sont marquées `baseline V0` sans rejeu ; les
+> scripts vivent dans `gamma3-backend/src/main/resources/db/migration/` (`V1__…` répare
+> la contrainte CHECK figée du statut des demandes — voir `DEV_JOURNAL.md` 2026-09-09).
+> **`ddl-auto` reste temporairement sur `update`** : Flyway et Hibernate cohabitent
+> (Flyway d'abord pour les changements explicites, Hibernate ensuite pour les entités
+> pas encore couvertes par un script). Cible finale (voir §10) : écrire un baseline SQL
+> complet du schéma existant puis basculer `ddl-auto` sur `validate`, afin que **toute**
+> évolution passe par un script versionné. Le paragraphe ci-dessous décrit la situation
+> d'origine, encore partiellement vraie tant que la transition n'est pas terminée.
+
+**Aucun historique de migration versionné n'existait jusqu'au 2026-09-09.** Conséquences concrètes :
 
 - Impossible de reconstruire l'état exact du schéma à une date donnée à partir du dépôt Git
   seul (contrairement à un projet Flyway/Liquibase où chaque migration est un fichier daté).
@@ -917,7 +930,7 @@ table via `Administration > Audit Gamma2`.
 
 | # | Sujet | Risque | Section |
 |---|---|---|---|
-| 1 | Pas de Flyway/Liquibase, `ddl-auto: update` | Impossible de reconstruire un état de schéma historique ; renommages/suppressions de colonnes silencieusement ignorés par Hibernate (colonne orpheline) | 6.6 |
+| 1 | ~~Pas de Flyway/Liquibase~~ **Flyway introduit le 2026-09-09** ; `ddl-auto` encore sur `update` (transition) | Résiduel : tant que le baseline complet n'est pas écrit et `ddl-auto` pas passé à `validate`, Hibernate peut encore appliquer des changements de schéma non tracés | 6.6 |
 | 2 | Import initial des 63 283 `Item` non rejouable, non tracé en code | Impossible de reconstruire le catalogue depuis zéro sans la sauvegarde de base actuelle | 7.1 |
 | 3 | `BonSortie.magasinId` sans relation JPA | Pas de contrainte d'intégrité référentielle, navigation Java impossible | 6.7 |
 | 4 | Aucun index déclaré (`@Index`) sur l'ensemble du schéma (vérifié par recherche exhaustive) | Risque de dégradation de performance sur les colonnes fréquemment filtrées (`nomenclature`, `statut`, `unite_id`, `matricule`) à mesure que le volume augmente — seules les contraintes `UNIQUE` créent un index implicite | tout le document |
@@ -931,9 +944,14 @@ table via `Administration > Audit Gamma2`.
 
 ## 10. Recommandations pour l'équipe entrante
 
-1. **Introduire Flyway ou Liquibase avant toute nouvelle évolution de schéma.** Générer une
-   première migration "baseline" à partir du schéma actuel (`pg_dump --schema-only`), puis
-   désactiver progressivement `ddl-auto: update` au profit de migrations explicites versionnées.
+1. ✅ **Flyway introduit le 2026-09-09** (`spring-boot-flyway`, scripts dans
+   `src/main/resources/db/migration/`, `baseline-on-migrate` pour les bases existantes).
+   **Reste à faire pour terminer la transition :** (a) générer le baseline SQL complet du
+   schéma actuel (`pg_dump --schema-only` de la base de référence → `V0__baseline.sql` sur
+   une future base neuve, ou conserver le baseline logique V0 sur les bases existantes) ;
+   (b) une fois le schéma entièrement couvert par des scripts, passer
+   `spring.jpa.hibernate.ddl-auto` de `update` à `validate` pour qu'Hibernate ne modifie
+   plus jamais le schéma de lui-même.
 2. **Ajouter les index manquants** en priorité sur : `items.nomenclature` (déjà indexé via
    `UNIQUE`, mais un index composé sur les 5 segments décodés serait utile si des filtres par
    classe/sous-classe deviennent fréquents), `demandes_materiel.statut` +

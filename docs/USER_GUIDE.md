@@ -37,13 +37,25 @@ Ce guide est destiné aux utilisateurs finaux pour les accompagner dans la prise
 
 Afin d'assurer la traçabilité militaire et la séparation stricte des privilèges :
 
+### Qui a accès à la console d'arbitrage ?
+La page **Arbitrage** (`/distribution`) est réservée à l'**Administrateur** et aux **Gestionnaires de soute (DA_MANAGER)**. Un compte d'unité (Gestionnaire ou Commandant) ne peut pas y accéder — s'il tente d'ouvrir l'adresse directement, il est redirigé vers le catalogue. Chaque Gestionnaire de soute ne voit et ne traite **que** les demandes routées vers **sa propre soute**.
+
 ### Pour l'Administrateur Système (ADMIN)
-* **Arbitrage centralisé :** L'administrateur peut arbitrer n'importe quelle demande de matériel soumise par les unités et décider d'attribuer une soute spécifique (ex: Magasin Centre SM1 ou Central SGS) pour le prélèvement.
-* **Aucun retrait physique direct :** L'administrateur **n'a pas l'autorisation** de confirmer la remise physique des équipements à l'unité (sécurité Zero-Trust). Sur la console d'arbitrage, les demandes en attente de livraison affichent l'indicateur bleu `EN ATTENTE RETRAIT MAGASIN`.
+* **Arbitrage centralisé :** L'administrateur peut arbitrer n'importe quelle demande de matériel soumise par les unités.
+* **Retrait physique côté SGS :** L'administrateur joue le rôle de magasinier pour la soute centrale **SGS** (aucun DA_MANAGER n'y étant rattaché). Pour les demandes routées vers SGS, c'est donc lui qui voit et actionne le bouton `Confirmer Retrait`. Pour toutes les soutes DA locales (SM1, SM2…), il ne peut pas confirmer le retrait — l'indicateur bleu `EN ATTENTE RETRAIT MAGASIN` s'affiche et l'action revient au magasinier local.
 
 ### Pour le Gestionnaire de Soute (DA_MANAGER)
-* **Indication et Visibilité :** Dès que l'administrateur (ou le système) valide et attribue un Bon de Sortie à sa soute, la demande apparaît instantanément sur la console d'arbitrage du gestionnaire de cette soute (ex: Magasin Centre).
+* **Indication et Visibilité :** Dès que le Commandant de l'unité valide la demande, celle-ci est routée vers la soute la plus proche et apparaît sur la console d'arbitrage de son gestionnaire.
 * **Confirmation du Retrait Réel :** Le bouton vert `Confirmer Retrait` est visible et activable **uniquement par le magasinier assigné à cette soute**. Cliquer dessus effectue la sortie de stock définitive, enregistre le mouvement de prélèvement et transfère les dotations en service réel à bord.
+
+### Escalade vers SGS (stock local insuffisant)
+Si la soute du Gestionnaire ne peut pas couvrir une demande, il clique sur **`Escalader vers SGS`** (visible sur les demandes en attente d'arbitrage) et saisit un motif. La demande passe alors au statut **`ESCALADÉE — TRANSFERT SGS`** et disparaît de sa liste d'actions.
+
+L'**Administrateur** voit ces demandes escaladées avec le bouton **`Statuer sur le transfert`** :
+* **Valider le transfert** → le déficit est transféré automatiquement de SGS vers la soute locale (deux mouvements de stock enregistrés : sortie SGS + entrée soute locale), la demande passe en approbation et un bon de sortie est généré pour le retrait.
+* **Refuser le transfert** (motif obligatoire) → la demande est rejetée, aucun stock n'est déplacé, l'unité est notifiée.
+
+Une fois le transfert validé, le retrait physique se déroule normalement à la soute locale (bouton `Confirmer Retrait` du magasinier local).
 
 
 ---
