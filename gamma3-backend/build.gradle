@@ -29,6 +29,14 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'org.postgresql:postgresql'
 	runtimeOnly 'com.h2database:h2'
+
+	// Migrations de schéma versionnées (remplace progressivement `ddl-auto: update` — voir
+	// docs/DATABASE_ARCHITECTURE.md §10). Flyway s'exécute au démarrage AVANT Hibernate.
+	//  - spring-boot-flyway : Spring Boot 4.0 a sorti l'auto-configuration Flyway de
+	//    spring-boot-autoconfigure vers ce module dédié — sans lui, Flyway est ignoré au boot.
+	//  - flyway-database-postgresql : depuis Flyway 10, le support PostgreSQL est un module à part.
+	implementation 'org.springframework.boot:spring-boot-flyway'
+	implementation 'org.flywaydb:flyway-database-postgresql'
 	implementation 'com.microsoft.sqlserver:mssql-jdbc'
 	
 	// JasperReports Engine & Functions for PDF/Excel Exports

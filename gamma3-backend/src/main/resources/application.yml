@@ -21,6 +21,20 @@ spring:
     password: ${DB_PASSWORD:gamma3_password}
     driver-class-name: org.postgresql.Driver
 
+  # Migrations de schéma versionnées.
+  # Étape de transition (2026-09-09) : Flyway est introduit AUX CÔTÉS de `ddl-auto: update`,
+  # pas encore à sa place. Flyway s'exécute en premier au démarrage et applique les scripts
+  # de db/migration ; Hibernate passe ensuite (`update`) et complète le schéma pour les
+  # entités pas encore couvertes par un script. Objectif à terme (voir
+  # docs/DATABASE_ARCHITECTURE.md §10) : basculer `ddl-auto` sur `validate` une fois un
+  # baseline complet écrit, pour que TOUTE évolution passe par un script versionné.
+  flyway:
+    enabled: true
+    baseline-on-migrate: true          # bases déjà existantes : marquées V0 sans rejouer l'historique
+    baseline-version: 0
+    baseline-description: "Schema pre-Flyway (genere par Hibernate ddl-auto)"
+    locations: classpath:db/migration
+
   jpa:
     hibernate:
       ddl-auto: update
