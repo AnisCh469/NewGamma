@@ -40,6 +40,47 @@ public class DemandeController {
     private final MouvementStockRepository mouvementRepository;
     private final LigneReceptionRepository ligneReceptionRepository;
 
+    // ─── Helpers d'autorisation ──────────────────────────────────────────────────
+    // Contexte : contrairement à creerDemande()/validerCommandant() (sécurisés au
+    // 2026-09-04), les endpoints d'arbitrage ci-dessous ne vérifiaient RIEN — un
+    // Gestionnaire d'unité pouvait auto-approuver sa propre demande, et un DA_MANAGER
+    // pouvait arbitrer/escalader les demandes d'un autre magasin (audit 2026-09-09).
+    // Ces helpers centralisent les contrôles, dans le même style « instanceof User »
+    // que le reste du contrôleur (pas de @PreAuthorize dans ce projet).
+
+    /** Renvoie l'utilisateur authentifié, ou null si la requête n'est pas authentifiée. */
+    private static User currentUser(Authentication authentication) {
+        return (authentication != null && authentication.getPrincipal() instanceof User user) ? user : null;
+    }
+
+    /**
+     * Vérifie qu'un utilisateur a le droit de TRAITER (arbitrer / escalader) une demande :
+     *   - ADMIN       → toute demande, tout magasin (il supervise SGS et l'ensemble du réseau) ;
+     *   - DA_MANAGER  → uniquement les demandes routées vers SON magasin assigné ;
+     *   - autre rôle  → interdit.
+     * @return null si l'accès est autorisé, sinon la ResponseEntity d'erreur (401/403) à renvoyer.
+     */
+    private ResponseEntity<?> verifierAccesTraitement(Authentication authentication, DemandeMateriel demande) {
+        User user = currentUser(authentication);
+        if (user == null) {
+            return ResponseEntity.status(401).body("Authentification requise.");
+        }
+        if (user.getRole() == Role.ADMIN) {
+            return null;
+        }
+        if (user.getRole() != Role.DA_MANAGER) {
+            return ResponseEntity.status(403).body("Seul un gestionnaire DA (DA_MANAGER) ou l'administrateur peut traiter une demande de matériel.");
+        }
+        if (user.getMagasin() == null) {
+            return ResponseEntity.status(403).body("Votre compte DA_MANAGER n'est rattaché à aucun magasin.");
+        }
+        if (demande.getMagasinDesigne() == null
+                || !user.getMagasin().getId().equals(demande.getMagasinDesigne().getId())) {
+            return ResponseEntity.status(403).body("Cette demande est routée vers un autre magasin que le vôtre — vous ne pouvez pas la traiter.");
+        }
+        return null;
+    }
+
     public record LigneDemandeDetailDto(
         Long id,
         tn.defense.gamma3.catalogue.domain.Item item,
@@ -92,11 +133,21 @@ public class DemandeController {
     //   - DA_MANAGER  → Voit UNIQUEMENT les demandes assignées à son magasin
     //   - UNIT_USER   → Accès refusé (utiliser /demandes/unite/{id})
     @GetMapping
-    public List<DemandeMateriel> getAllDemandes(Authentication authentication) {
+    public ResponseEntity<?> getAllDemandes(Authentication authentication) {
+        User user = currentUser(authentication);
+        if (user == null) {
+            return ResponseEntity.status(401).body("Authentification requise.");
+        }
+        // SÉCURITÉ (audit 2026-09-09) : cette vue est la vue GAMMA3 (DA/ADMIN). Un compte
+        // UNIT_USER (Gestionnaire ou Commandant) ne doit JAMAIS y accéder — auparavant il
+        // recevait ici la liste des demandes de TOUTES les unités de la Marine (fuite de
+        // confidentialité). Il dispose de /demandes/unite/{id} pour sa propre unité.
+        if (user.getRole() == Role.UNIT_USER) {
+            return ResponseEntity.status(403).body("Accès refusé : utilisez /demandes/unite/{id} pour consulter les demandes de votre unité.");
+        }
+
         List<DemandeMateriel> result;
-        if (authentication == null || !(authentication.getPrincipal() instanceof User user)) {
-            result = demandeRepository.findAllWithUnite();
-        } else if (user.getRole() == Role.DA_MANAGER && user.getMagasin() != null) {
+        if (user.getRole() == Role.DA_MANAGER && user.getMagasin() != null) {
             // DA_MANAGER filtré par son magasin assigné
             result = demandeRepository.findByMagasinDesigne_Id(user.getMagasin().getId());
         } else {
@@ -108,18 +159,28 @@ public class DemandeController {
         // le Commandant a refusées avant envoi. En pratique EN_ATTENTE_VALIDATION_COMMANDANT
         // n'a pas de magasinDesigne (donc déjà exclue du filtre DA_MANAGER ci-dessus), mais la
         // vue ADMIN ("toutes les demandes") les inclurait sans ce filtre explicite.
-        return result.stream()
+        return ResponseEntity.ok(result.stream()
                 .filter(d -> d.getStatut() != StatutDemande.EN_ATTENTE_VALIDATION_COMMANDANT
                         && d.getStatut() != StatutDemande.REFUSE_COMMANDANT)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
     }
 
     // ─── GET /demandes/escalades ─────────────────────────────────────────────────
     // RÔLE : Retourner les demandes en attente de validation de transfert inter-magasin (ESCALADE_SGS).
     //        Réservé à l'ADMIN pour traitement prioritaire.
     @GetMapping("/escalades")
-    public List<DemandeMateriel> getEscalades() {
-        return demandeRepository.findByStatut(StatutDemande.ESCALADE_SGS);
+    public ResponseEntity<?> getEscalades(Authentication authentication) {
+        User user = currentUser(authentication);
+        if (user == null) {
+            return ResponseEntity.status(401).body("Authentification requise.");
+        }
+        // SÉCURITÉ (audit 2026-09-09) : la validation d'un transfert inter-magasin est un
+        // pouvoir exclusivement ADMIN (SGS). La file d'attente correspondante ne doit donc
+        // être lisible que par un ADMIN — pas par un DA_MANAGER, encore moins un UNIT_USER.
+        if (user.getRole() != Role.ADMIN) {
+            return ResponseEntity.status(403).body("Accès refusé : seul l'administrateur (SGS) traite les escalades inter-magasin.");
+        }
+        return ResponseEntity.ok(demandeRepository.findByStatut(StatutDemande.ESCALADE_SGS));
     }
 
     @GetMapping("/unite/{uniteId}")
@@ -137,8 +198,22 @@ public class DemandeController {
     }
 
     @GetMapping("/{id}/lignes")
-    public List<LigneDemande> getLignesByDemandeId(@PathVariable Long id) {
-        return ligneRepository.findByDemande_Id(id);
+    public ResponseEntity<?> getLignesByDemandeId(@PathVariable Long id, Authentication authentication) {
+        // SÉCURITÉ (audit 2026-09-09) : un compte UNIT_USER ne peut lire le détail des lignes
+        // que pour les demandes de SA propre unité (l'écran "détail unité" ne demande jamais
+        // rien d'autre). DA_MANAGER et ADMIN : accès complet (vue GAMMA3).
+        User user = currentUser(authentication);
+        if (user != null && user.getRole() == Role.UNIT_USER) {
+            DemandeMateriel demande = demandeRepository.findById(id).orElse(null);
+            if (demande == null) {
+                return ResponseEntity.notFound().build();
+            }
+            if (user.getUnite() == null || demande.getUnite() == null
+                    || !user.getUnite().getId().equals(demande.getUnite().getId())) {
+                return ResponseEntity.status(403).body("Accès refusé : cette demande n'appartient pas à votre unité.");
+            }
+        }
+        return ResponseEntity.ok(ligneRepository.findByDemande_Id(id));
     }
 
     @GetMapping("/item/{itemId}/reservations")
@@ -159,7 +234,14 @@ public class DemandeController {
 
     @GetMapping("/{id}/lignes-detaillees")
     @Transactional(readOnly = true)
-    public ResponseEntity<?> getLignesDetaillees(@PathVariable Long id) {
+    public ResponseEntity<?> getLignesDetaillees(@PathVariable Long id, Authentication authentication) {
+        // SÉCURITÉ (audit 2026-09-09) : cette vue expose l'état des stocks par magasin, la
+        // consommation moyenne et les prévisions — données d'arbitrage GAMMA3. Réservée
+        // donc à DA_MANAGER / ADMIN ; un UNIT_USER n'y a pas accès.
+        User user = currentUser(authentication);
+        if (user == null || user.getRole() == Role.UNIT_USER) {
+            return ResponseEntity.status(403).body("Accès refusé : vue réservée à l'arbitrage DA.");
+        }
         List<LigneDemande> originalLignes = ligneRepository.findByDemande_Id(id);
         
         List<LigneDemandeDetailDto> detailedList = originalLignes.stream()
@@ -271,23 +353,38 @@ public class DemandeController {
         }
     }
 
+    // ─── POST /demandes/{id}/arbitrer ────────────────────────────────────────────
+    // RÔLE : Le DA_MANAGER du magasin désigné (ou l'ADMIN) approuve/refuse la demande.
+    // SÉCURITÉ (audit 2026-09-09) : auparavant AUCUN contrôle — un Gestionnaire d'unité
+    //   pouvait auto-approuver sa demande, un DA_MANAGER pouvait arbitrer le magasin
+    //   d'un collègue, et le `magasinId` du corps JSON réécrivait librement le routage.
     @PostMapping("/{id}/arbitrer")
     public ResponseEntity<?> arbitrerDemande(
             @PathVariable Long id,
             @RequestBody ArbitrageRequestDto requestDto,
             Authentication authentication) {
+        DemandeMateriel demande = demandeRepository.findById(id).orElse(null);
+        if (demande == null) {
+            return ResponseEntity.notFound().build();
+        }
+        ResponseEntity<?> refus = verifierAccesTraitement(authentication, demande);
+        if (refus != null) return refus;
+
+        User user = currentUser(authentication);
+        // Le magasin de prélèvement n'est PAS pris depuis le corps de la requête (un
+        // DA_MANAGER ne peut prélever que dans SON magasin ; l'ADMIN prélève dans le
+        // magasin déjà désigné, faute d'indication contraire explicite et légitime).
+        Long magasinPrelevement = (user.getRole() == Role.DA_MANAGER)
+                ? user.getMagasin().getId()
+                : (demande.getMagasinDesigne() != null ? demande.getMagasinDesigne().getId() : requestDto.magasinId());
         try {
-            String matricule = "admin";
-            if (authentication != null && authentication.getPrincipal() instanceof User user) {
-                matricule = user.getMatricule();
-            }
             DemandeMateriel arbitree = distributionService.arbitrerDemande(
                     id,
                     requestDto.decision(),
                     requestDto.motifRefus(),
                     requestDto.lignes(),
-                    requestDto.magasinId(),
-                    matricule
+                    magasinPrelevement,
+                    user.getMatricule()
             );
             return ResponseEntity.ok(arbitree);
         } catch (IllegalArgumentException | IllegalStateException e) {
@@ -299,11 +396,19 @@ public class DemandeController {
     // RÔLE : Le DA_MANAGER LOCAL escalade la demande vers l'ADMIN (SGS)
     //        quand son stock local est insuffisant.
     //        Après escalade, seul l'ADMIN peut valider le transfert.
+    // SÉCURITÉ (audit 2026-09-09) : mêmes contrôles que l'arbitrage — seul le DA_MANAGER
+    //        du magasin routé (ou l'ADMIN) peut escalader cette demande.
     @PostMapping("/{id}/escalader")
     public ResponseEntity<?> escalerDemande(
             @PathVariable Long id,
             @RequestBody EscaladeRequestDto requestDto,
             Authentication authentication) {
+        DemandeMateriel demande = demandeRepository.findById(id).orElse(null);
+        if (demande == null) {
+            return ResponseEntity.notFound().build();
+        }
+        ResponseEntity<?> refus = verifierAccesTraitement(authentication, demande);
+        if (refus != null) return refus;
         try {
             DemandeMateriel escalee = distributionService.escalerDemande(id, requestDto.motifEscalade());
             return ResponseEntity.ok(escalee);
@@ -321,16 +426,16 @@ public class DemandeController {
             @PathVariable Long id,
             @RequestBody TransfertValidationDto requestDto,
             Authentication authentication) {
+        User user = currentUser(authentication);
+        if (user == null) {
+            return ResponseEntity.status(401).body("Authentification requise.");
+        }
+        if (user.getRole() != Role.ADMIN) {
+            return ResponseEntity.status(403).body("Accès refusé : seul l'ADMIN (SGS) peut valider un transfert inter-magasin.");
+        }
         try {
-            String matricule = "admin";
-            if (authentication != null && authentication.getPrincipal() instanceof User user) {
-                if (user.getRole() != Role.ADMIN) {
-                    return ResponseEntity.status(403).body("Accès refusé : seul l'ADMIN peut valider un transfert inter-magasin.");
-                }
-                matricule = user.getMatricule();
-            }
             DemandeMateriel result = distributionService.validerTransfertInterMagasin(
-                    id, requestDto.accepter(), requestDto.motifRefus(), matricule);
+                    id, requestDto.accepter(), requestDto.motifRefus(), user.getMatricule());
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -341,12 +446,12 @@ public class DemandeController {
     public ResponseEntity<?> confirmerLivraisonPhysique(
             @PathVariable Long id,
             Authentication authentication) {
+        User user = currentUser(authentication);
+        if (user == null) {
+            return ResponseEntity.status(401).body("Authentification requise.");
+        }
         try {
-            String matricule = "admin";
-            if (authentication != null && authentication.getPrincipal() instanceof User user) {
-                matricule = user.getMatricule();
-            }
-            tn.defense.gamma3.distribution.domain.BonSortie bs = distributionService.confirmerSortiePhysique(id, matricule);
+            tn.defense.gamma3.distribution.domain.BonSortie bs = distributionService.confirmerSortiePhysique(id, user.getMatricule());
             return ResponseEntity.ok(bs);
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

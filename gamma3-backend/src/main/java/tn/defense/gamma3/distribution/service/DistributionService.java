@@ -190,7 +190,17 @@ public class DistributionService {
                 .referenceId(unite.getId().toString())
                 .build());
 
-        validee.setLignes(lignes);
+        // NE PAS faire `validee.setLignes(lignes)` ici : `validee` est une entité CHARGÉE
+        // depuis la base (via demandeRepository.findById en début de méthode), donc sa
+        // collection `lignes` est une PersistentCollection gérée par Hibernate. Remplacer
+        // cette référence par une autre liste sur une entité chargée déclenche, au flush,
+        // « A collection with cascade=all-delete-orphan was no longer referenced by the
+        // owning entity instance » (car @OneToMany(orphanRemoval = true) sur DemandeMateriel.lignes),
+        // ce qui faisait échouer TOUTE validation « accepter » avec une 500 et un rollback
+        // complet. La branche « refuser » ci-dessus ne touchait pas `lignes` et fonctionnait :
+        // c'est ce contraste qui a permis d'isoler la cause. Les lignes sont déjà rattachées
+        // en base ; la réponse HTTP les sérialise via le chargement paresseux (Open Session
+        // In View), exactement comme le fait déjà `return refusee;`.
         return validee;
     }
 
@@ -414,6 +424,14 @@ public class DistributionService {
                     ? ligne.getQuantiteAccordee()
                     : ligne.getQuantiteDemandee();
 
+            // Le chemin d'escalade saute l'étape d'arbitrage : on matérialise ici la
+            // quantité accordée (= demandée) pour que la suite du cycle (retrait physique,
+            // bon de sortie imprimé, écran de détail) dispose d'une valeur cohérente.
+            if (ligne.getQuantiteAccordee() == null) {
+                ligne.setQuantiteAccordee(accordee);
+                ligneRepository.save(ligne);
+            }
+
             if (accordee.compareTo(BigDecimal.ZERO) <= 0) continue;
 
             // Vérifier le stock disponible dans la soute locale
@@ -506,12 +524,24 @@ public class DistributionService {
         tn.defense.gamma3.auth.domain.User user = userRepository.findByMatricule(userMatricule)
                 .orElseThrow(() -> new IllegalArgumentException("Utilisateur non trouvé"));
 
-        if (user.getRole() != tn.defense.gamma3.auth.domain.Role.DA_MANAGER) {
-            throw new IllegalStateException("Seul un gestionnaire de soute (magasinier) est autorisé à confirmer la livraison physique des équipements.");
+        boolean estAdmin = user.getRole() == tn.defense.gamma3.auth.domain.Role.ADMIN;
+        boolean estDaManager = user.getRole() == tn.defense.gamma3.auth.domain.Role.DA_MANAGER;
+
+        if (!estAdmin && !estDaManager) {
+            throw new IllegalStateException("Seul un gestionnaire de soute (magasinier) ou l'administrateur est autorisé à confirmer la livraison physique des équipements.");
         }
 
-        if (user.getMagasin() == null || !user.getMagasin().getId().equals(bs.getMagasinId())) {
+        // Contrôle d'appartenance à la soute :
+        //   - DA_MANAGER  → uniquement la soute à laquelle il est assigné ;
+        //   - ADMIN       → uniquement la soute SGS (aucun DA_MANAGER n'y étant rattaché,
+        //                   c'est l'ADMIN qui joue le rôle de magasinier SGS ; sans cette
+        //                   règle, toute demande d'une unité routée vers SGS restait
+        //                   bloquée en APPROUVE_TOTAL, incapable de passer LIVRE — audit 2026-09-09).
+        if (estDaManager && (user.getMagasin() == null || !user.getMagasin().getId().equals(bs.getMagasinId()))) {
             throw new IllegalStateException("Vous n'êtes pas assigné à cette soute pour confirmer le retrait physique de ces équipements.");
+        }
+        if (estAdmin && !SGS_ID.equals(bs.getMagasinId())) {
+            throw new IllegalStateException("La confirmation de retrait dans une soute DA locale revient à son magasinier (DA_MANAGER), pas à l'administrateur.");
         }
 
         DemandeMateriel demande = demandeRepository.findByBonSortieId(bonSortieId)
@@ -523,8 +553,17 @@ public class DistributionService {
 
         List<LigneDemande> lignes = ligneRepository.findByDemande_Id(demande.getId());
         for (LigneDemande ligne : lignes) {
-            BigDecimal accordee = ligne.getQuantiteAccordee() != null ? ligne.getQuantiteAccordee() : BigDecimal.ZERO;
-            if (accordee.compareTo(BigDecimal.ZERO) <= 0) continue;
+            // Quantité à sortir physiquement :
+            //   - arbitrage classique  → quantiteAccordee a été fixée (éventuellement 0 = ligne refusée) ;
+            //   - chemin d'escalade    → quantiteAccordee reste null (l'étape arbitrer est sautée),
+            //                            on retombe alors sur la quantité demandée, comme le fait déjà
+            //                            validerTransfertInterMagasin(). Sans ce repli, le retrait ne
+            //                            décrémentait NI le stock NI la dotation réelle tout en passant
+            //                            quand même la demande à LIVRE (bug data d'intégrité, audit 2026-09-09).
+            BigDecimal accordee = ligne.getQuantiteAccordee() != null
+                    ? ligne.getQuantiteAccordee()
+                    : ligne.getQuantiteDemandee();
+            if (accordee == null || accordee.compareTo(BigDecimal.ZERO) <= 0) continue;
 
             // ÉTAPE 1 : Convertir la dotation virtuelle en dotation réelle à bord
             planRepository.findByUniteIdAndItemId(demande.getUnite().getId(), ligne.getItem().getId())
