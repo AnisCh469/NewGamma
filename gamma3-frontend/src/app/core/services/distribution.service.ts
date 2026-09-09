@@ -24,7 +24,9 @@ export interface DemandeMateriel {
     | 'EN_COURS_ARBITRAGE' | 'ESCALADE_SGS' | 'APPROUVE_PARTIEL' | 'APPROUVE_TOTAL'
     | 'REFUSE' | 'LIVRE';
   motifRefus?: string;
+  motifEscalade?: string;
   unite: UniteUtilisatrice;
+  magasinDesigne?: { id: number; code: string; nom: string; localisation?: string } | null;
   bonSortie?: BonSortie;
   lignes?: LigneDemande[];
   createdAt?: string;
@@ -66,6 +68,11 @@ export class DistributionService {
     return this.http.get<DemandeMateriel[]>(this.apiUrl);
   }
 
+  /** File des demandes escaladées en attente de validation de transfert inter-magasin (ADMIN/SGS). */
+  getEscalades(): Observable<DemandeMateriel[]> {
+    return this.http.get<DemandeMateriel[]>(`${this.apiUrl}/escalades`);
+  }
+
   getDemandesByUnite(uniteId: number): Observable<DemandeMateriel[]> {
     return this.http.get<DemandeMateriel[]>(`${this.apiUrl}/unite/${uniteId}`);
   }
@@ -90,6 +97,16 @@ export class DistributionService {
 
   getLignesDetailleesByDemande(demandeId: number): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/${demandeId}/lignes-detaillees`);
+  }
+
+  /** Le DA_MANAGER escalade une demande vers SGS quand son stock local est insuffisant. */
+  escaladeDemande(demandeId: number, motifEscalade: string): Observable<DemandeMateriel> {
+    return this.http.post<DemandeMateriel>(`${this.apiUrl}/${demandeId}/escalader`, { motifEscalade });
+  }
+
+  /** L'ADMIN (SGS) valide (ou refuse) le transfert inter-magasin d'une demande escaladée. */
+  validerTransfert(demandeId: number, accepter: boolean, motifRefus?: string): Observable<DemandeMateriel> {
+    return this.http.post<DemandeMateriel>(`${this.apiUrl}/${demandeId}/valider-transfert`, { accepter, motifRefus });
   }
 
   confirmerLivraison(bonSortieId: number): Observable<BonSortie> {

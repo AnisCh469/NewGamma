@@ -60,18 +60,41 @@
                   </span>
                 </div>
               </td>
-              <td class="py-3 px-4 text-right flex justify-end gap-2 items-center">
+              <td class="py-3 px-4 text-right flex justify-end gap-2 items-center flex-wrap">
                 <!-- Traiter si Soumise -->
-                <p-button *ngIf="dem.statut === 'SOUMIS'" icon="pi pi-cog" label="Traiter la demande" styleClass="p-button-primary p-button-sm font-bold rounded-lg" (click)="openArbitrageModal(dem)"></p-button>
-                
+                <ng-container *ngIf="dem.statut === 'SOUMIS' || dem.statut === 'EN_COURS_ARBITRAGE'">
+                  <p-button icon="pi pi-cog" label="Traiter la demande" styleClass="p-button-primary p-button-sm font-bold rounded-lg" (click)="openArbitrageModal(dem)"></p-button>
+                  <!-- Escalade : le DA_MANAGER remonte à SGS si sa soute ne peut pas couvrir -->
+                  <p-button *ngIf="estDaManager()" icon="pi pi-arrow-up-right" label="Escalader vers SGS" styleClass="p-button-warning p-button-outlined p-button-sm rounded-lg font-bold" (click)="openEscaladeDialog(dem)"></p-button>
+                </ng-container>
+
+                <!-- Escaladée : en attente de décision SGS -->
+                <ng-container *ngIf="dem.statut === 'ESCALADE_SGS'">
+                  <span *ngIf="!estAdmin()" class="inline-flex items-center text-[10px] text-red-700 font-bold bg-red-50 border border-red-100 rounded px-1.5 py-0.5 w-max">
+                    <i class="pi pi-clock mr-1 text-[9px]"></i>ESCALADÉE — EN ATTENTE SGS
+                  </span>
+                  <ng-container *ngIf="estAdmin()">
+                    <p-button icon="pi pi-eye" label="Détails" styleClass="p-button-text p-button-secondary p-button-sm rounded-lg font-bold" (click)="openArbitrageModal(dem)"></p-button>
+                    <p-button icon="pi pi-sync" label="Statuer sur le transfert" styleClass="p-button-warning p-button-sm rounded-lg font-bold" (click)="openTransfertDialog(dem)"></p-button>
+                  </ng-container>
+                </ng-container>
+
                 <!-- Consultation / Imprimer si Approuvée -->
                 <ng-container *ngIf="dem.statut === 'APPROUVE_TOTAL' || dem.statut === 'APPROUVE_PARTIEL'">
                   <p-button icon="pi pi-eye" label="Détails" styleClass="p-button-text p-button-secondary p-button-sm rounded-lg font-bold" (click)="openArbitrageModal(dem)"></p-button>
                   <p-button icon="pi pi-print" label="Imprimer le BS" styleClass="p-button-outlined p-button-secondary p-button-sm rounded-lg" (click)="declencherImpression(dem)"></p-button>
-                  <p-button *ngIf="dem.bonSortie?.statut === 'PREPARE' && authService.currentUser()?.role === 'DA_MANAGER'" icon="pi pi-check" label="Confirmer Retrait" styleClass="p-button-success p-button-sm rounded-lg font-bold" (click)="confirmerLivraisonPhysique(dem)"></p-button>
-                  <span *ngIf="dem.bonSortie?.statut === 'PREPARE' && authService.currentUser()?.role === 'ADMIN'" class="inline-flex items-center text-[10px] text-blue-700 font-bold bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5 w-max">
+                  <p-button *ngIf="dem.bonSortie?.statut === 'PREPARE' && peutConfirmerRetrait(dem)" icon="pi pi-check" label="Confirmer Retrait" styleClass="p-button-success p-button-sm rounded-lg font-bold" (click)="confirmerLivraisonPhysique(dem)"></p-button>
+                  <span *ngIf="dem.bonSortie?.statut === 'PREPARE' && !peutConfirmerRetrait(dem)" class="inline-flex items-center text-[10px] text-blue-700 font-bold bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5 w-max">
                     <i class="pi pi-clock mr-1 text-[9px]"></i>EN ATTENTE RETRAIT MAGASIN
                   </span>
+                </ng-container>
+
+                <!-- Cycle terminé : matériel remis -->
+                <ng-container *ngIf="dem.statut === 'LIVRE'">
+                  <span class="text-green-600 text-xs font-bold self-center mr-1">
+                    <i class="pi pi-check-circle mr-1"></i>Matériel remis
+                  </span>
+                  <p-button icon="pi pi-print" label="Imprimer le BS" styleClass="p-button-outlined p-button-secondary p-button-sm rounded-lg" (click)="declencherImpression(dem)"></p-button>
                 </ng-container>
 
                 <!-- Consultation si Refusée -->
@@ -410,5 +433,52 @@
   <ng-template pTemplate="footer">
     <p-button label="Annuler" icon="pi pi-times" (click)="displayRefusDotationDialog = false" styleClass="p-button-text"></p-button>
     <p-button label="Confirmer le Rejet" icon="pi pi-check" styleClass="p-button-danger font-bold" (click)="saveRefusDotation()" [disabled]="!motifRefusDotation"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- ─── Escalade vers SGS (DA_MANAGER) ─────────────────────────────────────────── -->
+<p-dialog header="Escalader la demande vers SGS" [(visible)]="displayEscaladeDialog" [modal]="true" [style]="{width: '480px'}" styleClass="p-fluid no-print">
+  <div class="flex flex-col gap-4 mt-2">
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs font-semibold text-amber-800">
+      Utilisez l'escalade lorsque le stock de <strong>votre soute</strong> ne permet pas de couvrir la demande
+      <strong>{{ demandeEscalade?.numeroDemande }}</strong> de l'unité <strong>{{ demandeEscalade?.unite?.nom }}</strong>.
+      L'administrateur (SGS) décidera d'un transfert inter-magasin depuis le magasin central.
+    </div>
+    <div class="field">
+      <label for="motifEscalade" class="font-bold text-gray-700 block mb-1 text-xs">Motif de l'escalade *</label>
+      <textarea pInputText id="motifEscalade" [(ngModel)]="motifEscalade" rows="3" required
+        placeholder="Ex : Stock local 2 unités, besoin 6. Rupture prévue, pas de réception planifiée."
+        class="w-full text-sm p-3 border border-gray-300 rounded focus:border-amber-500 focus:ring-1 focus:ring-amber-500"></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Annuler" icon="pi pi-times" (click)="displayEscaladeDialog = false" styleClass="p-button-text"></p-button>
+    <p-button label="Escalader vers SGS" icon="pi pi-arrow-up-right" styleClass="p-button-warning font-bold" (click)="confirmerEscalade()" [disabled]="!motifEscalade.trim()"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- ─── Validation du transfert inter-magasin (ADMIN / SGS) ─────────────────────── -->
+<p-dialog header="Transfert inter-magasin — décision SGS" [(visible)]="displayTransfertDialog" [modal]="true" [style]="{width: '520px'}" styleClass="p-fluid no-print">
+  <div class="flex flex-col gap-4 mt-2">
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-xs font-semibold text-blue-900">
+      Demande <strong>{{ demandeEscalade?.numeroDemande }}</strong> — unité <strong>{{ demandeEscalade?.unite?.nom }}</strong><br>
+      Soute locale destinataire : <strong>{{ demandeEscalade?.magasinDesigne?.nom || '—' }}</strong><br>
+      Motif de l'escalade : <em>{{ demandeEscalade?.motifEscalade || '—' }}</em>
+    </div>
+    <div class="text-xs text-gray-600">
+      <strong>Valider</strong> : le déficit est transféré de SGS vers la soute locale (mouvements de stock enregistrés), la demande passe en approbation et un bon de sortie est généré.<br>
+      <strong>Refuser</strong> : la demande est rejetée avec le motif ci-dessous, aucun stock n'est déplacé.
+    </div>
+    <div class="field">
+      <label for="motifRefusTransfert" class="font-bold text-gray-700 block mb-1 text-xs text-red-600">Motif de refus (obligatoire pour refuser)</label>
+      <textarea pInputText id="motifRefusTransfert" [(ngModel)]="motifRefusTransfert" rows="2"
+        placeholder="Ex : Stock SGS également en tension, priorité opérationnelle supérieure ailleurs."
+        class="w-full text-sm p-3 border border-gray-300 rounded focus:border-red-500 focus:ring-1 focus:ring-red-500"></textarea>
+    </div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Annuler" icon="pi pi-times" (click)="displayTransfertDialog = false" styleClass="p-button-text"></p-button>
+    <p-button label="Refuser le transfert" icon="pi pi-ban" styleClass="p-button-danger p-button-outlined font-bold" (click)="validerTransfert(false)" [disabled]="!motifRefusTransfert.trim()"></p-button>
+    <p-button label="Valider le transfert" icon="pi pi-check" styleClass="p-button-success font-bold" (click)="validerTransfert(true)"></p-button>
   </ng-template>
 </p-dialog>

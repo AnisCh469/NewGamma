@@ -347,9 +347,12 @@ export class ConsoleArbitrageComponent implements OnInit {
   getStatutSeverity(statut: string | undefined): 'success' | 'secondary' | 'info' | 'warning' | 'danger' | 'contrast' | undefined {
     switch (statut) {
       case 'SOUMIS': return 'warning';
+      case 'EN_COURS_ARBITRAGE': return 'warning';
+      case 'ESCALADE_SGS': return 'danger';
       case 'APPROUVE_TOTAL': return 'success';
       case 'APPROUVE_PARTIEL': return 'info';
       case 'REFUSE': return 'danger';
+      case 'LIVRE': return 'success';
       default: return 'info';
     }
   }
@@ -357,9 +360,12 @@ export class ConsoleArbitrageComponent implements OnInit {
   getStatutLabel(statut: string | undefined): string {
     switch (statut) {
       case 'SOUMIS': return 'EN ATTENTE D\'ARBITRAGE';
+      case 'EN_COURS_ARBITRAGE': return 'ARBITRAGE EN COURS';
+      case 'ESCALADE_SGS': return 'ESCALADÉE — TRANSFERT SGS';
       case 'APPROUVE_TOTAL': return 'APPROUVÉ TOTALEMENT';
       case 'APPROUVE_PARTIEL': return 'APPROUVÉ PARTIELLEMENT';
       case 'REFUSE': return 'REFUSÉ';
+      case 'LIVRE': return 'MATÉRIEL REMIS';
       default: return 'STATUT INCONNU';
     }
   }
@@ -533,6 +539,85 @@ export class ConsoleArbitrageComponent implements OnInit {
         }
       });
     }
+  }
+
+  // ─── Escalade vers SGS (stock local insuffisant) ────────────────────────────
+  // Le DA_MANAGER dont la soute ne peut pas couvrir la demande la remonte à l'ADMIN (SGS),
+  // qui décidera d'un transfert inter-magasin. Voir DistributionService.escalerDemande.
+  displayEscaladeDialog = false;
+  displayTransfertDialog = false;
+  demandeEscalade: DemandeMateriel | null = null;
+  motifEscalade = '';
+  motifRefusTransfert = '';
+
+  /** Vrai si l'utilisateur courant peut jouer le rôle de magasinier pour ce bon de sortie :
+   *  le DA_MANAGER pour sa soute, ou l'ADMIN pour la soute SGS (aucun DA_MANAGER n'y étant
+   *  rattaché — aligné sur le contrôle backend de confirmerSortiePhysique). */
+  peutConfirmerRetrait(dem: DemandeMateriel): boolean {
+    const role = this.authService.currentUser()?.role;
+    if (role === 'DA_MANAGER') return true;
+    if (role === 'ADMIN') return dem.magasinDesigne?.code === 'SGS';
+    return false;
+  }
+
+  estDaManager(): boolean {
+    return this.authService.currentUser()?.role === 'DA_MANAGER';
+  }
+  estAdmin(): boolean {
+    return this.authService.currentUser()?.role === 'ADMIN';
+  }
+
+  openEscaladeDialog(dem: DemandeMateriel): void {
+    this.demandeEscalade = dem;
+    this.motifEscalade = '';
+    this.displayEscaladeDialog = true;
+  }
+
+  confirmerEscalade(): void {
+    if (!this.demandeEscalade?.id || !this.motifEscalade.trim()) {
+      this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Motif d\'escalade obligatoire.' });
+      return;
+    }
+    this.distributionService.escaladeDemande(this.demandeEscalade.id, this.motifEscalade.trim()).subscribe({
+      next: () => {
+        this.messageService.add({ severity: 'success', summary: 'Demande escaladée', detail: 'La demande a été remontée à SGS pour validation d\'un transfert inter-magasin.' });
+        this.displayEscaladeDialog = false;
+        this.loadDemandes();
+      },
+      error: (err) => {
+        this.messageService.add({ severity: 'error', summary: 'Erreur', detail: typeof err.error === 'string' ? err.error : 'Échec de l\'escalade.' });
+      }
+    });
+  }
+
+  openTransfertDialog(dem: DemandeMateriel): void {
+    this.demandeEscalade = dem;
+    this.motifRefusTransfert = '';
+    this.displayTransfertDialog = true;
+  }
+
+  validerTransfert(accepter: boolean): void {
+    if (!this.demandeEscalade?.id) return;
+    if (!accepter && !this.motifRefusTransfert.trim()) {
+      this.messageService.add({ severity: 'error', summary: 'Erreur', detail: 'Motif de refus obligatoire.' });
+      return;
+    }
+    this.distributionService.validerTransfert(this.demandeEscalade.id, accepter, accepter ? undefined : this.motifRefusTransfert.trim()).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: accepter ? 'success' : 'warn',
+          summary: accepter ? 'Transfert validé' : 'Transfert refusé',
+          detail: accepter
+            ? 'Le stock a été transféré depuis SGS vers la soute locale. Bon de sortie généré.'
+            : 'Le transfert a été refusé, la demande est rejetée avec motif.'
+        });
+        this.displayTransfertDialog = false;
+        this.loadDemandes();
+      },
+      error: (err) => {
+        this.messageService.add({ severity: 'error', summary: 'Erreur', detail: typeof err.error === 'string' ? err.error : 'Échec de la validation du transfert.' });
+      }
+    });
   }
 
   selectOptimalMagasin(): void {

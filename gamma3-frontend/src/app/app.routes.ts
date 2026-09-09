@@ -1,6 +1,7 @@
 // Routing configuration for GAMMA 3
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { roleGuard } from './core/guards/role.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/login', pathMatch: 'full' },
@@ -18,10 +19,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/catalogue/demander-dotation/demander-dotation.component').then(m => m.DemanderDotationComponent),
     canActivate: [authGuard]
   },
-  { 
-    path: 'valider-demandes', 
+  {
+    path: 'valider-demandes',
     loadComponent: () => import('./features/distribution/validation-commandant/validation-commandant.component').then(m => m.ValidationCommandantComponent),
-    canActivate: [authGuard]
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['UNIT_USER'], fonctionsUnite: ['COMMANDANT'] }
   },
   { 
     path: 'catalogue/:id', 
@@ -38,10 +40,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/reception/reception-detail/reception-detail.component').then(m => m.ReceptionDetailComponent),
     canActivate: [authGuard]
   },
-  { 
-    path: 'distribution', 
+  {
+    path: 'distribution',
     loadComponent: () => import('./features/distribution/console-arbitrage/console-arbitrage.component').then(m => m.ConsoleArbitrageComponent),
-    canActivate: [authGuard]
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['ADMIN', 'DA_MANAGER'] }
   },
   { 
     path: 'fournisseurs', 
@@ -76,11 +79,13 @@ export const routes: Routes = [
   {
     path: 'administration/utilisateurs',
     loadComponent: () => import('./features/administration/gestion-utilisateurs/gestion-utilisateurs.component').then(m => m.GestionUtilisateursComponent),
-    canActivate: [authGuard]
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['ADMIN'] }
   },
   {
     path: 'administration/audit-migration',
     loadComponent: () => import('./features/administration/audit-migration/audit-migration.component').then(m => m.AuditMigrationComponent),
-    canActivate: [authGuard]
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['ADMIN'] }
   }
 ];
