@@ -30,15 +30,17 @@ export const routes: Routes = [
     loadComponent: () => import('./features/catalogue/item-detail/item-detail.component').then(m => m.ItemDetailComponent),
     canActivate: [authGuard]
   },
-  { 
-    path: 'receptions', 
+  {
+    path: 'receptions',
     loadComponent: () => import('./features/reception/reception-list/reception-list.component').then(m => m.ReceptionListComponent),
-    canActivate: [authGuard]
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['ADMIN', 'DA_MANAGER'] }
   },
-  { 
-    path: 'receptions/:id', 
+  {
+    path: 'receptions/:id',
     loadComponent: () => import('./features/reception/reception-detail/reception-detail.component').then(m => m.ReceptionDetailComponent),
-    canActivate: [authGuard]
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['ADMIN', 'DA_MANAGER'] }
   },
   {
     path: 'distribution',
@@ -74,7 +76,8 @@ export const routes: Routes = [
   {
     path: 'reformes',
     loadComponent: () => import('./features/reforme/reforme-console.component').then(m => m.ReformeConsoleComponent),
-    canActivate: [authGuard]
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['ADMIN', 'DA_MANAGER'] }
   },
   {
     path: 'administration/utilisateurs',

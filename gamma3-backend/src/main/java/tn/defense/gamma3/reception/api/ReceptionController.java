@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import tn.defense.gamma3.auth.domain.Role;
 import tn.defense.gamma3.auth.domain.User;
 import tn.defense.gamma3.reception.domain.BonEntree;
 import tn.defense.gamma3.reception.domain.BonProvisoireReception;
@@ -33,6 +34,26 @@ public class ReceptionController {
 
     public record BprRequestDto(BonProvisoireReception bpr, List<LigneReception> lignes) {}
 
+    /**
+     * La chaîne de réception (BPR → PV de commission → BE → entrée en stock) est une
+     * opération INTERNE à la Division de l'Approvisionnement : réservée à ADMIN / DA_MANAGER.
+     * Sans ce contrôle (audit 2026-09-09), n'importe quel compte authentifié pouvait créer
+     * un bon d'entrée et donc incrémenter le stock d'un magasin.
+     * @throws AccesReceptionRefuseException (HTTP 403) si l'appelant n'a pas le bon rôle
+     */
+    private void exigerRoleDA(Authentication authentication) {
+        User u = (authentication != null && authentication.getPrincipal() instanceof User user) ? user : null;
+        if (u == null) throw new AccesReceptionRefuseException("Authentification requise.");
+        if (u.getRole() != Role.ADMIN && u.getRole() != Role.DA_MANAGER) {
+            throw new AccesReceptionRefuseException("La gestion des réceptions est réservée à la Division de l'Approvisionnement.");
+        }
+    }
+
+    @ResponseStatus(org.springframework.http.HttpStatus.FORBIDDEN)
+    static class AccesReceptionRefuseException extends RuntimeException {
+        AccesReceptionRefuseException(String m) { super(m); }
+    }
+
     @GetMapping("/magasins")
     public List<Magasin> getAllMagasins() {
         return magasinRepository.findAll();
@@ -54,7 +75,8 @@ public class ReceptionController {
     }
 
     @PostMapping("/bpr")
-    public ResponseEntity<BonProvisoireReception> createBPR(@RequestBody BprRequestDto requestDto) {
+    public ResponseEntity<BonProvisoireReception> createBPR(@RequestBody BprRequestDto requestDto, Authentication authentication) {
+        exigerRoleDA(authentication);
         BonProvisoireReception saved = receptionService.creerBPR(requestDto.bpr(), requestDto.lignes());
         return ResponseEntity.ok(saved);
     }
@@ -65,7 +87,8 @@ public class ReceptionController {
     }
 
     @PostMapping("/pv")
-    public ResponseEntity<PvCommission> validerPV(@RequestBody PvCommission pv) {
+    public ResponseEntity<PvCommission> validerPV(@RequestBody PvCommission pv, Authentication authentication) {
+        exigerRoleDA(authentication);
         return ResponseEntity.ok(receptionService.validerPV(pv));
     }
 
@@ -76,6 +99,7 @@ public class ReceptionController {
 
     @PostMapping("/be")
     public ResponseEntity<BonEntree> genererBE(@RequestBody BonEntree be, Authentication authentication) {
+        exigerRoleDA(authentication);
         String matricule = "admin";
         if (authentication != null && authentication.getPrincipal() instanceof User user) {
             matricule = user.getMatricule();

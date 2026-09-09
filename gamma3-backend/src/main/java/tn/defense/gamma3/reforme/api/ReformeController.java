@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import tn.defense.gamma3.auth.domain.Role;
+import tn.defense.gamma3.auth.domain.User;
 import tn.defense.gamma3.reforme.domain.DossierReforme;
 import tn.defense.gamma3.reforme.domain.LigneReforme;
 import tn.defense.gamma3.reforme.service.ReformeService;
@@ -33,27 +35,49 @@ public class ReformeController {
         return reformeService.getLignesByDossier(id);
     }
 
+    /**
+     * Un dossier de réforme est INITIÉ par l'unité détentrice du matériel (via l'écran
+     * "détail unité") ou par la DA. Un compte UNIT_USER ne peut le faire que pour SA propre
+     * unité — sans ce contrôle (audit 2026-09-09), n'importe quel compte pouvait soumettre
+     * un dossier au nom de n'importe quelle unité.
+     */
     @PostMapping
-    public ResponseEntity<DossierReforme> creerDossier(
+    public ResponseEntity<?> creerDossier(
             @RequestParam Long uniteId,
             @RequestParam String motif,
-            @RequestBody List<LigneReforme> lignes) {
+            @RequestBody List<LigneReforme> lignes,
+            Authentication authentication) {
         if (lignes == null || lignes.isEmpty()) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body("Au moins un article est requis.");
+        }
+        User u = currentUser(authentication);
+        if (u == null) return ResponseEntity.status(401).body("Authentification requise.");
+        if (u.getRole() == Role.UNIT_USER
+                && (u.getUnite() == null || !u.getUnite().getId().equals(uniteId))) {
+            return ResponseEntity.status(403).body("Vous ne pouvez soumettre un dossier de réforme que pour votre unité.");
         }
         return ResponseEntity.ok(reformeService.creerDossier(uniteId, motif, lignes));
     }
 
+    /** La décision de la commission de réforme est un acte de la DA : ADMIN / DA_MANAGER. */
     @PostMapping("/{id}/commission")
-    public ResponseEntity<DossierReforme> traiterCommission(
+    public ResponseEntity<?> traiterCommission(
             @PathVariable Long id,
             @RequestParam String decision,
             @RequestParam String membres,
             @RequestParam String observations,
             @RequestParam(required = false) String dateCommission,
             Authentication authentication) {
+        User u = currentUser(authentication);
+        if (u == null) return ResponseEntity.status(401).body("Authentification requise.");
+        if (u.getRole() != Role.ADMIN && u.getRole() != Role.DA_MANAGER) {
+            return ResponseEntity.status(403).body("Seule la Division de l'Approvisionnement statue sur une commission de réforme.");
+        }
         LocalDate date = dateCommission != null ? LocalDate.parse(dateCommission) : LocalDate.now();
-        String userMatricule = authentication != null ? authentication.getName() : "admin";
-        return ResponseEntity.ok(reformeService.traiterDossierCommission(id, decision, membres, observations, date, userMatricule));
+        return ResponseEntity.ok(reformeService.traiterDossierCommission(id, decision, membres, observations, date, u.getMatricule()));
+    }
+
+    private static User currentUser(Authentication authentication) {
+        return (authentication != null && authentication.getPrincipal() instanceof User user) ? user : null;
     }
 }
