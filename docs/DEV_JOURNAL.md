@@ -348,6 +348,18 @@ Ce journal répertorie les difficultés techniques rencontrées au cours du dév
 * **Limitation assumée :** la taille du dump (≈855 Mo aujourd'hui) croît avec la base — à surveiller sur la durée ; c'est justement le rôle du réglage de rétention (nombre de fichiers, pas une limite de taille totale) de borner l'espace disque consommé, à affiner si le volume devient un problème réel. Le processus est **bloquant** côté requête HTTP (l'appelant attend la fin du `pg_dump`, jusqu'à 10 min) — acceptable pour un déclenchement manuel ponctuel par un administrateur, mais à revoir (job asynchrone + notification) si une sauvegarde programmée automatiquement (ex. cron nocturne) est demandée plus tard.
 * **Hors périmètre, par décision explicite de l'utilisateur :** la restauration reste une procédure manuelle documentée (`psql -f <fichier>`), jamais un bouton dans l'application — voir `docs/PROPOSITION_GOUVERNANCE_ROLES.md` §4.2 pour le raisonnement complet (double confirmation, sauvegarde de sécurité avant restauration, etc., à reconsidérer seulement si le besoin se précise).
 
+## Entrée : 2026-09-11 (12)
+* **Tâche :** Retour utilisateur pendant le test manuel du badge de profil (en-tête) : (1) le suffixe "(SGS)" du compte `ADMIN` n'était pas explicité — l'utilisateur pensait qu'il signifiait "gestionnaire système", (2) le code couleur ne reflétait pas le niveau de pouvoir réel : `ADMIN` (usage logistique quotidien) était affiché en **rouge** (alarmant, alors que c'est le compte du quotidien) tandis que `SUPER_ADMIN` (comptes, sécurité, sauvegardes, migrations — le compte le plus puissant du système) n'avait qu'un simple texte violet, sans signal visuel fort.
+* **Vérification :** `SGS` = **"Service de Gestion des Stocks"** (voir `DataSeeder.java`, création du magasin `SGS` — "Service de Gestion des Stocks", Bâtiment Central) — pas "gestionnaire système" comme supposé par l'utilisateur. Confirmé avant toute correction plutôt que de deviner.
+* **Cause technique racine :** Le code couleur du badge (`app.component.html`) avait été choisi de façon arbitraire lors de la Phase 1 (violet pour SUPER_ADMIN, rouge pour ADMIN) sans intention de signaler un niveau de risque — aucune réflexion "quel compte est le plus dangereux à utiliser par erreur" n'avait été menée à ce moment-là.
+* **Solution retenue :**
+  1. **Libellé corrigé** : `ADMIN` affiche désormais "Administrateur Logistique (SGS)" (au lieu de "Administrateur (SGS)" — comportement inchangé, seule la clarté du libellé change).
+  2. **Inversion intentionnelle du code couleur**, sur le principe « plus un compte a de pouvoir, plus son indicateur visuel doit être alarmant » :
+     * `SUPER_ADMIN` : badge de profil (`app.component.html`) désormais **fond rouge** entier (pas seulement le texte) avec halo/ombre rouge et icône ⚠️ permanente — visible en continu dans l'en-tête, pas seulement au moment de la connexion. Sévérité du tag dans le tableau `Gestion des Utilisateurs` (`gestion-utilisateurs.component.ts`, `getRoleSeverity`) passée de `contrast` à `danger`.
+     * `ADMIN` : badge de profil en **vert** (texte + avatar), sévérité du tag passée de `danger` à `success` — signale un compte d'usage courant, sans risque particulier au-delà de son périmètre logistique normal.
+  3. Commentaires ajoutés aux deux endroits pour que le raisonnement (pas seulement le résultat) survive à une future modification.
+* **Vérifié :** `ng build` OK (mêmes warnings préexistants, aucun nouveau). `ng serve` (déjà en cours d'exécution) a rechargé automatiquement le frontend après l'édition — confirmé par le log ("Page reload sent to client(s)").
+
 ## [Modèle d'Entrée]
 * **Date :** AAAA-MM-JJ
 * **Tâche :** Description de la tâche ou de la fonctionnalité

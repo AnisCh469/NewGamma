@@ -307,10 +307,17 @@ export class GestionUtilisateursComponent implements OnInit {
     });
   }
 
+  /**
+   * Code couleur des rôles (2026-09-11, retour utilisateur) : SUPER_ADMIN (pouvoirs étendus —
+   * comptes, sécurité, sauvegardes, migrations) affiché en "danger" (rouge) pour signaler un
+   * compte à manier avec prudence ; ADMIN (usage logistique quotidien, SGS = Service de
+   * Gestion des Stocks) affiché en "success" (vert), un compte d'usage courant sans risque
+   * particulier. Cohérent avec le badge de profil dans l'en-tête (app.component.html).
+   */
   getRoleSeverity(role: string): 'success' | 'secondary' | 'info' | 'warning' | 'danger' | 'contrast' | undefined {
     switch (role) {
-      case 'SUPER_ADMIN': return 'contrast';
-      case 'ADMIN': return 'danger';
+      case 'SUPER_ADMIN': return 'danger';
+      case 'ADMIN': return 'success';
       case 'DA_MANAGER': return 'warning';
       case 'UNIT_USER': return 'info';
       default: return 'secondary';

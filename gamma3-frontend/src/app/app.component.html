@@ -137,15 +137,28 @@
           </div>
         </div>
         <ng-template #profileBlock>
-          <div class="flex items-center space-x-3 bg-slate-800 px-3 py-1 rounded-full border border-slate-600">
+          <!--
+            Code couleur du badge de profil (2026-09-11, retour utilisateur) : le SUPER_ADMIN
+            peut TOUT faire (comptes, sécurité, sauvegardes, migrations) — un compte à manier
+            avec prudence. Le fond entier de son badge est donc rouge/alarmant (pas seulement
+            le texte), avec une icône d'avertissement, pour que ce niveau de pouvoir soit visible
+            EN PERMANENCE dans l'en-tête, pas seulement au moment de se connecter. L'ADMIN (SGS
+            = Service de Gestion des Stocks, voir DataSeeder.java) est le compte d'usage
+            quotidien pour la logistique : badge vert, standard, sans signal d'alerte.
+          -->
+          <div class="flex items-center space-x-3 px-3 py-1 rounded-full border transition-colors duration-300"
+               [ngClass]="user.role === 'SUPER_ADMIN'
+                 ? 'bg-red-900/70 border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.35)]'
+                 : 'bg-slate-800 border-slate-600'">
+            <i *ngIf="user.role === 'SUPER_ADMIN'" class="pi pi-exclamation-triangle text-red-300 text-sm" title="Compte à pouvoirs étendus — à manier avec prudence"></i>
             <div class="flex flex-col text-right">
-              <span class="text-sm font-bold leading-tight whitespace-nowrap">{{ user.fullName }}</span>
-              <span class="text-xs font-bold" [ngClass]="user.role === 'SUPER_ADMIN' ? 'text-purple-400' : user.role === 'ADMIN' ? 'text-red-500' : 'text-gamma-accent'">
-                {{ user.role === 'SUPER_ADMIN' ? 'Administrateur Système' : user.role === 'ADMIN' ? 'Administrateur (SGS)' : user.role === 'DA_MANAGER' ? 'Gestionnaire DA' : 'Client' }}
+              <span class="text-sm font-bold leading-tight whitespace-nowrap" [ngClass]="user.role === 'SUPER_ADMIN' ? 'text-white' : 'text-white'">{{ user.fullName }}</span>
+              <span class="text-xs font-bold" [ngClass]="user.role === 'SUPER_ADMIN' ? 'text-red-200' : user.role === 'ADMIN' ? 'text-green-400' : 'text-gamma-accent'">
+                {{ user.role === 'SUPER_ADMIN' ? 'Administrateur Système' : user.role === 'ADMIN' ? 'Administrateur Logistique (SGS)' : user.role === 'DA_MANAGER' ? 'Gestionnaire DA' : 'Client' }}
               </span>
             </div>
             <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold shadow-sm transition-colors duration-300"
-                 [ngClass]="user.role === 'SUPER_ADMIN' ? 'bg-purple-500' : user.role === 'ADMIN' ? 'bg-red-500' : 'bg-gamma-accent'">
+                 [ngClass]="user.role === 'SUPER_ADMIN' ? 'bg-red-600' : user.role === 'ADMIN' ? 'bg-green-500' : 'bg-gamma-accent'">
               {{ user.fullName.charAt(0).toUpperCase() }}
             </div>
           </div>
