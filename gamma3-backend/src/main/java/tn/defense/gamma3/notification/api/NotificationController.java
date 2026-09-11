@@ -29,7 +29,7 @@ public class NotificationController {
         }
 
         List<Notification> notifications;
-        if (currentUser.getRole() == Role.ADMIN || currentUser.getRole() == Role.DA_MANAGER) {
+        if (currentUser.getRole() == Role.SUPER_ADMIN || currentUser.getRole() == Role.ADMIN || currentUser.getRole() == Role.DA_MANAGER) {
             notifications = notificationRepository.findByUniteCodeIsNullOrderByCreatedAtDesc();
         } else {
             notifications = notificationRepository.findByUniteCodeOrderByCreatedAtDesc(resolveUniteCode(currentUser));
@@ -46,7 +46,7 @@ public class NotificationController {
         }
 
         long count;
-        if (currentUser.getRole() == Role.ADMIN || currentUser.getRole() == Role.DA_MANAGER) {
+        if (currentUser.getRole() == Role.SUPER_ADMIN || currentUser.getRole() == Role.ADMIN || currentUser.getRole() == Role.DA_MANAGER) {
             count = notificationRepository.countByUniteCodeIsNullAndReadIsFalse();
         } else {
             count = notificationRepository.countByUniteCodeAndReadIsFalse(resolveUniteCode(currentUser));
@@ -75,7 +75,7 @@ public class NotificationController {
         }
 
         List<Notification> notifications;
-        if (currentUser.getRole() == Role.ADMIN || currentUser.getRole() == Role.DA_MANAGER) {
+        if (currentUser.getRole() == Role.SUPER_ADMIN || currentUser.getRole() == Role.ADMIN || currentUser.getRole() == Role.DA_MANAGER) {
             notifications = notificationRepository.findByUniteCodeIsNullOrderByCreatedAtDesc();
         } else {
             notifications = notificationRepository.findByUniteCodeOrderByCreatedAtDesc(resolveUniteCode(currentUser));

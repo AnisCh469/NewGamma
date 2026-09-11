@@ -2,6 +2,7 @@ package tn.defense.gamma3.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
@@ -9,7 +10,21 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 
+/**
+ * CORRECTIF SÉCURITÉ CRITIQUE (2026-09-11, découvert lors de la vérification de la
+ * refonte des rôles SUPER_ADMIN/ADMIN) : {@code @EnableMethodSecurity} était absent de
+ * toute la configuration Spring. Conséquence : TOUTES les annotations
+ * {@code @PreAuthorize(...)} du projet (MigrationController, LegacyAuditController)
+ * étaient silencieusement ignorées par Spring Security — n'importe quel compte
+ * authentifié, quel que soit son rôle, pouvait donc appeler ces endpoints
+ * "réservés" à un rôle précis. Ce n'est PAS un effet de bord de la refonte des rôles :
+ * c'était déjà le cas avant (avec {@code hasRole('ADMIN')}), simplement jamais détecté
+ * faute d'un test qui vérifie explicitement un refus (403) sur ces endpoints précis.
+ * Ajouter cette annotation active enfin l'évaluation de {@code @PreAuthorize} sur
+ * toutes les méthodes de tous les beans Spring (contrôleurs y compris).
+ */
 @Configuration
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;

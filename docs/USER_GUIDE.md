@@ -125,17 +125,50 @@ Une fois le transfert validé, le retrait physique se déroule normalement à la
 
 ---
 
+## 🛡️ Deux niveaux d'administration : Administrateur Système (SUPER_ADMIN) et Administrateur Logistique (ADMIN)
+
+Depuis le 2026-09-11, le rôle unique "ADMIN" a été scindé en **deux rôles distincts**, pour
+séparer le pouvoir sur le **système lui-même** (comptes, sécurité, migrations, traçabilité) du
+pouvoir sur les **opérations logistiques quotidiennes** (arbitrage, réceptions, réformes) :
+
+| | **SUPER_ADMIN** — Administrateur Système | **ADMIN** — Administrateur Logistique (SGS) |
+|---|---|---|
+| **Compte de test** | `admin` | `sgs` |
+| **Gestion des comptes utilisateurs** | ✅ Seul rôle autorisé | ❌ |
+| **Journal d'Audit** | ✅ Seul rôle autorisé | ❌ |
+| **Paramètre "délai d'inactivité"** | ✅ Seul rôle autorisé à le modifier | ❌ (lecture seule) |
+| **Migrations Gamma2** (Plan d'Armement, historique mouvements, audit) | ✅ Seul rôle autorisé | ❌ |
+| **Suppression d'un document signé archivé** | ✅ Seul rôle autorisé | ❌ (peut téléverser, pas supprimer) |
+| **Arbitrage, Réceptions, Réformes, Fournisseurs, Unités, Analyses** | ✅ (superset — un SUPER_ADMIN peut toujours faire tout ce qu'un ADMIN fait) | ✅ |
+
+**Pourquoi cette séparation :** un compte capable de tout faire (données ET système) est un
+point de défaillance unique et un risque de sécurité. Désormais, la gestion quotidienne des
+stocks (SGS) est assurée par un compte `ADMIN` qui n'a **aucun accès** aux leviers sensibles du
+système (créer un compte, changer un réglage de sécurité, lire le journal d'audit, relancer une
+migration de données) — ces pouvoirs restent réservés à un compte `SUPER_ADMIN` dédié, en nombre
+volontairement restreint.
+
+**Pour un compte existant créé avant cette évolution :** aucune action requise — tous les
+comptes `ADMIN` déjà en place ont conservé leurs pouvoirs logistiques (ils continuent de
+fonctionner exactement comme avant). Seul un compte a été explicitement promu `SUPER_ADMIN`
+(voir tableau ci-dessus) ; c'est ce compte qui doit désormais être utilisé pour créer d'autres
+comptes `SUPER_ADMIN` si nécessaire, via l'écran `Utilisateurs` ci-dessous (nouvelle option de
+rôle "Administrateur Système (SUPER_ADMIN)" dans la liste déroulante).
+
+---
+
 ## 👤 Administration > Gestion des Utilisateurs
 
-* **Accès :** Un nouveau lien `Utilisateurs` apparaît dans le menu principal, visible **uniquement pour les comptes ADMIN**. Aucun autre rôle ne peut créer, modifier, bloquer ou débloquer un compte — même un Gestionnaire de Magasin (DA_MANAGER) doit passer par un ADMIN.
-* **Pourquoi il n'y a pas d'inscription libre-service :** Pour un système militaire, chaque compte doit être créé sciemment par un administrateur ; il n'existe donc aucun bouton "Créer un compte" sur l'écran de connexion.
+* **Accès :** Un nouveau lien `Utilisateurs` apparaît dans le menu principal, visible **uniquement pour les comptes SUPER_ADMIN**. Aucun autre rôle ne peut créer, modifier, bloquer ou débloquer un compte — même un Administrateur Logistique (ADMIN) doit passer par un SUPER_ADMIN.
+* **Pourquoi il n'y a pas d'inscription libre-service :** Pour un système militaire, chaque compte doit être créé sciemment par un administrateur système ; il n'existe donc aucun bouton "Créer un compte" sur l'écran de connexion.
 
 ### Créer un compte
 1. Cliquez sur `Nouveau Compte` en haut de l'écran `Utilisateurs`.
 2. Renseignez le **Matricule** (identifiant de connexion), un **mot de passe** initial (4 caractères minimum — l'utilisateur pourra le changer via son profil), le **Nom Complet**, et le **Rôle** :
    * **UNIT_USER** (compte d'une unité cliente) : le **Matricule doit être strictement identique au Code** d'une Unité Utilisatrice déjà créée dans `Tiers > Unités`. Si l'unité n'existe pas encore, créez-la d'abord dans cet écran, puis revenez créer son compte de connexion ici. Un message d'erreur explicite vous guidera si le code ne correspond à aucune unité.
    * **DA_MANAGER** (gestionnaire de soute) : un **Magasin** doit obligatoirement être sélectionné dans la liste déroulante — ce magasin devient la soute de rattachement de ce gestionnaire.
-   * **ADMIN** : aucun champ supplémentaire requis.
+   * **ADMIN** (Administrateur Logistique — SGS) : aucun champ supplémentaire requis. Pouvoirs logistiques (arbitrage, réceptions, réformes…), **pas** d'accès aux écrans d'administration système.
+   * **SUPER_ADMIN** (Administrateur Système) : aucun champ supplémentaire requis. À réserver à un nombre restreint de comptes — voir la section ci-dessus.
 3. Cliquez sur `Enregistrer`. Un message d'erreur s'affiche si le matricule existe déjà, ou si un champ obligatoire manque.
 
 ### Modifier un compte

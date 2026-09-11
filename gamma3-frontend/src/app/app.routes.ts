@@ -34,19 +34,19 @@ export const routes: Routes = [
     path: 'receptions',
     loadComponent: () => import('./features/reception/reception-list/reception-list.component').then(m => m.ReceptionListComponent),
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['ADMIN', 'DA_MANAGER'] }
+    data: { roles: ['SUPER_ADMIN', 'ADMIN', 'DA_MANAGER'] }
   },
   {
     path: 'receptions/:id',
     loadComponent: () => import('./features/reception/reception-detail/reception-detail.component').then(m => m.ReceptionDetailComponent),
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['ADMIN', 'DA_MANAGER'] }
+    data: { roles: ['SUPER_ADMIN', 'ADMIN', 'DA_MANAGER'] }
   },
   {
     path: 'distribution',
     loadComponent: () => import('./features/distribution/console-arbitrage/console-arbitrage.component').then(m => m.ConsoleArbitrageComponent),
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['ADMIN', 'DA_MANAGER'] }
+    data: { roles: ['SUPER_ADMIN', 'ADMIN', 'DA_MANAGER'] }
   },
   { 
     path: 'fournisseurs', 
@@ -77,24 +77,24 @@ export const routes: Routes = [
     path: 'reformes',
     loadComponent: () => import('./features/reforme/reforme-console.component').then(m => m.ReformeConsoleComponent),
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['ADMIN', 'DA_MANAGER'] }
+    data: { roles: ['SUPER_ADMIN', 'ADMIN', 'DA_MANAGER'] }
   },
   {
     path: 'administration/utilisateurs',
     loadComponent: () => import('./features/administration/gestion-utilisateurs/gestion-utilisateurs.component').then(m => m.GestionUtilisateursComponent),
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['ADMIN'] }
+    data: { roles: ['SUPER_ADMIN'] }
   },
   {
     path: 'administration/audit-migration',
     loadComponent: () => import('./features/administration/audit-migration/audit-migration.component').then(m => m.AuditMigrationComponent),
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['ADMIN'] }
+    data: { roles: ['SUPER_ADMIN'] }
   },
   {
     path: 'administration/journal-audit',
     loadComponent: () => import('./features/administration/journal-audit/journal-audit.component').then(m => m.JournalAuditComponent),
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['ADMIN'] }
+    data: { roles: ['SUPER_ADMIN'] }
   }
 ];

@@ -44,7 +44,7 @@ public class ReceptionController {
     private void exigerRoleDA(Authentication authentication) {
         User u = (authentication != null && authentication.getPrincipal() instanceof User user) ? user : null;
         if (u == null) throw new AccesReceptionRefuseException("Authentification requise.");
-        if (u.getRole() != Role.ADMIN && u.getRole() != Role.DA_MANAGER) {
+        if (u.getRole() != Role.SUPER_ADMIN && u.getRole() != Role.ADMIN && u.getRole() != Role.DA_MANAGER) {
             throw new AccesReceptionRefuseException("La gestion des réceptions est réservée à la Division de l'Approvisionnement.");
         }
     }

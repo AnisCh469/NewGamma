@@ -90,7 +90,7 @@ export class AppComponent {
 
     // Smart routing based on notification type and user role
     const role = this.authService.currentUser()?.role;
-    const isAdmin = role === 'ADMIN' || role === 'DA_MANAGER';
+    const isAdmin = role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'DA_MANAGER';
     const refId = notif.referenceId;
 
     if (notif.type === 'DOTATION') {

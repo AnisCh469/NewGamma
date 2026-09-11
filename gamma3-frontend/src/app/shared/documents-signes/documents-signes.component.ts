@@ -87,8 +87,11 @@ export class DocumentsSignesComponent implements OnInit {
   selectedFile: File | null = null;
   note = '';
 
+  /** Suppression d'un document archivé = correction de donnée : pouvoir SYSTÈME
+   *  (SUPER_ADMIN uniquement, pas ADMIN — voir docs/PROPOSITION_GOUVERNANCE_ROLES.md et
+   *  le contrôle correspondant côté backend, DocumentSigneController). */
   get estAdmin(): boolean {
-    return this.authService.currentUser()?.role === 'ADMIN';
+    return this.authService.currentUser()?.role === 'SUPER_ADMIN';
   }
 
   ngOnInit(): void {

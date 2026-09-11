@@ -95,7 +95,7 @@ public class LegacyAuditController {
     ) {}
 
     @GetMapping("/audit")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<AuditReport> auditGamma2(){
         List<LegacyTableInfo> legacyTables = new ArrayList<>();
         boolean reachable = true;

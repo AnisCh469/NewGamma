@@ -94,8 +94,10 @@ public class DocumentSigneController {
     public ResponseEntity<?> supprimer(@PathVariable Long id, Authentication auth) {
         User u = user(auth);
         if (u == null) return ResponseEntity.status(401).body("Authentification requise.");
-        if (u.getRole() != Role.ADMIN) {
-            return ResponseEntity.status(403).body("Seul un administrateur peut supprimer un document signé.");
+        // Supprimer une pièce d'archive est une correction de données : pouvoir SYSTÈME
+        // (2026-09-11, docs/PROPOSITION_GOUVERNANCE_ROLES.md) — SUPER_ADMIN, pas ADMIN.
+        if (u.getRole() != Role.SUPER_ADMIN) {
+            return ResponseEntity.status(403).body("Seul un administrateur système peut supprimer un document signé.");
         }
         try {
             service.supprimer(id);

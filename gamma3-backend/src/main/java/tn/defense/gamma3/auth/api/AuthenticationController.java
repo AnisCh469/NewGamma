@@ -60,17 +60,22 @@ public class AuthenticationController {
      * @param authentication l'appelant authentifié, injecté par Spring Security
      *
      * RETOUR :
-     * @return 200 + jeton du nouveau compte ; 403 si l'appelant n'est pas ADMIN ;
+     * @return 200 + jeton du nouveau compte ; 403 si l'appelant n'est pas SUPER_ADMIN ;
      *         409 si le matricule existe déjà.
+     *
+     * NOTE (2026-09-11) : la gestion des comptes est un pouvoir SYSTÈME, réservé à
+     * SUPER_ADMIN (voir docs/PROPOSITION_GOUVERNANCE_ROLES.md) — ADMIN reste l'administrateur
+     * logistique et ne crée plus de comptes. En pratique cet endpoint est un chemin historique ;
+     * l'écran Administration > Gestion des Utilisateurs passe par UserAdminController.
      */
     @PostMapping("/register")
     public ResponseEntity<?> register(
             @RequestBody AuthDto.RegisterRequest request,
             Authentication authentication
     ) {
-        if (authentication == null || !(authentication.getPrincipal() instanceof User currentUser) || currentUser.getRole() != Role.ADMIN) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof User currentUser) || currentUser.getRole() != Role.SUPER_ADMIN) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Seul un administrateur peut créer un compte utilisateur."));
+                    .body(Map.of("error", "Seul un administrateur système peut créer un compte utilisateur."));
         }
         try {
             return ResponseEntity.ok(service.register(request));

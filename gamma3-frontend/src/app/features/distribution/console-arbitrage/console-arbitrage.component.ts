@@ -556,15 +556,17 @@ export class ConsoleArbitrageComponent implements OnInit {
   peutConfirmerRetrait(dem: DemandeMateriel): boolean {
     const role = this.authService.currentUser()?.role;
     if (role === 'DA_MANAGER') return true;
-    if (role === 'ADMIN') return dem.magasinDesigne?.code === 'SGS';
+    if (role === 'ADMIN' || role === 'SUPER_ADMIN') return dem.magasinDesigne?.code === 'SGS';
     return false;
   }
 
   estDaManager(): boolean {
     return this.authService.currentUser()?.role === 'DA_MANAGER';
   }
+  /** ADMIN (administrateur logistique SGS) ou SUPER_ADMIN (superset — voir gouvernance des rôles). */
   estAdmin(): boolean {
-    return this.authService.currentUser()?.role === 'ADMIN';
+    const role = this.authService.currentUser()?.role;
+    return role === 'ADMIN' || role === 'SUPER_ADMIN';
   }
 
   openEscaladeDialog(dem: DemandeMateriel): void {

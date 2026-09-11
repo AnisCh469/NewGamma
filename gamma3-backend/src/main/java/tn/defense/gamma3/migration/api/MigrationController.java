@@ -18,7 +18,7 @@ public class MigrationController {
     private final MouvementMigrationService mouvementMigrationService;
 
     @PostMapping("/plan-armement")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<String> runPlanArmementMigration() {
         try {
             planArmementMigrationService.runMigration();
@@ -34,7 +34,7 @@ public class MigrationController {
      * les lignes {@code reference_bon LIKE 'G2-%'} d'un import précédent.
      */
     @PostMapping("/mouvements-stock")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> runMouvementsMigration() {
         try {
             MouvementMigrationService.Resultat r = mouvementMigrationService.runMigration();

@@ -14,15 +14,15 @@
         <a *ngIf="currentUser.role === 'UNIT_USER' && currentUser.fonctionUnite !== 'COMMANDANT'" routerLink="/demander-dotation" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Demande d'Équipement</a>
         <a *ngIf="currentUser.role === 'UNIT_USER' && currentUser.fonctionUnite === 'COMMANDANT'" routerLink="/valider-demandes" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Valider les Demandes</a>
         <a *ngIf="currentUser.role === 'UNIT_USER' && unitId" [routerLink]="['/unites', unitId]" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Mon Plan & Suivi</a>
-        <a *ngIf="currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/fournisseurs" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Fournisseurs</a>
-        <a *ngIf="currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/receptions" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Réceptions</a>
-        <a *ngIf="currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/unites" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Unités Clients</a>
-        <a *ngIf="currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/distribution" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Arbitrage</a>
-        <a *ngIf="currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/reformes" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Réforme</a>
-        <a *ngIf="currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/analytics" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Analyses</a>
-        <a *ngIf="currentUser.role === 'ADMIN'" routerLink="/administration/utilisateurs" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Utilisateurs</a>
-        <a *ngIf="currentUser.role === 'ADMIN'" routerLink="/administration/audit-migration" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Audit Gamma2</a>
-        <a *ngIf="currentUser.role === 'ADMIN'" routerLink="/administration/journal-audit" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Journal d'Audit</a>
+        <a *ngIf="currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/fournisseurs" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Fournisseurs</a>
+        <a *ngIf="currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/receptions" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Réceptions</a>
+        <a *ngIf="currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/unites" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Unités Clients</a>
+        <a *ngIf="currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/distribution" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Arbitrage</a>
+        <a *ngIf="currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/reformes" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Réforme</a>
+        <a *ngIf="currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/analytics" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Analyses</a>
+        <a *ngIf="currentUser.role === 'SUPER_ADMIN'" routerLink="/administration/utilisateurs" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Utilisateurs</a>
+        <a *ngIf="currentUser.role === 'SUPER_ADMIN'" routerLink="/administration/audit-migration" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Audit Gamma2</a>
+        <a *ngIf="currentUser.role === 'SUPER_ADMIN'" routerLink="/administration/journal-audit" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Journal d'Audit</a>
       </nav>
     </div>
     
@@ -139,12 +139,12 @@
           <div class="flex items-center space-x-3 bg-slate-800 px-3 py-1 rounded-full border border-slate-600">
             <div class="flex flex-col text-right">
               <span class="text-sm font-bold leading-tight whitespace-nowrap">{{ user.fullName }}</span>
-              <span class="text-xs font-bold" [ngClass]="user.role === 'ADMIN' ? 'text-red-500' : 'text-gamma-accent'">
-                {{ user.role === 'ADMIN' ? 'Administrateur' : user.role === 'DA_MANAGER' ? 'Gestionnaire DA' : 'Client' }}
+              <span class="text-xs font-bold" [ngClass]="user.role === 'SUPER_ADMIN' ? 'text-purple-400' : user.role === 'ADMIN' ? 'text-red-500' : 'text-gamma-accent'">
+                {{ user.role === 'SUPER_ADMIN' ? 'Administrateur Système' : user.role === 'ADMIN' ? 'Administrateur (SGS)' : user.role === 'DA_MANAGER' ? 'Gestionnaire DA' : 'Client' }}
               </span>
             </div>
             <div class="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold shadow-sm transition-colors duration-300"
-                 [ngClass]="user.role === 'ADMIN' ? 'bg-red-500' : 'bg-gamma-accent'">
+                 [ngClass]="user.role === 'SUPER_ADMIN' ? 'bg-purple-500' : user.role === 'ADMIN' ? 'bg-red-500' : 'bg-gamma-accent'">
               {{ user.fullName.charAt(0).toUpperCase() }}
             </div>
           </div>

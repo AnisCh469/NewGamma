@@ -65,7 +65,7 @@ public class DemandeController {
         if (user == null) {
             return ResponseEntity.status(401).body("Authentification requise.");
         }
-        if (user.getRole() == Role.ADMIN) {
+        if (user.getRole() == Role.ADMIN || user.getRole() == Role.SUPER_ADMIN) {
             return null;
         }
         if (user.getRole() != Role.DA_MANAGER) {
@@ -177,7 +177,7 @@ public class DemandeController {
         // SÉCURITÉ (audit 2026-09-09) : la validation d'un transfert inter-magasin est un
         // pouvoir exclusivement ADMIN (SGS). La file d'attente correspondante ne doit donc
         // être lisible que par un ADMIN — pas par un DA_MANAGER, encore moins un UNIT_USER.
-        if (user.getRole() != Role.ADMIN) {
+        if (user.getRole() != Role.ADMIN && user.getRole() != Role.SUPER_ADMIN) {
             return ResponseEntity.status(403).body("Accès refusé : seul l'administrateur (SGS) traite les escalades inter-magasin.");
         }
         return ResponseEntity.ok(demandeRepository.findByStatut(StatutDemande.ESCALADE_SGS));
@@ -430,7 +430,7 @@ public class DemandeController {
         if (user == null) {
             return ResponseEntity.status(401).body("Authentification requise.");
         }
-        if (user.getRole() != Role.ADMIN) {
+        if (user.getRole() != Role.ADMIN && user.getRole() != Role.SUPER_ADMIN) {
             return ResponseEntity.status(403).body("Accès refusé : seul l'ADMIN (SGS) peut valider un transfert inter-magasin.");
         }
         try {

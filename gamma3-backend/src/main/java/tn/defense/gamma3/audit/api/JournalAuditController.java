@@ -34,7 +34,8 @@ public class JournalAuditController {
             Authentication authentication) {
         User u = currentUser(authentication);
         if (u == null) return ResponseEntity.status(401).body("Authentification requise.");
-        if (u.getRole() != Role.ADMIN) return ResponseEntity.status(403).body("Réservé à l'administrateur.");
+        // Le journal d'audit est un outil SYSTÈME (2026-09-11) : SUPER_ADMIN, pas ADMIN.
+        if (u.getRole() != Role.SUPER_ADMIN) return ResponseEntity.status(403).body("Réservé à l'administrateur système.");
 
         Page<JournalAudit> resultat = service.lister(matricule, action, PageRequest.of(page, Math.min(Math.max(size, 1), 200)));
         return ResponseEntity.ok(resultat);

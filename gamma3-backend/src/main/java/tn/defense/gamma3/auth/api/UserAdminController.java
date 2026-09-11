@@ -64,7 +64,7 @@ public class UserAdminController {
 
     @GetMapping
     public ResponseEntity<?> listUsers(Authentication authentication) {
-        if (!isAdmin(authentication)) {
+        if (!isSuperAdmin(authentication)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("message", "Réservé aux administrateurs."));
         }
@@ -79,7 +79,7 @@ public class UserAdminController {
      */
     @GetMapping("/magasins")
     public ResponseEntity<?> listMagasins(Authentication authentication) {
-        if (!isAdmin(authentication)) {
+        if (!isSuperAdmin(authentication)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("message", "Réservé aux administrateurs."));
         }
@@ -93,7 +93,7 @@ public class UserAdminController {
      */
     @GetMapping("/unites")
     public ResponseEntity<?> listUnites(Authentication authentication) {
-        if (!isAdmin(authentication)) {
+        if (!isSuperAdmin(authentication)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("message", "Réservé aux administrateurs."));
         }
@@ -108,7 +108,7 @@ public class UserAdminController {
     @PostMapping
     public ResponseEntity<?> createUser(@RequestBody UserAdminDto.CreateUserRequest request,
                                          Authentication authentication, HttpServletRequest httpRequest) {
-        if (!isAdmin(authentication)) {
+        if (!isSuperAdmin(authentication)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("message", "Réservé aux administrateurs."));
         }
@@ -179,7 +179,7 @@ public class UserAdminController {
     public ResponseEntity<?> updateUser(@PathVariable Long id,
                                          @RequestBody UserAdminDto.UpdateUserRequest request,
                                          Authentication authentication, HttpServletRequest httpRequest) {
-        if (!isAdmin(authentication)) {
+        if (!isSuperAdmin(authentication)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("message", "Réservé aux administrateurs."));
         }
@@ -271,7 +271,7 @@ public class UserAdminController {
     public ResponseEntity<?> setEnabled(@PathVariable Long id,
                                          @RequestBody UserAdminDto.SetEnabledRequest request,
                                          Authentication authentication, HttpServletRequest httpRequest) {
-        if (!isAdmin(authentication)) {
+        if (!isSuperAdmin(authentication)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("message", "Réservé aux administrateurs."));
         }
@@ -305,7 +305,7 @@ public class UserAdminController {
     public ResponseEntity<?> resetPassword(@PathVariable Long id,
                                             @RequestBody UserAdminDto.ResetPasswordRequest request,
                                             Authentication authentication, HttpServletRequest httpRequest) {
-        if (!isAdmin(authentication)) {
+        if (!isSuperAdmin(authentication)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("message", "Réservé aux administrateurs."));
         }
@@ -335,9 +335,9 @@ public class UserAdminController {
     // Helper
     // ------------------------------------------------------------------
 
-    private boolean isAdmin(Authentication authentication) {
+    private boolean isSuperAdmin(Authentication authentication) {
         return authentication != null
                 && authentication.getPrincipal() instanceof User u
-                && u.getRole() == Role.ADMIN;
+                && u.getRole() == Role.SUPER_ADMIN;
     }
 }

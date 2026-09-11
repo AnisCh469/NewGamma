@@ -75,7 +75,8 @@ export class GestionUtilisateursComponent implements OnInit {
   } = { matricule: '', password: '', fullName: '', role: null, magasinId: null, uniteId: null, fonctionUnite: null };
 
   roleOptions: { label: string; value: Role }[] = [
-    { label: 'Administrateur (ADMIN)', value: 'ADMIN' },
+    { label: 'Administrateur Système (SUPER_ADMIN)', value: 'SUPER_ADMIN' },
+    { label: 'Administrateur Logistique — SGS (ADMIN)', value: 'ADMIN' },
     { label: 'Gestionnaire de Magasin (DA_MANAGER)', value: 'DA_MANAGER' },
     { label: "Utilisateur d'Unité (UNIT_USER)", value: 'UNIT_USER' }
   ];
@@ -308,6 +309,7 @@ export class GestionUtilisateursComponent implements OnInit {
 
   getRoleSeverity(role: string): 'success' | 'secondary' | 'info' | 'warning' | 'danger' | 'contrast' | undefined {
     switch (role) {
+      case 'SUPER_ADMIN': return 'contrast';
       case 'ADMIN': return 'danger';
       case 'DA_MANAGER': return 'warning';
       case 'UNIT_USER': return 'info';

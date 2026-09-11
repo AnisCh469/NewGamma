@@ -70,7 +70,7 @@ public class ReformeController {
             Authentication authentication) {
         User u = currentUser(authentication);
         if (u == null) return ResponseEntity.status(401).body("Authentification requise.");
-        if (u.getRole() != Role.ADMIN && u.getRole() != Role.DA_MANAGER) {
+        if (u.getRole() != Role.SUPER_ADMIN && u.getRole() != Role.ADMIN && u.getRole() != Role.DA_MANAGER) {
             return ResponseEntity.status(403).body("Seule la Division de l'Approvisionnement statue sur une commission de réforme.");
         }
         LocalDate date = dateCommission != null ? LocalDate.parse(dateCommission) : LocalDate.now();

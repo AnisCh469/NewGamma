@@ -97,16 +97,29 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         if (userRepository.count() == 0) {
-            User admin = User.builder()
+            // Gouvernance des rôles (2026-09-11, voir docs/PROPOSITION_GOUVERNANCE_ROLES.md) :
+            // le compte "admin" est l'Administrateur SYSTÈME (SUPER_ADMIN — comptes, paramètres,
+            // sauvegardes, migrations, audit), distinct de l'Administrateur LOGISTIQUE (ADMIN —
+            // arbitrage des demandes, supervision des magasins/SGS), créé séparément ci-dessous.
+            User superAdmin = User.builder()
                     .matricule(adminMatricule)
                     .fullName("Administrateur Système")
                     .password(passwordEncoder.encode(adminPassword))
+                    .role(Role.SUPER_ADMIN)
+                    .build();
+            userRepository.save(superAdmin);
+            // Sécurité : ne jamais journaliser un mot de passe, même celui d'un compte de démo.
+            System.out.println("✅ Administrateur système par défaut créé (matricule : " + adminMatricule + "). "
+                    + "Définissez ADMIN_MATRICULE et ADMIN_PASSWORD en production.");
+
+            User adminLogistique = User.builder()
+                    .matricule("sgs")
+                    .fullName("Administrateur Logistique (SGS)")
+                    .password(passwordEncoder.encode("sgs"))
                     .role(Role.ADMIN)
                     .build();
-            userRepository.save(admin);
-            // Sécurité : ne jamais journaliser un mot de passe, même celui d'un compte de démo.
-            System.out.println("✅ Administrateur par défaut créé (matricule : " + adminMatricule + "). "
-                    + "Définissez ADMIN_MATRICULE et ADMIN_PASSWORD en production.");
+            userRepository.save(adminLogistique);
+            System.out.println("✅ Administrateur logistique (SGS) par défaut créé : sgs/sgs");
 
             User client = User.builder()
                     .matricule("client")

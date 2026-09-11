@@ -46,7 +46,7 @@ public class DocumentController {
 
     @GetMapping("/bon-entree/{bprId}")
     public ResponseEntity<byte[]> bonEntree(@PathVariable Long bprId, Authentication auth) {
-        exigerRole(auth, Role.ADMIN, Role.DA_MANAGER);
+        exigerRole(auth, Role.SUPER_ADMIN, Role.ADMIN, Role.DA_MANAGER);
         Map<String, Object> model = data.bonEntree(bprId);
         return pdfInline(pdf.render("bon-entree", model), (String) model.get("numero"), "bon-entree");
     }
@@ -60,7 +60,7 @@ public class DocumentController {
 
     @GetMapping("/facture/{commandeId}")
     public ResponseEntity<byte[]> facture(@PathVariable Long commandeId, Authentication auth) {
-        exigerRole(auth, Role.ADMIN, Role.DA_MANAGER);
+        exigerRole(auth, Role.SUPER_ADMIN, Role.ADMIN, Role.DA_MANAGER);
         Map<String, Object> model = data.facture(commandeId);
         return pdfInline(pdf.render("facture", model), (String) model.get("numero"), "bon-commande");
     }
@@ -76,7 +76,7 @@ public class DocumentController {
 
     @GetMapping("/fiche-fournisseur/{fournisseurId}")
     public ResponseEntity<byte[]> ficheFournisseur(@PathVariable Long fournisseurId, Authentication auth) {
-        exigerRole(auth, Role.ADMIN, Role.DA_MANAGER);
+        exigerRole(auth, Role.SUPER_ADMIN, Role.ADMIN, Role.DA_MANAGER);
         Map<String, Object> model = data.ficheFournisseur(fournisseurId);
         return pdfInline(pdf.render("fiche-fournisseur", model), (String) model.get("numero"), "fiche-fournisseur");
     }
@@ -134,7 +134,7 @@ public class DocumentController {
     private void verifierAccesLogistique(Authentication auth, Long uniteIdDuDocument) {
         User u = user(auth);
         if (u == null) throw new AccesRefuseException("Authentification requise.");
-        if (u.getRole() == Role.ADMIN || u.getRole() == Role.DA_MANAGER) return;
+        if (u.getRole() == Role.SUPER_ADMIN || u.getRole() == Role.ADMIN || u.getRole() == Role.DA_MANAGER) return;
         if (u.getRole() == Role.UNIT_USER && u.getUnite() != null
                 && u.getUnite().getId().equals(uniteIdDuDocument)) return;
         throw new AccesRefuseException("Vous ne pouvez consulter que les documents de votre unité.");

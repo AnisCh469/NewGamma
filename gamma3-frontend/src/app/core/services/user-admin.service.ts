@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 
-export type Role = 'ADMIN' | 'DA_MANAGER' | 'UNIT_USER';
+export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'DA_MANAGER' | 'UNIT_USER';
 export type FonctionUnite = 'GESTIONNAIRE' | 'COMMANDANT';
 
 export interface Magasin {

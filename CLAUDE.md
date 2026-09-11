@@ -73,9 +73,17 @@ Base applicative **PostgreSQL**, schéma généré par **`ddl-auto: update`** (H
 
 **Comptes de test** (créés par `DataSeeder.java` au premier démarrage si la base est vide) :
 
+> ⚠️ **2026-09-11 — nouveau rôle `SUPER_ADMIN`** (voir `docs/PROPOSITION_GOUVERNANCE_ROLES.md`
+> et `docs/DEV_JOURNAL.md` entrée du même jour) : `admin` est désormais l'**Administrateur
+> Système** (comptes/rôles, paramètres système, migrations, journal d'audit — plus, en
+> superset, tout ce que `ADMIN` peut faire). Un second compte `sgs` a été créé pour
+> l'**Administrateur Logistique** (arbitrage des demandes, supervision des magasins/SGS) —
+> c'est lui qui incarne maintenant le rôle `ADMIN` "métier" au quotidien.
+
 | Matricule | Mot de passe | Rôle | Détail |
 |---|---|---|---|
-| `admin` | `admin` | ADMIN | Supervise tous les magasins |
+| `admin` | `admin` | **SUPER_ADMIN** | Administrateur système (comptes, paramètres, migrations, audit) + superset logistique |
+| `sgs` | `sgs2026` | ADMIN | Administrateur logistique — arbitrage des demandes, supervision de tous les magasins (SGS) |
 | `client` | `client` | UNIT_USER | Compte générique sans unité rattachée |
 | `DMEN` / `DRC` / `RPS` / `CFISM` | = matricule | UNIT_USER, `fonctionUnite=GESTIONNAIRE` | Compose et soumet les demandes de son unité |
 | `DMEN_CDT` / `DRC_CDT` / `RPS_CDT` / `CFISM_CDT` | = matricule | UNIT_USER, `fonctionUnite=COMMANDANT` | Valide/refuse les demandes de la même unité avant GAMMA3 |

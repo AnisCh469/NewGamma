@@ -34,7 +34,8 @@ public class ParametreSystemeController {
                                          HttpServletRequest httpRequest) {
         User u = currentUser(authentication);
         if (u == null) return ResponseEntity.status(401).body("Authentification requise.");
-        if (u.getRole() != Role.ADMIN) return ResponseEntity.status(403).body("Réservé à l'administrateur.");
+        // Un paramètre système est un pouvoir SYSTÈME (2026-09-11) : SUPER_ADMIN, pas ADMIN.
+        if (u.getRole() != Role.SUPER_ADMIN) return ResponseEntity.status(403).body("Réservé à l'administrateur système.");
 
         Integer minutes = body.get("inactiviteMinutes");
         if (minutes == null) return ResponseEntity.badRequest().body("Le champ 'inactiviteMinutes' est requis.");

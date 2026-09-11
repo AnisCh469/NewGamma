@@ -524,7 +524,8 @@ public class DistributionService {
         tn.defense.gamma3.auth.domain.User user = userRepository.findByMatricule(userMatricule)
                 .orElseThrow(() -> new IllegalArgumentException("Utilisateur non trouvé"));
 
-        boolean estAdmin = user.getRole() == tn.defense.gamma3.auth.domain.Role.ADMIN;
+        boolean estAdmin = user.getRole() == tn.defense.gamma3.auth.domain.Role.ADMIN
+                || user.getRole() == tn.defense.gamma3.auth.domain.Role.SUPER_ADMIN;
         boolean estDaManager = user.getRole() == tn.defense.gamma3.auth.domain.Role.DA_MANAGER;
 
         if (!estAdmin && !estDaManager) {

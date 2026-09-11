@@ -176,7 +176,7 @@ public class MouvementMigrationService {
                         .matricule("SYS-MIGRATION-G2")
                         .fullName("Migration Gamma 2 (historique)")
                         .password("!disabled!" + UUID.randomUUID())   // pas un hash bcrypt → connexion impossible
-                        .role(Role.ADMIN)
+                        .role(Role.SUPER_ADMIN)
                         .enabled(false)                                // bloqué par JwtAuthenticationFilter
                         .build()));
     }
