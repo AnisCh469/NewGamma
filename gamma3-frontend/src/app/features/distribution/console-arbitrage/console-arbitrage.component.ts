@@ -520,25 +520,44 @@ export class ConsoleArbitrageComponent implements OnInit {
     }
 
     if (confirm(`Confirmer la récupération physique des matériels pour la demande ${dem.numeroDemande} ? Cette action effectuera le prélèvement réel du stock des soutes DA.`)) {
-      this.distributionService.confirmerLivraison(dem.bonSortie.id).subscribe({
-        next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Sortie Confirmée',
-            detail: `La livraison physique pour le Bon de Sortie ${dem.bonSortie?.numeroBs} a été confirmée.`
-          });
-          this.loadDemandes();
-        },
-        error: (err) => {
-          const errorMsg = typeof err.error === 'string' ? err.error : 'Impossible de confirmer la livraison physique.';
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Erreur',
-            detail: errorMsg
-          });
-        }
-      });
+      this.executerConfirmationLivraison(dem, false);
     }
+  }
+
+  /**
+   * Exécute la confirmation de retrait, avec repli automatique sur une demande de dérogation
+   * au seuil de sécurité (CCF RG16/17/68/102) si le backend la propose (409,
+   * message préfixé "SEUIL_SECURITE:" — voir DistributionService.confirmerSortiePhysique côté
+   * backend). Un blocage SANS ce préfixe (ex: appelant DA_MANAGER, qui ne peut jamais
+   * s'auto-autoriser) est affiché tel quel, sans proposer de dérogation.
+   */
+  private executerConfirmationLivraison(dem: DemandeMateriel, derogationSeuilSecurite: boolean): void {
+    if (!dem.bonSortie?.id) return;
+    this.distributionService.confirmerLivraison(dem.bonSortie.id, derogationSeuilSecurite).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Sortie Confirmée',
+          detail: `La livraison physique pour le Bon de Sortie ${dem.bonSortie?.numeroBs} a été confirmée.`
+        });
+        this.loadDemandes();
+      },
+      error: (err) => {
+        const errorMsg = typeof err.error === 'string' ? err.error : 'Impossible de confirmer la livraison physique.';
+        if (err.status === 409 && errorMsg.startsWith('SEUIL_SECURITE:')) {
+          const detail = errorMsg.substring('SEUIL_SECURITE:'.length);
+          if (confirm(`⚠️ Seuil de sécurité atteint :\n\n${detail}\n\nConfirmer quand même la sortie sous votre responsabilité (dérogation tracée dans le Journal d'Audit) ?`)) {
+            this.executerConfirmationLivraison(dem, true);
+          }
+          return;
+        }
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Erreur',
+          detail: errorMsg
+        });
+      }
+    });
   }
 
   // ─── Escalade vers SGS (stock local insuffisant) ────────────────────────────

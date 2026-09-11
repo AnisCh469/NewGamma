@@ -23,9 +23,12 @@ import tn.defense.gamma3.tiers.repository.UniteUtilisatriceRepository;
 import tn.defense.gamma3.notification.domain.Notification;
 import tn.defense.gamma3.notification.repository.NotificationRepository;
 import tn.defense.gamma3.auth.repository.UserRepository;
+import tn.defense.gamma3.audit.domain.TypeActionAudit;
+import tn.defense.gamma3.audit.service.JournalAuditService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,6 +47,7 @@ public class DistributionService {
     private final MagasinRepository magasinRepository;
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final JournalAuditService journalAuditService;
 
     // ─── Constante : ID du Magasin Principal SGS (Nord/Bizerte) ───────────────────────
     // RÔLE : Magasin de référence pour les transferts inter-magasins et le routage par défaut.
@@ -513,7 +517,7 @@ public class DistributionService {
     //        → Le stock SGS a déjà été transféré localement via validerTransfertInterMagasin si nécessaire.
     // ──────────────────────────────────────────────────────────────────────────
     @Transactional
-    public BonSortie confirmerSortiePhysique(Long bonSortieId, String userMatricule) {
+    public BonSortie confirmerSortiePhysique(Long bonSortieId, String userMatricule, boolean derogationConfirmee, String adresseIp) {
         BonSortie bs = bonSortieRepository.findById(bonSortieId)
                 .orElseThrow(() -> new IllegalArgumentException("Bon de sortie introuvable"));
 
@@ -553,6 +557,57 @@ public class DistributionService {
         }
 
         List<LigneDemande> lignes = ligneRepository.findByDemande_Id(demande.getId());
+
+        // ─── Seuil de sécurité (CCF RG16/RG17/RG68/RG102, audit de conformité 2026-09-11) ───
+        // "Au seuil de sécurité, la distribution de l'article est bloquée. Elle n'est
+        // autorisée que sur ordre de l'EMAM/BL." — équivalent numérique retenu : une
+        // dérogation explicite, réservée à un ADMIN/SUPER_ADMIN (jamais un simple magasinier
+        // DA_MANAGER, qui ne peut donc jamais s'auto-autoriser), tracée dans le Journal
+        // d'Audit. Le seuil est comparé au stock TOTAL de l'article tous magasins confondus
+        // (c'est la notion de "le stock" du CCF, écrit avant l'existence de plusieurs soutes
+        // régionales dans Gamma3) — pas seulement celui de la soute de prélèvement.
+        List<String> articlesSousSeuil = new ArrayList<>();
+        for (LigneDemande ligne : lignes) {
+            BigDecimal accordeeVerif = ligne.getQuantiteAccordee() != null ? ligne.getQuantiteAccordee() : ligne.getQuantiteDemandee();
+            if (accordeeVerif == null || accordeeVerif.compareTo(BigDecimal.ZERO) <= 0) continue;
+
+            Item article = ligne.getItem();
+            BigDecimal seuil = article.getStockSecurite();
+            if (seuil == null || seuil.compareTo(BigDecimal.ZERO) <= 0) continue; // Pas de seuil configuré pour cet article.
+
+            BigDecimal stockTotalActuel = stockRepository.findByItem_Id(article.getId()).stream()
+                    .map(Stock::getQuantite)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal stockApresSortie = stockTotalActuel.subtract(accordeeVerif);
+
+            if (stockApresSortie.compareTo(seuil) < 0) {
+                articlesSousSeuil.add(article.getNomenclature() + " (" + article.getDesignation() + ") : stock actuel "
+                        + stockTotalActuel + ", seuil de sécurité " + seuil + ", après sortie " + stockApresSortie);
+            }
+        }
+
+        if (!articlesSousSeuil.isEmpty()) {
+            boolean estAdminPourDerogation = estAdmin; // ADMIN ou SUPER_ADMIN uniquement, jamais DA_MANAGER (voir estAdmin plus haut).
+            if (!estAdminPourDerogation) {
+                throw new SeuilSecuriteAtteintException(
+                        "Sortie bloquée : le stock passerait sous le seuil de sécurité pour "
+                                + articlesSousSeuil.size() + " article(s). Seul un administrateur (SGS ou système) peut autoriser une dérogation. Détail : "
+                                + String.join(" | ", articlesSousSeuil));
+            }
+            if (!derogationConfirmee) {
+                throw new SeuilSecuriteAtteintException(
+                        "SEUIL_SECURITE:Le stock passerait sous le seuil de sécurité pour "
+                                + articlesSousSeuil.size() + " article(s). Confirmez la dérogation pour poursuivre. Détail : "
+                                + String.join(" | ", articlesSousSeuil));
+            }
+            // Dérogation confirmée par un ADMIN/SUPER_ADMIN : on poursuit, mais on trace
+            // impérativement cette décision — c'est exactement le type d'action que le CCF
+            // réserve à "l'ordre de l'EMAM/BL".
+            journalAuditService.enregistrer(user.getMatricule(), user.getFullName(), TypeActionAudit.SEUIL_SECURITE_DEROGATION,
+                    "Dérogation au seuil de sécurité pour le bon de sortie " + bs.getNumeroBs() + " : " + String.join(" | ", articlesSousSeuil),
+                    adresseIp);
+        }
+
         for (LigneDemande ligne : lignes) {
             // Quantité à sortir physiquement :
             //   - arbitrage classique  → quantiteAccordee a été fixée (éventuellement 0 = ligne refusée) ;
@@ -605,5 +660,16 @@ public class DistributionService {
                 .build());
 
         return savedBs;
+    }
+
+    /**
+     * Levée quand une sortie physique ferait passer le stock d'un article sous son seuil de
+     * sécurité (CCF RG16/RG17/RG68/RG102). Le message commence par le préfixe machine-lisible
+     * {@code "SEUIL_SECURITE:"} uniquement quand une dérogation ADMIN/SUPER_ADMIN reste
+     * possible (pour que le frontend propose un bouton de confirmation) — son absence signale
+     * un blocage définitif (ex : appelant DA_MANAGER, qui ne peut jamais s'auto-autoriser).
+     */
+    public static class SeuilSecuriteAtteintException extends RuntimeException {
+        public SeuilSecuriteAtteintException(String message) { super(message); }
     }
 }

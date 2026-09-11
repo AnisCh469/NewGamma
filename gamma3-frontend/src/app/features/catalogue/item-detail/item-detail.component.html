@@ -236,6 +236,43 @@
         </div>
       </div>
 
+      <!-- Fiche Signalétique d'Article (FSA) — CCF, ajouté le 2026-09-11 (audit de conformité) -->
+      <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] m-0">Fiche Signalétique d'Article (FSA)</h3>
+          <p-button *ngIf="!isClient()" icon="pi pi-pencil" label="Modifier" styleClass="p-button-text p-button-secondary p-button-xs" (onClick)="openFsaModal()"></p-button>
+        </div>
+        <div class="grid grid-cols-3 gap-x-4 gap-y-3 text-xs">
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">Criticité</span>
+            <p-tag *ngIf="item.criticite" [value]="item.criticite === 'CRITIQUE' ? 'Critique' : 'Non-critique'" [severity]="item.criticite === 'CRITIQUE' ? 'danger' : 'secondary'" styleClass="text-[10px]"></p-tag>
+            <span *ngIf="!item.criticite" class="text-gray-300 italic">—</span>
+          </div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">Type de matériel</span><span class="font-bold text-gray-800">{{ item.codeTypeMateriel || '—' }}</span></div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">Réparabilité</span><span class="font-bold text-gray-800">{{ item.reparabilite === 'REPARABLE' ? 'Réparable' : item.reparabilite === 'NON_REPARABLE' ? 'Non réparable' : '—' }}</span></div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">Poids</span><span class="font-bold text-gray-800">{{ item.poids != null ? (item.poids + ' kg') : '—' }}</span></div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">Volume</span><span class="font-bold text-gray-800">{{ item.volume != null ? (item.volume + ' m³') : '—' }}</span></div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">Norme ISO</span><span class="font-bold text-gray-800">{{ item.normeIso || '—' }}</span></div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">Échelon de maintenance</span><span class="font-bold text-gray-800">{{ item.echelonMaintenance || '—' }}</span></div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">Conditionnement</span><span class="font-bold text-gray-800">{{ item.codeConditionnement || '—' }}</span></div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">Durée de conservation</span><span class="font-bold text-gray-800">{{ item.dureeConservation || '—' }}</span></div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">Stock minimum</span><span class="font-bold text-gray-800">{{ item.stockMinimum ?? '—' }}</span></div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">Stock maximum</span><span class="font-bold text-gray-800">{{ item.stockMaximum ?? '—' }}</span></div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">CMA</span><span class="font-bold text-gray-800">{{ item.cma ?? '—' }}</span></div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">Code de gestion</span><span class="font-bold text-gray-800">{{ item.codeGestion || '—' }}</span></div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">Code de soutien</span><span class="font-bold text-gray-800">{{ item.codeSoutien || '—' }}</span></div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">Position administrative</span><span class="font-bold text-gray-800">{{ item.codePositionAdministrative || '—' }}</span></div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">Mode d'approvisionnement</span><span class="font-bold text-gray-800">{{ item.codeModeApprovisionnement || '—' }}</span></div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">Origine du matériel</span><span class="font-bold text-gray-800">{{ item.codeOrigineMateriel || '—' }}</span></div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">Délai réapprovisionnement</span><span class="font-bold text-gray-800">{{ item.delaiApprovisionnementAnnees != null ? (item.delaiApprovisionnementAnnees + ' an(s)') : '—' }}</span></div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">État</span><span class="font-bold text-gray-800">{{ item.etatArticle || '—' }}</span></div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">NSN</span><span class="font-bold text-gray-800">{{ item.nsn || '—' }}</span></div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">OEM</span><span class="font-bold text-gray-800">{{ item.oem || '—' }}</span></div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">Blocage approvisionnement</span>
+            <p-tag [value]="item.blocageApprovisionnement ? 'Bloqué' : 'Autorisé'" [severity]="item.blocageApprovisionnement ? 'danger' : 'success'" styleClass="text-[10px]"></p-tag>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -357,5 +394,46 @@
   </div>
   <ng-template pTemplate="footer">
     <p-button label="Fermer" icon="pi pi-times" (onClick)="displayHistoriqueModal = false" styleClass="p-button-text"></p-button>
+  </ng-template>
+</p-dialog>
+
+<!-- ═══════════ Fiche Signalétique d'Article (FSA) — édition (CCF §2-2/2-3/2-4) ═══════════ -->
+<p-dialog header="Modifier la Fiche Signalétique d'Article" [(visible)]="displayFsaModal"
+          [modal]="true" [style]="{width: '820px'}" styleClass="p-fluid">
+  <div class="grid grid-cols-2 gap-x-6 gap-y-3 mt-2">
+
+    <h4 class="col-span-2 text-xs font-black uppercase text-gray-400 tracking-widest border-b pb-1 mt-2">Données de base</h4>
+    <div class="field"><label class="font-bold text-gray-700 block mb-1 text-sm">Poids (kg)</label><p-inputNumber [(ngModel)]="fsaForm.poids" [minFractionDigits]="0" [maxFractionDigits]="3"></p-inputNumber></div>
+    <div class="field"><label class="font-bold text-gray-700 block mb-1 text-sm">Volume (m³)</label><p-inputNumber [(ngModel)]="fsaForm.volume" [minFractionDigits]="0" [maxFractionDigits]="4"></p-inputNumber></div>
+    <div class="field"><label class="font-bold text-gray-700 block mb-1 text-sm">Norme ISO</label><input type="text" pInputText [(ngModel)]="fsaForm.normeIso" class="w-full"></div>
+    <div class="field"><label class="font-bold text-gray-700 block mb-1 text-sm">Échelon de maintenance</label><input type="text" pInputText [(ngModel)]="fsaForm.echelonMaintenance" class="w-full"></div>
+    <div class="field"><label class="font-bold text-gray-700 block mb-1 text-sm">Conditionnement</label><input type="text" pInputText [(ngModel)]="fsaForm.codeConditionnement" placeholder="Xx0000 ou Fs(0000)" class="w-full"></div>
+    <div class="field"><label class="font-bold text-gray-700 block mb-1 text-sm">Durée de conservation</label><input type="text" pInputText [(ngModel)]="fsaForm.dureeConservation" placeholder="ex : 24 mois" class="w-full"></div>
+
+    <h4 class="col-span-2 text-xs font-black uppercase text-gray-400 tracking-widest border-b pb-1 mt-2">Classification</h4>
+    <div class="field"><label class="font-bold text-gray-700 block mb-1 text-sm">Criticité (Cr/NCr)</label><p-dropdown [options]="criticiteOptions" [(ngModel)]="fsaForm.criticite" optionLabel="label" optionValue="value" [showClear]="true" placeholder="Non renseigné" appendTo="body"></p-dropdown></div>
+    <div class="field"><label class="font-bold text-gray-700 block mb-1 text-sm">Code type de matériel</label><p-dropdown [options]="codeTypeMaterielOptions" [(ngModel)]="fsaForm.codeTypeMateriel" optionLabel="label" optionValue="value" [showClear]="true" placeholder="Non renseigné" appendTo="body"></p-dropdown></div>
+    <div class="field"><label class="font-bold text-gray-700 block mb-1 text-sm">Réparabilité (Rep/NRep)</label><p-dropdown [options]="reparabiliteOptions" [(ngModel)]="fsaForm.reparabilite" optionLabel="label" optionValue="value" [showClear]="true" placeholder="Non renseigné" appendTo="body"></p-dropdown></div>
+
+    <h4 class="col-span-2 text-xs font-black uppercase text-gray-400 tracking-widest border-b pb-1 mt-2">Planification</h4>
+    <div class="field"><label class="font-bold text-gray-700 block mb-1 text-sm">Stock minimum</label><p-inputNumber [(ngModel)]="fsaForm.stockMinimum" [minFractionDigits]="0" [maxFractionDigits]="2"></p-inputNumber></div>
+    <div class="field"><label class="font-bold text-gray-700 block mb-1 text-sm">Stock maximum</label><p-inputNumber [(ngModel)]="fsaForm.stockMaximum" [minFractionDigits]="0" [maxFractionDigits]="2"></p-inputNumber></div>
+    <div class="field"><label class="font-bold text-gray-700 block mb-1 text-sm">CMA (Consommation Moyenne Annuelle)</label><p-inputNumber [(ngModel)]="fsaForm.cma" [minFractionDigits]="0" [maxFractionDigits]="2"></p-inputNumber></div>
+    <div class="field"><label class="font-bold text-gray-700 block mb-1 text-sm">Délai de réapprovisionnement (années)</label><p-inputNumber [(ngModel)]="fsaForm.delaiApprovisionnementAnnees" [min]="0" [max]="10"></p-inputNumber></div>
+    <div class="field"><label class="font-bold text-gray-700 block mb-1 text-sm">Code de gestion</label><p-dropdown [options]="codeGestionOptions" [(ngModel)]="fsaForm.codeGestion" optionLabel="label" optionValue="value" [showClear]="true" placeholder="Non renseigné" appendTo="body"></p-dropdown></div>
+    <div class="field"><label class="font-bold text-gray-700 block mb-1 text-sm">Code de soutien</label><p-dropdown [options]="codeSoutienOptions" [(ngModel)]="fsaForm.codeSoutien" optionLabel="label" optionValue="value" [showClear]="true" placeholder="Non renseigné" appendTo="body"></p-dropdown></div>
+    <div class="field"><label class="font-bold text-gray-700 block mb-1 text-sm">Position administrative</label><p-dropdown [options]="codePositionAdministrativeOptions" [(ngModel)]="fsaForm.codePositionAdministrative" optionLabel="label" optionValue="value" [showClear]="true" placeholder="Non renseigné" appendTo="body"></p-dropdown></div>
+    <div class="field"><label class="font-bold text-gray-700 block mb-1 text-sm">Mode d'approvisionnement</label><p-dropdown [options]="codeModeApprovisionnementOptions" [(ngModel)]="fsaForm.codeModeApprovisionnement" optionLabel="label" optionValue="value" [showClear]="true" placeholder="Non renseigné" appendTo="body"></p-dropdown></div>
+    <div class="field"><label class="font-bold text-gray-700 block mb-1 text-sm">Origine du matériel</label><p-dropdown [options]="codeOrigineMaterielOptions" [(ngModel)]="fsaForm.codeOrigineMateriel" optionLabel="label" optionValue="value" [showClear]="true" placeholder="Non renseigné" appendTo="body"></p-dropdown></div>
+    <div class="field"><label class="font-bold text-gray-700 block mb-1 text-sm">État</label><input type="text" pInputText [(ngModel)]="fsaForm.etatArticle" class="w-full"></div>
+    <div class="field flex items-center gap-2 mt-5"><p-checkbox [(ngModel)]="fsaForm.blocageApprovisionnement" [binary]="true" inputId="blocageApprov"></p-checkbox><label for="blocageApprov" class="font-bold text-gray-700 text-sm cursor-pointer">Bloquer tout nouvel approvisionnement</label></div>
+
+    <h4 class="col-span-2 text-xs font-black uppercase text-gray-400 tracking-widest border-b pb-1 mt-2">Références constructeur</h4>
+    <div class="field"><label class="font-bold text-gray-700 block mb-1 text-sm">NSN (National Stock Number)</label><input type="text" pInputText [(ngModel)]="fsaForm.nsn" class="w-full"></div>
+    <div class="field"><label class="font-bold text-gray-700 block mb-1 text-sm">OEM (référence fabricant d'origine)</label><input type="text" pInputText [(ngModel)]="fsaForm.oem" class="w-full"></div>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Annuler" icon="pi pi-times" (onClick)="displayFsaModal = false" styleClass="p-button-text"></p-button>
+    <p-button label="Enregistrer" icon="pi pi-check" [loading]="savingFsa" (onClick)="saveFsa()" styleClass="p-button-primary"></p-button>
   </ng-template>
 </p-dialog>

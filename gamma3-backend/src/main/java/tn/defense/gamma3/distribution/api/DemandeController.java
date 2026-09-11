@@ -1,5 +1,6 @@
 package tn.defense.gamma3.distribution.api;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.ResponseEntity;
@@ -445,14 +446,22 @@ public class DemandeController {
     @PostMapping("/bons-sortie/{id}/confirmer-livraison")
     public ResponseEntity<?> confirmerLivraisonPhysique(
             @PathVariable Long id,
-            Authentication authentication) {
+            @RequestParam(name = "derogationSeuilSecurite", defaultValue = "false") boolean derogationSeuilSecurite,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
         User user = currentUser(authentication);
         if (user == null) {
             return ResponseEntity.status(401).body("Authentification requise.");
         }
         try {
-            tn.defense.gamma3.distribution.domain.BonSortie bs = distributionService.confirmerSortiePhysique(id, user.getMatricule());
+            tn.defense.gamma3.distribution.domain.BonSortie bs = distributionService.confirmerSortiePhysique(
+                    id, user.getMatricule(), derogationSeuilSecurite, httpRequest.getRemoteAddr());
             return ResponseEntity.ok(bs);
+        } catch (DistributionService.SeuilSecuriteAtteintException e) {
+            // Voir la javadoc de l'exception : le préfixe "SEUIL_SECURITE:" indique au
+            // frontend qu'une dérogation reste possible (bouton de confirmation) ; son
+            // absence signale un blocage définitif (ex: appelant DA_MANAGER).
+            return ResponseEntity.status(409).body(e.getMessage());
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }

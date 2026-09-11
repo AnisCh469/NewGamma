@@ -109,7 +109,15 @@ export class DistributionService {
     return this.http.post<DemandeMateriel>(`${this.apiUrl}/${demandeId}/valider-transfert`, { accepter, motifRefus });
   }
 
-  confirmerLivraison(bonSortieId: number): Observable<BonSortie> {
-    return this.http.post<BonSortie>(`${this.apiUrl}/bons-sortie/${bonSortieId}/confirmer-livraison`, {});
+  /**
+   * @param derogationSeuilSecurite Confirme explicitement une sortie qui ferait passer le
+   *   stock d'un article sous son seuil de sécurité (CCF RG16/17/68/102) — réservé
+   *   ADMIN/SUPER_ADMIN côté backend ; voir DistributionService.confirmerSortiePhysique.
+   *   Un premier appel sans dérogation renvoie un 409 dont le message commence par
+   *   "SEUIL_SECURITE:" si une dérogation reste possible pour l'appelant.
+   */
+  confirmerLivraison(bonSortieId: number, derogationSeuilSecurite = false): Observable<BonSortie> {
+    const params = derogationSeuilSecurite ? '?derogationSeuilSecurite=true' : '';
+    return this.http.post<BonSortie>(`${this.apiUrl}/bons-sortie/${bonSortieId}/confirmer-livraison${params}`, {});
   }
 }

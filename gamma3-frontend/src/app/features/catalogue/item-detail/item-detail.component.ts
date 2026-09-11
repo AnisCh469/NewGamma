@@ -17,6 +17,8 @@ import { DialogModule } from 'primeng/dialog';
 import { TableModule } from 'primeng/table';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputTextareaModule } from 'primeng/inputtextarea';
+import { InputNumberModule } from 'primeng/inputnumber';
+import { CheckboxModule } from 'primeng/checkbox';
 import { StockService } from '../../stock/stock.service';
 import { Stock, MouvementDto } from '../../../core/models/stock.model';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -27,7 +29,7 @@ import { environment } from '../../../../environments/environment';
 @Component({
   selector: 'app-item-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, CardModule, PanelModule, DividerModule, ButtonModule, TagModule, FileUploadModule, DropdownModule, ToastModule, QRCodeModule, DialogModule, TableModule, InputTextModule, InputTextareaModule],
+  imports: [CommonModule, RouterModule, FormsModule, CardModule, PanelModule, DividerModule, ButtonModule, TagModule, FileUploadModule, DropdownModule, ToastModule, QRCodeModule, DialogModule, TableModule, InputTextModule, InputTextareaModule, InputNumberModule, CheckboxModule],
   providers: [MessageService],
   templateUrl: './item-detail.component.html',
   styleUrls: ['./item-detail.component.css']
@@ -76,6 +78,82 @@ export class ItemDetailComponent implements OnInit {
 
   selectedDangerClass: string = 'NONE';
   editDangerMode: boolean = false;
+
+  // ─── Fiche Signalétique d'Article (FSA) — ajouté le 2026-09-11, audit de conformité CCF
+  //     (voir docs/AUDIT_CONFORMITE_CCF_2026-09-11.md §4). Réservé à l'administration
+  //     (isClient() masque déjà le bouton), même patron que l'édition de la classe de danger.
+  displayFsaModal = false;
+  savingFsa = false;
+  fsaForm: Partial<Item> = {};
+
+  readonly criticiteOptions = [
+    { label: 'Critique (Cr)', value: 'CRITIQUE' },
+    { label: 'Non-critique (NCr)', value: 'NON_CRITIQUE' }
+  ];
+  readonly reparabiliteOptions = [
+    { label: 'Réparable (Rep)', value: 'REPARABLE' },
+    { label: 'Non réparable (NRep)', value: 'NON_REPARABLE' }
+  ];
+  readonly codeTypeMaterielOptions = [
+    { label: 'MC — Matériel complet', value: 'MC' },
+    { label: 'EQ — Équipement', value: 'EQ' },
+    { label: 'BE — Banc d\'essai / mesure', value: 'BE' },
+    { label: 'DT — Document technique', value: 'DT' },
+    { label: 'PS — Sous-ensemble de rechange', value: 'PS' },
+    { label: 'PR — Pièce de rechange spécifique', value: 'PR' },
+    { label: 'PC — Pièce de rechange commune', value: 'PC' },
+    { label: 'AC — Accessoire', value: 'AC' },
+    { label: 'OD — Outillage standard', value: 'OD' },
+    { label: 'OS — Outillage spécifique', value: 'OS' },
+    { label: 'MP — Matière première', value: 'MP' },
+    { label: 'MS — Matière première dangereuse', value: 'MS' }
+  ];
+  readonly codeGestionOptions = [
+    { label: 'Clf — Commandes par lot fixe', value: 'CLF' },
+    { label: 'Clu — Nombre limité d\'unités', value: 'CLU' },
+    { label: 'Ciu — Nombre illimité d\'unités', value: 'CIU' },
+    { label: 'Cei — Commandes externes interdites', value: 'CEI' },
+    { label: 'Csm — Interdites sous stock minimum', value: 'CSM' },
+    { label: 'Clm — Limitées au stock maximum', value: 'CLM' }
+  ];
+  readonly codeSoutienOptions = [
+    { label: 'S10 — Soutien normé', value: 'S10' },
+    { label: 'S20 — Soutien restreint', value: 'S20' },
+    { label: 'S30 — Soutien spécial', value: 'S30' },
+    { label: 'S40 — Soutien suspendu', value: 'S40' },
+    { label: 'S50 — Soutien arrêté', value: 'S50' }
+  ];
+  readonly codePositionAdministrativeOptions = [
+    { label: 'An — Allocation', value: 'AN' },
+    { label: 'Dc — Dotation de configuration', value: 'DC' },
+    { label: 'Da — Dotation d\'armement', value: 'DA' },
+    { label: 'Sb — Stock bord', value: 'SB' },
+    { label: 'Va — Volant d\'ateliers', value: 'VA' },
+    { label: 'Ps — Spécifique', value: 'PS' },
+    { label: 'Px — Non définie', value: 'PX' }
+  ];
+  readonly codeModeApprovisionnementOptions = [
+    { label: 'GRC — Gré à gré / marché cadre', value: 'GRC' },
+    { label: 'ADO — Appel d\'offre', value: 'ADO' },
+    { label: 'BDC — Bon de commande', value: 'BDC' },
+    { label: 'ADR — Achat direct par régie', value: 'ADR' },
+    { label: 'MAX — Non défini', value: 'MAX' },
+    { label: 'LCE — Lettre de commande à l\'étranger', value: 'LCE' }
+  ];
+  readonly codeOrigineMaterielOptions = [
+    { label: 'AFn — Marché local', value: 'AFN' },
+    { label: 'AFe — Fournisseur d\'origine', value: 'AFE' },
+    { label: 'FMs — Armée américaine (FMS)', value: 'FMS' },
+    { label: 'DOc — Don / convention', value: 'DOC' },
+    { label: 'CL1 — Fabrication ateliers Armée de Mer', value: 'CL1' },
+    { label: 'CL2 — Fabrication autre direction MDN', value: 'CL2' },
+    { label: 'CL3 — Fabrication fournisseur local', value: 'CL3' },
+    { label: 'CL4 — Fabrication fournisseur étranger', value: 'CL4' },
+    { label: 'PR1 — Prêt provisoire', value: 'PR1' },
+    { label: 'AD1 — Dislocation', value: 'AD1' },
+    { label: 'AD2 — Montage / assemblage', value: 'AD2' },
+    { label: 'AX1 — Origine indéfinie', value: 'AX1' }
+  ];
 
   getFullUrl(url: string | undefined): string {
     if (!url) return '';
@@ -157,6 +235,48 @@ export class ItemDetailComponent implements OnInit {
         error: () => this.messageService.add({severity:'error', summary:'Erreur', detail:'Impossible de mettre à jour'})
       });
     }
+  }
+
+  /** Ouvre la boîte de dialogue d'édition de la Fiche Signalétique d'Article (FSA). */
+  openFsaModal(): void {
+    if (!this.item) return;
+    const {
+      poids, volume, normeIso, echelonMaintenance, codeConditionnement,
+      criticite, codeTypeMateriel,
+      stockMinimum, stockMaximum, codeGestion, codeSoutien, codePositionAdministrative,
+      codeModeApprovisionnement, codeOrigineMateriel, reparabilite,
+      delaiApprovisionnementAnnees, blocageApprovisionnement, cma, etatArticle,
+      dureeConservation, nsn, oem
+    } = this.item;
+    this.fsaForm = {
+      poids, volume, normeIso, echelonMaintenance, codeConditionnement,
+      criticite, codeTypeMateriel,
+      stockMinimum, stockMaximum, codeGestion, codeSoutien, codePositionAdministrative,
+      codeModeApprovisionnement, codeOrigineMateriel, reparabilite,
+      delaiApprovisionnementAnnees, blocageApprovisionnement: !!blocageApprovisionnement, cma, etatArticle,
+      dureeConservation, nsn, oem
+    };
+    this.displayFsaModal = true;
+  }
+
+  saveFsa(): void {
+    if (!this.item) return;
+    this.savingFsa = true;
+    this.itemService.updateItem(this.item.id, this.fsaForm).subscribe({
+      next: (res) => {
+        this.item = res;
+        this.savingFsa = false;
+        this.displayFsaModal = false;
+        this.messageService.add({ severity: 'success', summary: 'Succès', detail: 'Fiche signalétique mise à jour.' });
+      },
+      error: (err) => {
+        this.savingFsa = false;
+        this.messageService.add({
+          severity: 'error', summary: 'Erreur',
+          detail: typeof err?.error?.error === 'string' ? err.error.error : 'Impossible de mettre à jour la fiche.'
+        });
+      }
+    });
   }
 
   onPhotoUpload(event: any) {

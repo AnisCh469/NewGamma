@@ -20,5 +20,15 @@ public enum TypeActionAudit {
     /** Sauvegarde de la base de données déclenchée avec succès (voir module {@code sauvegarde}). */
     SAUVEGARDE_DECLENCHEE,
     /** Tentative de sauvegarde ayant échoué (pg_dump indisponible, conteneur arrêté, timeout…). */
-    SAUVEGARDE_ECHEC
+    SAUVEGARDE_ECHEC,
+    /** Ligne de Plan d'Armement créée/modifiée/supprimée (audit CCF 2026-09-11 — voir
+     *  PlanArmementController, correctif de la faille de contrôle de rôle absent). */
+    PLAN_ARMEMENT_CREE,
+    PLAN_ARMEMENT_MODIFIE,
+    PLAN_ARMEMENT_SUPPRIME,
+    /** Un ADMIN/SUPER_ADMIN a autorisé une sortie physique alors que le stock résultant
+     *  passait sous le seuil de sécurité de l'article (CCF RG16/RG17/RG68/RG102 — équivalent
+     *  numérique de "l'ordre de l'EMAM/BL" requis pour distribuer au-delà de ce seuil). Voir
+     *  DistributionService.confirmerSortiePhysique. */
+    SEUIL_SECURITE_DEROGATION
 }

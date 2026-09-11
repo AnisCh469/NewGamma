@@ -399,4 +399,85 @@ public class ItemController {
                     .body(Map.of("error", "Un article avec la nomenclature '" + item.getNomenclature() + "' existe déjà."));
         }
     }
+
+    /**
+     * PUT /api/v1/items/{id} — Modalité de modification d'un article (CCF, document
+     * "4 INSTRUCTIONS DE CREATION MODIFICATION FT", §2-2), ajoutée le 2026-09-11 en même temps
+     * que l'extension de la Fiche Signalétique d'Article (FSA) suite à l'audit de conformité
+     * CCF — jusqu'ici, un article ne pouvait plus être modifié après sa création (à l'exception
+     * de sa classe de danger et de ses fichiers joints, via ItemUploadController).
+     *
+     * La nomenclature n'est PAS modifiable par cette route (clé d'identification stable,
+     * référencée par le stock, le Plan d'Armement et l'historique des mouvements — un
+     * changement se ferait par création d'un nouvel article, jamais par mutation de l'existant).
+     * Les autres champs métier (désignation, prix, tous les champs de la FSA) sont modifiables.
+     *
+     * @return 200 + l'article mis à jour ; 400 si la nomenclature fournie diffère de
+     *         l'existante ; 403 si l'appelant est un UNIT_USER ; 404 si l'article n'existe pas.
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateItem(@PathVariable UUID id, @RequestBody Item itemDetails) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof User currentUser && currentUser.getRole() == Role.UNIT_USER) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", "Seule l'administration peut modifier un article du catalogue."));
+        }
+
+        return itemRepository.findById(id).map(item -> {
+            if (itemDetails.getNomenclature() != null && !itemDetails.getNomenclature().trim().equals(item.getNomenclature())) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "La nomenclature d'un article ne peut pas être modifiée."));
+            }
+
+            // Fusion PARTIELLE (patch), champ par champ, jamais un remplacement intégral :
+            // le front n'envoie parfois qu'un sous-ensemble des champs (ex : le dialogue
+            // "Fiche Signalétique" n'envoie QUE les champs FSA, jamais la désignation ni le
+            // prix) — un remplacement intégral aurait silencieusement écrasé à `null` tout
+            // champ absent du corps de la requête (bug découvert en testant cette
+            // fonctionnalité : `type_consommabilite`, NOT NULL en base, provoquait une
+            // DataIntegrityViolationException dès qu'il manquait du JSON envoyé).
+            // Données de base
+            appliquerSiPresent(itemDetails.getDesignation(), item::setDesignation);
+            appliquerSiPresent(itemDetails.getPrixUnitaire(), item::setPrixUnitaire);
+            appliquerSiPresent(itemDetails.getStockSecurite(), item::setStockSecurite);
+            appliquerSiPresent(itemDetails.getUniteGestionCode(), item::setUniteGestionCode);
+            appliquerSiPresent(itemDetails.getDangerClass(), item::setDangerClass);
+            appliquerSiPresent(itemDetails.getTypeConsommabilite(), item::setTypeConsommabilite);
+            appliquerSiPresent(itemDetails.getPoids(), item::setPoids);
+            appliquerSiPresent(itemDetails.getVolume(), item::setVolume);
+            appliquerSiPresent(itemDetails.getNormeIso(), item::setNormeIso);
+            appliquerSiPresent(itemDetails.getEchelonMaintenance(), item::setEchelonMaintenance);
+            appliquerSiPresent(itemDetails.getCodeConditionnement(), item::setCodeConditionnement);
+            // Classification
+            appliquerSiPresent(itemDetails.getCriticite(), item::setCriticite);
+            appliquerSiPresent(itemDetails.getCodeTypeMateriel(), item::setCodeTypeMateriel);
+            // Planification
+            appliquerSiPresent(itemDetails.getStockMinimum(), item::setStockMinimum);
+            appliquerSiPresent(itemDetails.getStockMaximum(), item::setStockMaximum);
+            appliquerSiPresent(itemDetails.getCodeGestion(), item::setCodeGestion);
+            appliquerSiPresent(itemDetails.getCodeSoutien(), item::setCodeSoutien);
+            appliquerSiPresent(itemDetails.getCodePositionAdministrative(), item::setCodePositionAdministrative);
+            appliquerSiPresent(itemDetails.getCodeModeApprovisionnement(), item::setCodeModeApprovisionnement);
+            appliquerSiPresent(itemDetails.getCodeOrigineMateriel(), item::setCodeOrigineMateriel);
+            appliquerSiPresent(itemDetails.getReparabilite(), item::setReparabilite);
+            appliquerSiPresent(itemDetails.getDelaiApprovisionnementAnnees(), item::setDelaiApprovisionnementAnnees);
+            appliquerSiPresent(itemDetails.getBlocageApprovisionnement(), item::setBlocageApprovisionnement);
+            appliquerSiPresent(itemDetails.getCma(), item::setCma);
+            appliquerSiPresent(itemDetails.getEtatArticle(), item::setEtatArticle);
+            // Stockage
+            appliquerSiPresent(itemDetails.getDureeConservation(), item::setDureeConservation);
+            // Références constructeur
+            appliquerSiPresent(itemDetails.getNsn(), item::setNsn);
+            appliquerSiPresent(itemDetails.getOem(), item::setOem);
+
+            return ResponseEntity.ok(itemRepository.save(item));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    /** N'applique la valeur au setter que si elle est fournie — voir le commentaire de
+     *  {@link #updateItem} : cet endpoint est une fusion partielle, jamais un remplacement
+     *  intégral, pour ne jamais écraser à {@code null} un champ simplement absent du JSON. */
+    private static <T> void appliquerSiPresent(T valeur, java.util.function.Consumer<T> setter) {
+        if (valeur != null) setter.accept(valeur);
+    }
 }

@@ -94,6 +94,22 @@ Administrateur peut supprimer un document déjà téléversé.
 * **Champs optionnels :** Prix unitaire, stock de sécurité, unité de gestion, type (Consommable / Non Consommable) et classe de danger (GHS).
 * **Photo et document (PDF) :** Peuvent être ajoutés directement depuis ce formulaire — ils sont envoyés juste après la création de l'article. Vous pourrez toujours les ajouter ou les remplacer plus tard depuis la fiche détaillée de l'article.
 
+### 📋 Fiche Signalétique d'Article (FSA) — champs complémentaires
+
+Depuis le 2026-09-11, la fiche détaillée d'un article (cliquez sur son numéro depuis le
+catalogue) affiche un nouveau panneau **« Fiche Signalétique d'Article (FSA) »** reprenant
+l'intégralité des champs du Cahier des Charges Fonctionnel d'origine : poids, volume, norme ISO,
+échelon de maintenance, criticité (Critique/Non-critique), type de matériel, stock minimum/
+maximum, code de gestion, code de soutien, position administrative, mode d'approvisionnement,
+origine du matériel, réparabilité, délai de réapprovisionnement, CMA, état, durée de
+conservation, NSN et référence OEM.
+
+* **Modifier la fiche :** bouton `Modifier` en haut du panneau (masqué pour un compte d'unité
+  cliente). Comme pour la FSA papier d'origine, ces champs peuvent être complétés
+  **progressivement** au fil du temps — aucun n'est obligatoire.
+* La désignation, le prix, le stock de sécurité et les autres champs déjà existants restent
+  modifiables ailleurs sur l'écran (aucun impact de ce nouveau formulaire sur eux).
+
 ---
 
 ---
@@ -122,6 +138,16 @@ L'**Administrateur** voit ces demandes escaladées avec le bouton **`Statuer sur
 
 Une fois le transfert validé, le retrait physique se déroule normalement à la soute locale (bouton `Confirmer Retrait` du magasinier local).
 
+### 🔒 Seuil de sécurité (nouveau, 2026-09-11)
+
+Si un article dispose d'un **seuil de sécurité** (renseigné dans sa Fiche Signalétique) et que la
+sortie demandée ferait passer son stock total en dessous de ce seuil :
+
+* **Gestionnaire de soute (DA_MANAGER) :** le retrait est **bloqué**, sans exception — un message
+  explique qu'il faut faire remonter la demande à un administrateur.
+* **Administrateur (SGS ou Système) :** un message d'avertissement détaille l'article et le stock
+  concernés, avec la possibilité de **confirmer une dérogation** sous sa propre responsabilité.
+  Cette dérogation est systématiquement enregistrée dans le **Journal d'Audit**.
 
 ---
 

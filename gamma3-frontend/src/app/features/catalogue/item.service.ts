@@ -25,6 +25,37 @@ export interface Item {
   typeConsommabilite?: 'CONSOMMABLE' | 'NON_CONSOMMABLE';
   createdAt?: string;
   updatedAt?: string;
+
+  // ─── Fiche Signalétique d'Article (FSA) — ajouté le 2026-09-11, audit de conformité CCF
+  //     (voir docs/AUDIT_CONFORMITE_CCF_2026-09-11.md §4). Tous facultatifs : la FSA du CCF
+  //     est complétée progressivement par plusieurs acteurs, jamais en une seule saisie.
+  // Données de base
+  poids?: number;                 // kg
+  volume?: number;                // m³
+  normeIso?: string;
+  echelonMaintenance?: string;
+  codeConditionnement?: string;   // ex: "Xx0000" ou "Fs(0000)" — voir CCF §2-4-7
+  // Classification
+  criticite?: 'CRITIQUE' | 'NON_CRITIQUE';
+  codeTypeMateriel?: 'MC' | 'EQ' | 'BE' | 'DT' | 'PS' | 'PR' | 'PC' | 'AC' | 'OD' | 'OS' | 'MP' | 'MS';
+  // Planification
+  stockMinimum?: number;
+  stockMaximum?: number;
+  codeGestion?: 'CLF' | 'CLU' | 'CIU' | 'CEI' | 'CSM' | 'CLM';
+  codeSoutien?: 'S10' | 'S20' | 'S30' | 'S40' | 'S50';
+  codePositionAdministrative?: 'AN' | 'DC' | 'DA' | 'SB' | 'VA' | 'PS' | 'PX';
+  codeModeApprovisionnement?: 'GRC' | 'ADO' | 'BDC' | 'ADR' | 'MAX' | 'LCE';
+  codeOrigineMateriel?: 'AFN' | 'AFE' | 'FMS' | 'DOC' | 'CL1' | 'CL2' | 'CL3' | 'CL4' | 'PR1' | 'AD1' | 'AD2' | 'AX1';
+  reparabilite?: 'REPARABLE' | 'NON_REPARABLE';
+  delaiApprovisionnementAnnees?: number;
+  blocageApprovisionnement?: boolean;
+  cma?: number;                   // Consommation Moyenne Annuelle
+  etatArticle?: string;
+  // Stockage
+  dureeConservation?: string;
+  // Références constructeur
+  nsn?: string;
+  oem?: string;
 }
 
 
@@ -115,6 +146,14 @@ export class ItemService {
   // RETOUR : Observable de l'article persistant, avec son UUID généré.
   createItem(item: Partial<Item>): Observable<Item> {
     return this.http.post<Item>(this.apiUrl, item);
+  }
+
+  // ─── updateItem ───────────────────────────────────────────────────────────
+  // RÔLE : Modalité de modification d'un article (CCF §2-2), ajoutée le 2026-09-11 avec la
+  //        Fiche Signalétique d'Article étendue. La nomenclature n'est pas modifiable par
+  //        cette route (voir ItemController.updateItem côté backend).
+  updateItem(id: string, item: Partial<Item>): Observable<Item> {
+    return this.http.put<Item>(`${this.apiUrl}/${id}`, item);
   }
 
   // ─── getNomenclatureNextLevel ──────────────────────────────────────────────
