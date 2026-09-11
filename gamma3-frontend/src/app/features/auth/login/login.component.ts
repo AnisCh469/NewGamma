@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -30,11 +30,16 @@ export class LoginComponent implements OnInit {
   errorMessage = '';
   isLoading = false;
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private authService: AuthService, private router: Router, private route: ActivatedRoute) {}
 
   ngOnInit() {
     if (this.authService.isAuthenticated()) {
       this.router.navigate(['/catalogue']);
+      return;
+    }
+    // Renvoyé ici après une déconnexion automatique pour inactivité (voir InactivityService).
+    if (this.route.snapshot.queryParamMap.get('expiree')) {
+      this.errorMessage = "Session expirée pour cause d'inactivité. Veuillez vous reconnecter.";
     }
   }
 

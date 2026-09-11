@@ -1,11 +1,14 @@
 package tn.defense.gamma3.auth.api;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import tn.defense.gamma3.audit.domain.TypeActionAudit;
+import tn.defense.gamma3.audit.service.JournalAuditService;
 import tn.defense.gamma3.auth.api.dto.AuthDto;
 import tn.defense.gamma3.auth.domain.Role;
 import tn.defense.gamma3.auth.domain.User;
@@ -40,6 +43,7 @@ import java.util.Map;
 public class AuthenticationController {
 
     private final AuthenticationService service;
+    private final JournalAuditService journalAuditService;
 
     /**
      * RÔLE :
@@ -81,6 +85,35 @@ public class AuthenticationController {
             @RequestBody AuthDto.LoginRequest request
     ) {
         return ResponseEntity.ok(service.authenticate(request));
+    }
+
+    /**
+     * RÔLE : consigner la fin de session dans le journal d'audit (motif MANUEL / INACTIVITE /
+     * FERMETURE). N'invalide PAS le jeton JWT lui-même — voir la limite documentée dans
+     * ParametreSystemeService : sans jeton à courte durée de vie ni liste de révocation côté
+     * serveur, un jeton déjà émis reste techniquement utilisable jusqu'à sa propre expiration.
+     * La fin de session réelle est assurée côté client (jeton en sessionStorage, effacé à la
+     * fermeture de l'onglet/navigateur, voir AuthService côté front) ; cet appel ne sert qu'à
+     * la traçabilité. Best-effort : appelé aussi via `fetch(..., {keepalive:true})` au moment
+     * de la fermeture de l'onglet, qui peut échouer à joindre le serveur selon le navigateur.
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(
+            @RequestBody(required = false) Map<String, String> body,
+            Authentication authentication,
+            HttpServletRequest httpRequest) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof User user)) {
+            return ResponseEntity.status(401).body("Authentification requise.");
+        }
+        String motif = body != null ? body.getOrDefault("motif", "MANUEL") : "MANUEL";
+        TypeActionAudit action = switch (motif) {
+            case "INACTIVITE" -> TypeActionAudit.DECONNEXION_INACTIVITE;
+            case "FERMETURE" -> TypeActionAudit.DECONNEXION_FERMETURE;
+            default -> TypeActionAudit.DECONNEXION_MANUELLE;
+        };
+        journalAuditService.enregistrer(user.getMatricule(), user.getFullName(), action,
+                "Déconnexion (" + motif.toLowerCase() + ").", httpRequest.getRemoteAddr());
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/verify-2fa")

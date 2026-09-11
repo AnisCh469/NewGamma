@@ -1,5 +1,6 @@
 package tn.defense.gamma3.auth.api;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Sort;
@@ -8,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import tn.defense.gamma3.audit.domain.TypeActionAudit;
+import tn.defense.gamma3.audit.service.JournalAuditService;
 import tn.defense.gamma3.auth.api.dto.UserAdminDto;
 import tn.defense.gamma3.auth.domain.FonctionUnite;
 import tn.defense.gamma3.auth.domain.Role;
@@ -51,6 +54,7 @@ public class UserAdminController {
     private final UniteUtilisatriceRepository uniteRepository;
     private final MagasinRepository magasinRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JournalAuditService journalAuditService;
 
     private static final int MIN_PASSWORD_LENGTH = 4;
 
@@ -103,7 +107,7 @@ public class UserAdminController {
 
     @PostMapping
     public ResponseEntity<?> createUser(@RequestBody UserAdminDto.CreateUserRequest request,
-                                         Authentication authentication) {
+                                         Authentication authentication, HttpServletRequest httpRequest) {
         if (!isAdmin(authentication)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("message", "Réservé aux administrateurs."));
@@ -157,6 +161,9 @@ public class UserAdminController {
 
         try {
             User saved = userRepository.save(user);
+            User admin = (User) authentication.getPrincipal();
+            journalAuditService.enregistrer(admin.getMatricule(), admin.getFullName(), TypeActionAudit.COMPTE_CREE,
+                    "Création du compte " + matricule + " (rôle " + role + ").", httpRequest.getRemoteAddr());
             return ResponseEntity.status(HttpStatus.CREATED).body(saved);
         } catch (DataIntegrityViolationException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -171,7 +178,7 @@ public class UserAdminController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateUser(@PathVariable Long id,
                                          @RequestBody UserAdminDto.UpdateUserRequest request,
-                                         Authentication authentication) {
+                                         Authentication authentication, HttpServletRequest httpRequest) {
         if (!isAdmin(authentication)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("message", "Réservé aux administrateurs."));
@@ -217,6 +224,9 @@ public class UserAdminController {
         user.setFonctionUnite(fonctionUnite);
 
         User saved = userRepository.save(user);
+        User admin = (User) authentication.getPrincipal();
+        journalAuditService.enregistrer(admin.getMatricule(), admin.getFullName(), TypeActionAudit.COMPTE_MODIFIE,
+                "Modification du compte " + saved.getMatricule() + " (rôle " + role + ").", httpRequest.getRemoteAddr());
         return ResponseEntity.ok(saved);
     }
 
@@ -260,7 +270,7 @@ public class UserAdminController {
     @PutMapping("/{id}/enabled")
     public ResponseEntity<?> setEnabled(@PathVariable Long id,
                                          @RequestBody UserAdminDto.SetEnabledRequest request,
-                                         Authentication authentication) {
+                                         Authentication authentication, HttpServletRequest httpRequest) {
         if (!isAdmin(authentication)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("message", "Réservé aux administrateurs."));
@@ -280,6 +290,10 @@ public class UserAdminController {
 
         user.setEnabled(request.isEnabled());
         User saved = userRepository.save(user);
+        journalAuditService.enregistrer(currentUser.getMatricule(), currentUser.getFullName(),
+                request.isEnabled() ? TypeActionAudit.COMPTE_DEBLOQUE : TypeActionAudit.COMPTE_BLOQUE,
+                (request.isEnabled() ? "Déblocage" : "Blocage") + " du compte " + saved.getMatricule() + ".",
+                httpRequest.getRemoteAddr());
         return ResponseEntity.ok(saved);
     }
 
@@ -290,7 +304,7 @@ public class UserAdminController {
     @PutMapping("/{id}/password")
     public ResponseEntity<?> resetPassword(@PathVariable Long id,
                                             @RequestBody UserAdminDto.ResetPasswordRequest request,
-                                            Authentication authentication) {
+                                            Authentication authentication, HttpServletRequest httpRequest) {
         if (!isAdmin(authentication)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("message", "Réservé aux administrateurs."));
@@ -311,6 +325,9 @@ public class UserAdminController {
 
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+        User admin = (User) authentication.getPrincipal();
+        journalAuditService.enregistrer(admin.getMatricule(), admin.getFullName(), TypeActionAudit.MOT_DE_PASSE_REINITIALISE,
+                "Réinitialisation du mot de passe du compte " + user.getMatricule() + ".", httpRequest.getRemoteAddr());
         return ResponseEntity.ok(Map.of("message", "Mot de passe réinitialisé."));
     }
 

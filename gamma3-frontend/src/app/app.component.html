@@ -22,6 +22,7 @@
         <a *ngIf="currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/analytics" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Analyses</a>
         <a *ngIf="currentUser.role === 'ADMIN'" routerLink="/administration/utilisateurs" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Utilisateurs</a>
         <a *ngIf="currentUser.role === 'ADMIN'" routerLink="/administration/audit-migration" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Audit Gamma2</a>
+        <a *ngIf="currentUser.role === 'ADMIN'" routerLink="/administration/journal-audit" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Journal d'Audit</a>
       </nav>
     </div>
     

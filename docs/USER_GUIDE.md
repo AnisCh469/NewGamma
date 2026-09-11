@@ -4,6 +4,23 @@ Ce guide est destiné aux utilisateurs finaux pour les accompagner dans la prise
 
 ---
 
+## 🔒 Sécurité de session
+
+Depuis le 2026-09-11, votre session GAMMA 3 se termine automatiquement dans deux cas :
+
+* **Vous fermez l'onglet ou le navigateur** — vous devrez vous reconnecter à la prochaine ouverture.
+* **Vous restez inactif** (aucun clic, aucune frappe) pendant **5 minutes** par défaut. Vous êtes
+  alors renvoyé à l'écran de connexion avec le message *« Session expirée pour cause
+  d'inactivité »*. Ce délai est réglable par l'administrateur (voir ci-dessous), jusqu'à 8 heures.
+
+**Pour l'administrateur** : le délai d'inactivité se règle dans **Administration → Gestion des
+Utilisateurs**, bloc « Sécurité de session » en haut de l'écran. Chaque connexion, déconnexion et
+action d'administration (création de compte, blocage, réinitialisation de mot de passe, changement
+de ce délai) est enregistrée dans **Administration → Journal d'Audit**, consultable et filtrable
+par compte ou par type d'événement.
+
+---
+
 ## 🖨️ Impression des documents officiels
 
 Depuis 2026-09-09, **tous les documents officiels sont produits sous forme de fichier PDF

@@ -21,6 +21,7 @@ import {
   UpdateUserRequest
 } from '../../../core/services/user-admin.service';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ParametreService } from '../../../core/services/parametre.service';
 
 /**
  * Console d'administration des comptes utilisateurs (écran Administration > Gestion des
@@ -92,15 +93,50 @@ export class GestionUtilisateursComponent implements OnInit {
     return this.unites.map(u => ({ label: `${u.code} — ${u.nom}`, value: u.id! }));
   }
 
+  // Sécurité de session (délai d'inactivité, configurable — demande utilisateur 2026-09-11)
+  inactiviteMinutes: number | null = null;
+  inactiviteMinutesInput: number = 5;
+  isSavingInactivite = false;
+  inactiviteMessage = '';
+
   constructor(
     private userAdminService: UserAdminService,
-    public authService: AuthService
+    public authService: AuthService,
+    private parametreService: ParametreService
   ) {}
 
   ngOnInit(): void {
     this.loadUsers();
     this.loadMagasins();
     this.loadUnites();
+    this.loadInactivite();
+  }
+
+  loadInactivite(): void {
+    this.parametreService.getInactiviteMinutes().subscribe({
+      next: (r) => { this.inactiviteMinutes = r.inactiviteMinutes; this.inactiviteMinutesInput = r.inactiviteMinutes; },
+      error: () => {}
+    });
+  }
+
+  enregistrerInactivite(): void {
+    if (!this.inactiviteMinutesInput || this.inactiviteMinutesInput < 1 || this.inactiviteMinutesInput > 480) {
+      this.inactiviteMessage = 'La durée doit être comprise entre 1 et 480 minutes.';
+      return;
+    }
+    this.isSavingInactivite = true;
+    this.inactiviteMessage = '';
+    this.parametreService.setInactiviteMinutes(this.inactiviteMinutesInput).subscribe({
+      next: (r) => {
+        this.isSavingInactivite = false;
+        this.inactiviteMinutes = r.inactiviteMinutes;
+        this.inactiviteMessage = `Délai enregistré : ${r.inactiviteMinutes} min. Les sessions déjà ouvertes appliqueront ce nouveau délai à leur prochaine activité.`;
+      },
+      error: (err) => {
+        this.isSavingInactivite = false;
+        this.inactiviteMessage = err?.error || "Erreur lors de l'enregistrement.";
+      }
+    });
   }
 
   loadUsers(): void {

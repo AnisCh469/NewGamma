@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { AuthService } from './core/auth/auth.service';
 import { NotificationService } from './core/services/notification.service';
 import { UniteService } from './core/services/unite.service';
+import { InactivityService } from './core/services/inactivity.service';
 
 @Component({
   selector: 'app-root',
@@ -17,6 +18,7 @@ export class AppComponent {
   authService = inject(AuthService);
   notificationService = inject(NotificationService);
   uniteService = inject(UniteService);
+  private inactivityService = inject(InactivityService);
   router = inject(Router);
 
   isDrawerOpen = false;
@@ -29,13 +31,26 @@ export class AppComponent {
     }
   }
 
+  /**
+   * Fermeture de l'onglet ou du navigateur : notifie le serveur (best-effort, voir
+   * AuthService.notifierFermeture) pour la traçabilité. La fin de session elle-même est déjà
+   * garantie par sessionStorage, qui s'efface automatiquement — pas besoin d'attendre cet appel.
+   */
+  @HostListener('window:beforeunload')
+  onBeforeUnload(): void {
+    if (this.authService.isAuthenticated()) {
+      this.authService.notifierFermeture();
+    }
+  }
+
   constructor() {
     // Reactively start or stop polling based on the user's logged-in state
     effect(() => {
       const user = this.authService.currentUser();
       if (user) {
         this.notificationService.startPolling();
-        
+        this.inactivityService.demarrer();
+
         // Rattachement Unité explicite (voir AuthResponse.uniteId côté backend, depuis le
         // 2026-09-04) : ne plus déduire l'unité du compte via son matricule (Gestionnaire ET
         // Commandant d'une même unité ont désormais des matricules différents et libres).
@@ -44,6 +59,7 @@ export class AppComponent {
         }
       } else {
         this.notificationService.stopPolling();
+        this.inactivityService.arreter();
         this.isDrawerOpen = false;
         this.unitId = null;
       }

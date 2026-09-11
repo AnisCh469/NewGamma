@@ -2,13 +2,24 @@ package tn.defense.gamma3.auth.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import tn.defense.gamma3.audit.domain.TypeActionAudit;
+import tn.defense.gamma3.audit.service.JournalAuditService;
 import tn.defense.gamma3.auth.api.dto.AuthDto;
 import tn.defense.gamma3.auth.domain.User;
 import tn.defense.gamma3.auth.repository.UserRepository;
 
+/**
+ * NOTE TRAÇABILITÉ (2026-09-11) : chaque tentative de connexion (réussie ou non) et chaque
+ * connexion finalisée après 2FA sont consignées dans le journal d'audit ({@link JournalAuditService}).
+ * {@code httpServletRequest} est injecté directement dans ce service (singleton) : Spring
+ * fournit automatiquement un proxy à portée requête qui délègue, à chaque appel, à la requête
+ * HTTP réellement en cours — c'est le mécanisme standard pour accéder à la requête depuis un
+ * bean qui n'est pas un contrôleur, ici uniquement pour en extraire l'adresse IP de l'appelant.
+ */
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
@@ -17,6 +28,8 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final JournalAuditService journalAuditService;
+    private final jakarta.servlet.http.HttpServletRequest httpServletRequest;
 
     public AuthDto.AuthResponse register(AuthDto.RegisterRequest request) {
         var user = User.builder()
@@ -36,16 +49,24 @@ public class AuthenticationService {
     }
 
     public AuthDto.AuthResponse authenticate(AuthDto.LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getMatricule(),
-                        request.getPassword()
-                )
-        );
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getMatricule(),
+                            request.getPassword()
+                    )
+            );
+        } catch (AuthenticationException e) {
+            journalAuditService.enregistrer(request.getMatricule(), null, TypeActionAudit.CONNEXION_ECHEC,
+                    "Échec d'authentification (identifiants invalides ou compte bloqué).", ipAppelant());
+            throw e;
+        }
         var user = repository.findByMatricule(request.getMatricule())
                 .orElseThrow();
 
         if (user.isTwoFactorEnabled()) {
+            // Pas encore une connexion complète (2ème facteur en attente) : pas de CONNEXION
+            // consignée ici, voir verify2Fa() qui finalise réellement la session.
             return AuthDto.AuthResponse.builder()
                     .requires2fa(true)
                     .matricule(user.getMatricule())
@@ -58,6 +79,8 @@ public class AuthenticationService {
         }
 
         var jwtToken = jwtService.generateToken(user);
+        journalAuditService.enregistrer(user.getMatricule(), user.getFullName(), TypeActionAudit.CONNEXION,
+                "Connexion réussie.", ipAppelant());
         return AuthDto.AuthResponse.builder()
                 .token(jwtToken)
                 .matricule(user.getMatricule())
@@ -67,6 +90,14 @@ public class AuthenticationService {
                 .uniteCode(user.getUnite() != null ? user.getUnite().getCode() : null)
                 .fonctionUnite(user.getFonctionUnite())
                 .build();
+    }
+
+    private String ipAppelant() {
+        try {
+            return httpServletRequest.getRemoteAddr();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public AuthDto.AuthResponse verify2Fa(AuthDto.Verify2FaRequest request) {
@@ -83,6 +114,8 @@ public class AuthenticationService {
         }
 
         var jwtToken = jwtService.generateToken(user);
+        journalAuditService.enregistrer(user.getMatricule(), user.getFullName(), TypeActionAudit.CONNEXION,
+                "Connexion réussie (après validation du second facteur).", ipAppelant());
         return AuthDto.AuthResponse.builder()
                 .token(jwtToken)
                 .matricule(user.getMatricule())

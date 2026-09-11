@@ -90,5 +90,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/administration/audit-migration/audit-migration.component').then(m => m.AuditMigrationComponent),
     canActivate: [authGuard, roleGuard],
     data: { roles: ['ADMIN'] }
+  },
+  {
+    path: 'administration/journal-audit',
+    loadComponent: () => import('./features/administration/journal-audit/journal-audit.component').then(m => m.JournalAuditComponent),
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['ADMIN'] }
   }
 ];

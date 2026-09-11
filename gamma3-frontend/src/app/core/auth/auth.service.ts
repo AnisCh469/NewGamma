@@ -23,12 +23,16 @@ export interface LoginRequest {
   password: string;
 }
 
+export type MotifDeconnexion = 'MANUEL' | 'INACTIVITE' | 'FERMETURE';
+
+const STORAGE_KEY = 'gamma3_user';
+
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
   private apiUrl = `${environment.apiUrl}/api/v1/auth`;
-  
+
   // Angular Signal to hold the current user state
   public currentUser = signal<AuthResponse | null>(this.getUserFromStorage());
 
@@ -38,8 +42,7 @@ export class AuthService {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials).pipe(
       tap(response => {
         if (response && response.token && !response.requires2fa) {
-          localStorage.setItem('gamma3_user', JSON.stringify(response));
-          this.currentUser.set(response);
+          this.stockerSession(response);
         }
       })
     );
@@ -49,8 +52,7 @@ export class AuthService {
     return this.http.post<AuthResponse>(`${this.apiUrl}/verify-2fa`, { matricule, code }).pipe(
       tap(response => {
         if (response && response.token) {
-          localStorage.setItem('gamma3_user', JSON.stringify(response));
-          this.currentUser.set(response);
+          this.stockerSession(response);
         }
       })
     );
@@ -68,10 +70,55 @@ export class AuthService {
     return this.http.post<void>(`${this.apiUrl}/2fa/disable?matricule=${matricule}`, {});
   }
 
-  logout(): void {
-    localStorage.removeItem('gamma3_user');
+  /**
+   * RÔLE : mettre fin à la session, quel qu'en soit le motif (bouton « Déconnexion »,
+   * inactivité prolongée, fermeture de l'onglet/navigateur).
+   *
+   * POURQUOI `sessionStorage` et pas `localStorage` (2026-09-11, motif sécurité) :
+   * `sessionStorage` est automatiquement vidé par le navigateur à la fermeture de l'onglet
+   * OU du navigateur — exactement le comportement demandé ("terminer la session dès que
+   * l'utilisateur ferme l'onglet ou le navigateur"). `localStorage`, lui, survit
+   * indéfiniment : un jeton y resterait valable pour quiconque rouvre le navigateur sur ce
+   * poste, même des jours plus tard.
+   *
+   * LIMITE ASSUMÉE : ceci protège le POSTE (le jeton disparaît du navigateur), mais le jeton
+   * JWT lui-même reste valable côté serveur jusqu'à sa propre expiration
+   * (`application.security.jwt.expiration`, 24 h par défaut) — voir la note dans
+   * ParametreSystemeService (backend). Une révocation serveur immédiate demanderait des
+   * jetons à courte durée de vie + jeton de rafraîchissement, hors périmètre de ce correctif.
+   */
+  logout(motif: MotifDeconnexion = 'MANUEL'): void {
+    // Best-effort : consigne la déconnexion dans le journal d'audit. Ne bloque jamais la
+    // déconnexion elle-même (le jeton est effacé même si cet appel échoue).
+    const token = this.getToken();
+    if (token) {
+      this.http.post(`${this.apiUrl}/logout`, { motif }).subscribe({ error: () => {} });
+    }
+    sessionStorage.removeItem(STORAGE_KEY);
     this.currentUser.set(null);
-    this.router.navigate(['/login']);
+    this.router.navigate(['/login'], motif === 'INACTIVITE' ? { queryParams: { expiree: '1' } } : undefined);
+  }
+
+  /**
+   * Variante appelée depuis `window.beforeunload`/`pagehide` (fermeture d'onglet/navigateur) :
+   * ni `subscribe()` ni la navigation Angular ne sont fiables à ce moment précis (la page est
+   * en train de se détruire). `fetch(..., { keepalive: true })` est le seul mécanisme qui
+   * garantisse (au mieux) l'envoi de la requête après le déchargement de la page — et,
+   * contrairement à `navigator.sendBeacon`, il permet d'ajouter l'en-tête d'autorisation.
+   * Best-effort par nature : peut ne pas aboutir selon le navigateur/l'OS. La sécurité réelle
+   * ne repose PAS sur cet appel mais sur l'effacement automatique de `sessionStorage`.
+   */
+  notifierFermeture(): void {
+    const token = this.getToken();
+    if (!token) return;
+    try {
+      fetch(`${this.apiUrl}/logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ motif: 'FERMETURE' }),
+        keepalive: true
+      }).catch(() => {});
+    } catch { /* best-effort */ }
   }
 
   getToken(): string | null {
@@ -83,8 +130,13 @@ export class AuthService {
     return !!this.getToken();
   }
 
+  private stockerSession(response: AuthResponse): void {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(response));
+    this.currentUser.set(response);
+  }
+
   private getUserFromStorage(): AuthResponse | null {
-    const userJson = localStorage.getItem('gamma3_user');
+    const userJson = sessionStorage.getItem(STORAGE_KEY);
     if (userJson) {
       try {
         return JSON.parse(userJson);

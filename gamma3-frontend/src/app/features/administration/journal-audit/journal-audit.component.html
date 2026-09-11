@@ -1,0 +1,68 @@
+<div class="min-h-screen bg-slate-50 p-8">
+
+  <div class="mb-6 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+    <div>
+      <h1 class="text-3xl font-extrabold text-gamma-dark tracking-tight">Journal d'Audit</h1>
+      <p class="text-slate-500 mt-1">
+        Traçabilité de chaque intervenant : connexions, déconnexions, gestion des comptes,
+        paramètres système. Lecture seule — {{ totalElements }} entrée(s).
+      </p>
+    </div>
+    <p-button label="Rafraîchir" icon="pi pi-refresh" styleClass="p-button-outlined p-button-secondary"
+              (onClick)="charger()" [loading]="isLoading"></p-button>
+  </div>
+
+  <div class="mb-6 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap items-end gap-3">
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-bold text-slate-500 uppercase">Matricule de l'acteur</label>
+      <input type="text" pInputText [(ngModel)]="filtreMatricule" placeholder="Ex : admin"
+             (keyup.enter)="appliquerFiltres()" class="w-52" />
+    </div>
+    <div class="flex flex-col gap-1">
+      <label class="text-xs font-bold text-slate-500 uppercase">Type d'événement</label>
+      <p-dropdown [options]="actionOptions" [(ngModel)]="filtreAction" optionLabel="label" optionValue="value"
+                  [showClear]="true" placeholder="Tous" styleClass="w-64"></p-dropdown>
+    </div>
+    <p-button label="Filtrer" icon="pi pi-filter" styleClass="p-button-sm p-button-primary" (onClick)="appliquerFiltres()"></p-button>
+    <p-button label="Réinitialiser" icon="pi pi-times" styleClass="p-button-sm p-button-text p-button-secondary" (onClick)="reinitialiserFiltres()"></p-button>
+  </div>
+
+  <div *ngIf="errorMessage" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+    <i class="pi pi-exclamation-triangle mr-2"></i>{{ errorMessage }}
+  </div>
+
+  <div class="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+    <p-table [value]="entrees" [loading]="isLoading" [paginator]="true" [rows]="size" [totalRecords]="totalElements"
+             [lazy]="true" (onPage)="onPage($event)" styleClass="p-datatable-sm" [rowHover]="true">
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500">Date</th>
+          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500">Acteur</th>
+          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500">Événement</th>
+          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500">Détails</th>
+          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500">Adresse IP</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-e>
+        <tr class="hover:bg-blue-50/40">
+          <td class="py-2.5 px-4 text-xs font-medium text-slate-600 whitespace-nowrap">{{ e.dateEvenement | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+          <td class="py-2.5 px-4 text-xs">
+            <span class="font-mono font-bold text-gamma-primary">{{ e.acteurMatricule }}</span>
+            <span *ngIf="e.acteurNom" class="text-slate-400 ml-1">({{ e.acteurNom }})</span>
+          </td>
+          <td class="py-2.5 px-4">
+            <p-tag [value]="libelle(e.action)" [severity]="severite(e.action)" styleClass="text-[10px] px-2 font-bold"></p-tag>
+          </td>
+          <td class="py-2.5 px-4 text-xs text-slate-600">{{ e.details }}</td>
+          <td class="py-2.5 px-4 text-xs font-mono text-slate-400 whitespace-nowrap">{{ e.adresseIp }}</td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr><td colspan="5" class="text-center py-12 text-slate-400">
+          <i class="pi pi-inbox text-3xl block mb-2"></i>Aucune entrée pour ces filtres.
+        </td></tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+</div>
