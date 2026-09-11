@@ -16,5 +16,9 @@ public enum TypeActionAudit {
     COMPTE_MODIFIE,
     COMPTE_BLOQUE,
     COMPTE_DEBLOQUE,
-    MOT_DE_PASSE_REINITIALISE
+    MOT_DE_PASSE_REINITIALISE,
+    /** Sauvegarde de la base de données déclenchée avec succès (voir module {@code sauvegarde}). */
+    SAUVEGARDE_DECLENCHEE,
+    /** Tentative de sauvegarde ayant échoué (pg_dump indisponible, conteneur arrêté, timeout…). */
+    SAUVEGARDE_ECHEC
 }

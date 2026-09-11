@@ -44,6 +44,8 @@ export class JournalAuditComponent implements OnInit {
     { label: 'Compte bloqué', value: 'COMPTE_BLOQUE' },
     { label: 'Compte débloqué', value: 'COMPTE_DEBLOQUE' },
     { label: 'Mot de passe réinitialisé', value: 'MOT_DE_PASSE_REINITIALISE' },
+    { label: 'Sauvegarde déclenchée', value: 'SAUVEGARDE_DECLENCHEE' },
+    { label: 'Sauvegarde échouée', value: 'SAUVEGARDE_ECHEC' },
   ];
 
   ngOnInit(): void {
@@ -94,6 +96,8 @@ export class JournalAuditComponent implements OnInit {
     if (action === 'COMPTE_DEBLOQUE') return 'success';
     if (action === 'COMPTE_CREE') return 'success';
     if (action === 'PARAMETRE_MODIFIE' || action === 'MOT_DE_PASSE_REINITIALISE') return 'warning';
+    if (action === 'SAUVEGARDE_DECLENCHEE') return 'success';
+    if (action === 'SAUVEGARDE_ECHEC') return 'danger';
     return 'info';
   }
 

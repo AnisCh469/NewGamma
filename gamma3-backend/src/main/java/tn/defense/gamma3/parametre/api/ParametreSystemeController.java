@@ -50,6 +50,36 @@ public class ParametreSystemeController {
         }
     }
 
+    /** Lu par SUPER_ADMIN seulement : réglage propre au module de sauvegarde (écran dédié). */
+    @GetMapping("/sauvegarde-retention")
+    public ResponseEntity<?> getRetentionSauvegardes(Authentication authentication) {
+        User u = currentUser(authentication);
+        if (u == null) return ResponseEntity.status(401).body("Authentification requise.");
+        if (u.getRole() != Role.SUPER_ADMIN) return ResponseEntity.status(403).body("Réservé à l'administrateur système.");
+        return ResponseEntity.ok(Map.of("retentionSauvegardes", service.getRetentionSauvegardes()));
+    }
+
+    @PutMapping("/sauvegarde-retention")
+    public ResponseEntity<?> setRetentionSauvegardes(@RequestBody Map<String, Integer> body,
+                                                       Authentication authentication,
+                                                       HttpServletRequest httpRequest) {
+        User u = currentUser(authentication);
+        if (u == null) return ResponseEntity.status(401).body("Authentification requise.");
+        if (u.getRole() != Role.SUPER_ADMIN) return ResponseEntity.status(403).body("Réservé à l'administrateur système.");
+
+        Integer nombre = body.get("retentionSauvegardes");
+        if (nombre == null) return ResponseEntity.badRequest().body("Le champ 'retentionSauvegardes' est requis.");
+
+        try {
+            int applique = service.setRetentionSauvegardes(nombre, u);
+            journalAuditService.enregistrer(u.getMatricule(), u.getFullName(), TypeActionAudit.PARAMETRE_MODIFIE,
+                    "Rétention des sauvegardes fixée à " + applique + " fichiers.", httpRequest.getRemoteAddr());
+            return ResponseEntity.ok(Map.of("retentionSauvegardes", applique));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     private static User currentUser(Authentication auth) {
         return (auth != null && auth.getPrincipal() instanceof User u) ? u : null;
     }

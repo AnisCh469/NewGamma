@@ -96,5 +96,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/administration/journal-audit/journal-audit.component').then(m => m.JournalAuditComponent),
     canActivate: [authGuard, roleGuard],
     data: { roles: ['SUPER_ADMIN'] }
+  },
+  {
+    path: 'administration/sauvegardes',
+    loadComponent: () => import('./features/administration/sauvegardes/sauvegardes.component').then(m => m.SauvegardesComponent),
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['SUPER_ADMIN'] }
   }
 ];

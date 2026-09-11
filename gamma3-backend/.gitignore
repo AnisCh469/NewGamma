@@ -38,3 +38,8 @@ out/
 
 # Fichiers téléversés par les utilisateurs (photos/documents) — jamais versionnés
 uploads/
+
+# Sauvegardes de la base (pg_dump, module sauvegarde) — jamais versionnées : volumineuses,
+# potentiellement sensibles, et déjà purgées automatiquement par leur propre politique de
+# rétention (voir ParametreSystemeService.CLE_RETENTION_SAUVEGARDES).
+backups/

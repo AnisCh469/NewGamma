@@ -19,4 +19,13 @@ export class ParametreService {
   setInactiviteMinutes(minutes: number): Observable<{ inactiviteMinutes: number }> {
     return this.http.put<{ inactiviteMinutes: number }>(`${this.base}/session`, { inactiviteMinutes: minutes });
   }
+
+  /** Nombre de sauvegardes conservées avant purge automatique des plus anciennes (SUPER_ADMIN). */
+  getRetentionSauvegardes(): Observable<{ retentionSauvegardes: number }> {
+    return this.http.get<{ retentionSauvegardes: number }>(`${this.base}/sauvegarde-retention`);
+  }
+
+  setRetentionSauvegardes(nombre: number): Observable<{ retentionSauvegardes: number }> {
+    return this.http.put<{ retentionSauvegardes: number }>(`${this.base}/sauvegarde-retention`, { retentionSauvegardes: nombre });
+  }
 }

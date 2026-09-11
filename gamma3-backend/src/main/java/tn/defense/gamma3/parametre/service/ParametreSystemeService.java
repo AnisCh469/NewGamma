@@ -33,6 +33,13 @@ public class ParametreSystemeService {
     private static final int MIN_MINUTES = 1;
     private static final int MAX_MINUTES = 480; // 8 h
 
+    /** Nombre de sauvegardes conservées avant que les plus anciennes soient purgées
+     *  automatiquement (voir module {@code sauvegarde}, Phase 2 de la gouvernance des rôles). */
+    public static final String CLE_RETENTION_SAUVEGARDES = "sauvegarde.retention.nombre";
+    private static final int DEFAUT_RETENTION = 30;
+    private static final int MIN_RETENTION = 1;
+    private static final int MAX_RETENTION = 365;
+
     @Transactional(readOnly = true)
     public int getInactiviteMinutes() {
         return repository.findByCle(CLE_INACTIVITE_MINUTES)
@@ -62,5 +69,36 @@ public class ParametreSystemeService {
         p.setModifieLe(LocalDateTime.now());
         repository.save(p);
         return minutes;
+    }
+
+    @Transactional(readOnly = true)
+    public int getRetentionSauvegardes() {
+        return repository.findByCle(CLE_RETENTION_SAUVEGARDES)
+                .map(p -> {
+                    try {
+                        return Integer.parseInt(p.getValeur());
+                    } catch (NumberFormatException e) {
+                        return DEFAUT_RETENTION;
+                    }
+                })
+                .orElse(DEFAUT_RETENTION);
+    }
+
+    @Transactional
+    public int setRetentionSauvegardes(int nombre, User admin) {
+        if (nombre < MIN_RETENTION || nombre > MAX_RETENTION) {
+            throw new IllegalArgumentException(
+                    "Le nombre de sauvegardes conservées doit être compris entre " + MIN_RETENTION + " et " + MAX_RETENTION + ".");
+        }
+        ParametreSysteme p = repository.findByCle(CLE_RETENTION_SAUVEGARDES)
+                .orElseGet(() -> ParametreSysteme.builder()
+                        .cle(CLE_RETENTION_SAUVEGARDES)
+                        .description("Nombre de sauvegardes de la base à conserver avant purge automatique des plus anciennes.")
+                        .build());
+        p.setValeur(String.valueOf(nombre));
+        p.setModifiePar(admin);
+        p.setModifieLe(LocalDateTime.now());
+        repository.save(p);
+        return nombre;
     }
 }

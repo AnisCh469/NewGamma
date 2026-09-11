@@ -138,6 +138,7 @@ pouvoir sur les **opérations logistiques quotidiennes** (arbitrage, réceptions
 | **Journal d'Audit** | ✅ Seul rôle autorisé | ❌ |
 | **Paramètre "délai d'inactivité"** | ✅ Seul rôle autorisé à le modifier | ❌ (lecture seule) |
 | **Migrations Gamma2** (Plan d'Armement, historique mouvements, audit) | ✅ Seul rôle autorisé | ❌ |
+| **Sauvegarde de la base de données** | ✅ Seul rôle autorisé | ❌ |
 | **Suppression d'un document signé archivé** | ✅ Seul rôle autorisé | ❌ (peut téléverser, pas supprimer) |
 | **Arbitrage, Réceptions, Réformes, Fournisseurs, Unités, Analyses** | ✅ (superset — un SUPER_ADMIN peut toujours faire tout ce qu'un ADMIN fait) | ✅ |
 
@@ -185,6 +186,32 @@ rôle "Administrateur Système (SUPER_ADMIN)" dans la liste déroulante).
 ### Colonnes du tableau
 * **2FA** : indique si la double authentification est activée pour ce compte (icône verte) ou non (icône grise) — activée par l'utilisateur lui-même depuis son profil, un ADMIN ne peut pas l'activer à sa place.
 * **Statut** : `Actif` (badge vert) ou `Bloqué` (badge rouge).
+
+---
+
+## 💾 Administration > Sauvegardes
+
+* **Accès :** Réservé aux comptes **SUPER_ADMIN**, via le lien `Sauvegardes` du menu principal.
+* **À quoi ça sert :** Produire une copie complète de la base de données, à un instant donné,
+  conservée sur le serveur — la protection de référence en cas d'erreur humaine, de panne ou
+  d'incident.
+* **Déclencher une sauvegarde :** bouton `Déclencher une sauvegarde maintenant`. L'opération
+  prend de quelques secondes à quelques minutes selon la taille de la base (comptez environ
+  30 secondes pour une base d'une taille proche de celle en production actuelle) — un message
+  de confirmation apparaît avec le nom du fichier et sa taille une fois terminée.
+* **Où va le fichier :** **Jamais téléchargé dans le navigateur.** Le fichier reste
+  exclusivement sur le serveur GAMMA 3, pour des raisons de sécurité (un export volumineux
+  transitant par un poste web serait une exposition inutile sur un système militaire). Le
+  tableau de l'écran liste les sauvegardes déjà produites (nom, date, taille) à titre
+  d'information.
+* **Rétention :** un réglage "Rétention" indique combien de sauvegardes sont conservées ; à
+  chaque nouvelle sauvegarde réussie, les plus anciennes au-delà de ce nombre sont supprimées
+  automatiquement pour ne pas saturer l'espace disque du serveur. Valeur par défaut : 30.
+* **Restauration :** volontairement **pas** un bouton dans l'application — une restauration
+  écrase des données réelles et mérite qu'un administrateur système regarde ce qu'il fait avant
+  de l'exécuter. C'est une procédure manuelle documentée, à exécuter par un administrateur
+  système de confiance directement sur le serveur (ligne de commande). Si vous en avez besoin,
+  contactez l'équipe technique.
 
 ---
 
