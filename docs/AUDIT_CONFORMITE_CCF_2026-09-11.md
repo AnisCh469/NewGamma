@@ -134,9 +134,15 @@ ce ne sont donc pas que des champs d'affichage, plusieurs pilotent une logique m
 - **Réforme** : la distinction Complet/Non-complet et surtout **Réforme complète vs Déclassement
   vs Réparation** existe bien dans `DossierReforme.decisionCommission` — la structure de fond du
   CCF est respectée, même si le formalisme (PV1-PV5, fiches M42/M43/M45/M30) est simplifié.
-- **Double vérification Gestionnaire → Commandant** avant transmission à GAMMA3 : cette
-  fonctionnalité (ajoutée le 2026-09-04) **n'est décrite nulle part dans le CCF fourni** — c'est
-  une évolution de GAMMA 3 au-delà du cahier des charges d'origine, pas un écart avec celui-ci.
+- **Double vérification Gestionnaire → Commandant** avant transmission à GAMMA3 (fonctionnalité
+  ajoutée le 2026-09-04) : ~~n'est décrite nulle part dans le CCF fourni~~ — **correction du
+  2026-09-11, après que l'utilisateur a partagé le tableau officiel des groupes d'utilisateurs du
+  CCF (voir §7)** : le CCF prévoit bien un groupe **CDT (Commandant)**, distinct du **DDM
+  (Détenteur de Matériel)**, dont le rôle est précisément de valider la demande du DDM de son
+  unité avant sa transmission à la DA. GAMMA 3 est donc **conforme au CCF sur ce point** — ce
+  n'était pas un écart, c'était un trou dans mon extraction initiale des documents source (ce
+  tableau, structuré en image/graphique dans le `.docx`, n'a pas été capturé par l'extraction
+  texte utilisée pour cet audit — voir §7 pour la limite méthodologique).
 - **Gouvernance SUPER_ADMIN, audit trail, sauvegarde automatisée, sécurité de session** : hors
   périmètre du CCF (document d'origine papier/pré-dématérialisation), logiquement absents de la
   spécification mais cohérents avec une modernisation du système d'information.
@@ -149,3 +155,56 @@ Le CCF est un document **institutionnel et procédural lourd** (commissions, PV 
 formulaires papier F01 à F11 par procédure). Une partie de ces lacunes correspond à de la
 paperasse qu'une modernisation vise justement à simplifier — il serait contre-productif de tout
 réimplémenter à l'identique sans validation. Voir les questions posées en fin de conversation.
+
+---
+
+## 7. Précision reçue de l'utilisateur (2026-09-11) — groupes d'utilisateurs officiels du CCF
+
+L'utilisateur a partagé une capture d'écran du tableau officiel « Groupe d'utilisateur /
+désignation » du CCF, **non capturé par l'extraction texte** utilisée pour cet audit (ce tableau
+est structuré en image/graphique dans le `.docx` source, invisible à une extraction de
+`word/document.xml` brut — limite méthodologique à noter pour toute relecture future du CCF).
+
+| Code CCF | Désignation officielle | Niveau |
+|---|---|---|
+| **DDM** | Détenteur de matériel | Unité |
+| **CDT** *(absent du tableau, confirmé par l'utilisateur)* | Commandant — valide la demande du DDM avant transmission à la DA | Unité |
+| **GEST** | Gestionnaire | DA |
+| **MAG** | Magasin | DA |
+| **ADEST** | Aire de distribution | DA |
+| **SC** | Section comptabilité | DA |
+| **SCS** | Section commande et suivi | DA |
+| **SEP** | Section étude et prévision | DA |
+| **SeRef** | Section réforme | DA |
+| **SR** | Section recette | DA |
+
+Précisions de l'utilisateur : le DDM appartient à l'unité (confirmé — voir correction §5
+ci-dessus) ; les 8 autres groupes DA (hors DDM/CDT) sont **inspirés des sections actuelles de la
+Division Approvisionnement**, pas une invention du CCF déconnectée de l'organisation réelle.
+
+### Correspondance avec le modèle de rôles GAMMA 3 actuel
+
+| Code CCF | Équivalent GAMMA 3 | Statut |
+|---|---|---|
+| DDM | `UNIT_USER` (`FonctionUnite=GESTIONNAIRE`) | ✅ Conforme |
+| CDT | `UNIT_USER` (`FonctionUnite=COMMANDANT`) | ✅ Conforme (voir correction §5) |
+| MAG | `DA_MANAGER` | ✅ Conforme |
+| GEST | `ADMIN` / `SUPER_ADMIN` (rôle généraliste) | ⚠️ Fusionné — le CCF semble désigner ici un rôle DA précis (proche du "chef SGS" cité dans plusieurs RG), pas la totalité des pouvoirs `ADMIN`/`SUPER_ADMIN` |
+| ADEST | *(aucun)* | ⚠️ Fondu dans `DA_MANAGER`/`ADMIN` — le "chef de l'aire de distribution" (P05 OP4/OP6) n'est pas un rôle distinct aujourd'hui |
+| SC | *(aucun)* | ⚠️ Fondu dans `ADMIN`/`SUPER_ADMIN` — porteur naturel d'une future Procédure P07 (comptabilité/collationnement) |
+| SCS | *(aucun)* | ⚠️ Fondu — porteur naturel de la Procédure P02 (commande et suivi), jugée hors périmètre logistique au §1 |
+| SEP | *(aucun)* | ⚠️ Fondu — **porteur naturel de la future Procédure P01** (prévisions), voir la proposition dédiée |
+| SeRef | *(aucun)* | ⚠️ Fondu dans `ADMIN`/`SUPER_ADMIN` — porteur naturel de la Procédure P06 (réforme), déjà bien couverte fonctionnellement (§5) mais sans rôle dédié |
+| SR | *(aucun)* | ⚠️ Fondu dans `ADMIN`/`SUPER_ADMIN`/`DA_MANAGER` — porteur naturel de la Procédure P03 (réception), déjà bien couverte fonctionnellement mais sans rôle dédié |
+
+**Constat :** GAMMA 3 a fusionné les 8 rôles internes de la DA (GEST/MAG/ADEST/SC/SCS/SEP/SeRef/SR)
+en seulement 2 (`ADMIN` + `DA_MANAGER`, `MAG` mis à part qui correspond proprement à
+`DA_MANAGER`). Ce n'est pas nécessairement une erreur — une petite structure n'a pas forcément
+intérêt à cloisonner 8 comptes différents pour 8 fonctions administratives — mais c'est une
+divergence délibérée à documenter, et une option à considérer si l'utilisateur veut un jour un
+cloisonnement plus fin (par ex. limiter qui peut valider un dossier de réforme vs qui peut
+lancer une prévision). **Pas d'implémentation proposée ici** : à trancher avec l'utilisateur,
+au même titre que les 4 décisions du §6 — voir aussi la proposition P01/P07
+(`docs/PROPOSITION_PREVISIONS_ET_COLLATIONNEMENT.md`), où le rattachement de ces deux écrans à
+un rôle SEP/SC dédié (plutôt qu'à `ADMIN`/`SUPER_ADMIN` génériquement) mériterait d'être
+reconsidéré à la lumière de ce tableau.

@@ -150,3 +150,13 @@ la détection d'écart) sans reconstruire tout le formalisme papier — sauf dem
    Recommandé : P01 d'abord — il complète directement une fonctionnalité déjà en production
    (blocage au seuil de sécurité) et a une valeur opérationnelle immédiate (alertes de
    réapprovisionnement), alors que P07 est un contrôle périodique (annuel) moins urgent.
+5. **Rattacher les écrans « Prévisions » (P01) et « Collationnement » (P07) à `ADMIN`/`SUPER_ADMIN`
+   génériquement, ou à un rôle dédié inspiré des groupes officiels du CCF ?** L'utilisateur a
+   précisé le 2026-09-11 que le CCF distingue des groupes par section de la DA — **SEP** (Section
+   Étude et Prévision, porteuse naturelle de P01) et **SC** (Section Comptabilité, porteuse
+   naturelle de P07) — voir `docs/AUDIT_CONFORMITE_CCF_2026-09-11.md` §7. GAMMA 3 fusionne
+   aujourd'hui ces sections dans `ADMIN`/`SUPER_ADMIN`. Recommandé : garder `ADMIN`/`SUPER_ADMIN`
+   pour ces deux premiers écrans (cohérent avec le reste du système, pas de rupture de modèle en
+   cours de route) — mais si l'utilisateur souhaite à terme un cloisonnement par section façon
+   CCF (SEP/SC/SCS/SeRef/SR distincts), ce serait le bon moment de le décider avant que ces deux
+   nouveaux écrans ne soient construits sur un modèle à refaire ensuite.
