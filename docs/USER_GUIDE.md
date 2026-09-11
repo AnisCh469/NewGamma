@@ -34,6 +34,22 @@ Chaque document porte l'en-tête institutionnel (Ministère de la Défense Natio
 Nationale Tunisienne / Division de l'Approvisionnement), un numéro de référence, un code QR
 de traçabilité et les cases de visa. Le PDF peut être ré-imprimé à l'identique à tout moment.
 
+### 📎 Conserver le document une fois signé
+
+Un document imprimé (Bon de Sortie, Bon d'Entrée, PV de Réforme, Bon de Commande) doit
+généralement être **signé et cacheté physiquement**. Une fois cela fait :
+
+1. **Scannez** le document signé (PDF ou photo/image).
+2. Sur l'écran de l'enregistrement concerné (la demande dans la console d'arbitrage, la
+   réception, la commission de réforme, la commande fournisseur), repérez le bloc
+   **« Documents signés »**.
+3. Choisissez le fichier scanné, ajoutez éventuellement une note (ex. « Signé par le
+   Commandant le 09/09 »), puis **« Téléverser le document signé »**.
+
+Le document apparaît dans la liste, consultable à tout moment en cliquant sur son nom — il
+reste attaché en permanence à l'enregistrement, comme référence et historique. Seul un
+Administrateur peut supprimer un document déjà téléversé.
+
 ---
 
 ## 🔍 Recherche d'Articles dans le Catalogue

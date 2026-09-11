@@ -301,6 +301,11 @@
           <p-button label="Consulter l'historique" icon="pi pi-list" styleClass="p-button-text p-button-secondary p-button-sm" routerLink="/receptions"></p-button>
           <p-button label="Imprimer le Bon d'Entrée Officiel (A4)" icon="pi pi-print" styleClass="p-button-primary p-button-sm font-bold" (onClick)="printBE()"></p-button>
         </div>
+
+        <div class="w-full max-w-2xl mt-6 text-left" *ngIf="bpr?.id">
+          <app-documents-signes typeDocument="BON_ENTREE" [referenceId]="bpr!.id!"
+                                [referenceLibelle]="be.numeroBe"></app-documents-signes>
+        </div>
       </div>
 
     </div>

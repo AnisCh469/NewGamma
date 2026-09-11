@@ -176,6 +176,12 @@
         </div>
       </ng-template>
 
+      <!-- Documents signés : scan du PV de réforme signé par la commission -->
+      <div class="mt-4" *ngIf="selectedDossier?.id">
+        <app-documents-signes typeDocument="PV_REFORME" [referenceId]="selectedDossier!.id!"
+                              [referenceLibelle]="selectedDossier?.numeroDossier"></app-documents-signes>
+      </div>
+
     </div>
 
     <!-- Actions du dialogue -->

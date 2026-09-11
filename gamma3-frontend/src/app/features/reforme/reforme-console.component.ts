@@ -4,6 +4,7 @@ import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ReformeService, DossierReforme, LigneReforme } from '../../core/services/reforme.service';
 import { DocumentService } from '../../core/services/document.service';
+import { DocumentsSignesComponent } from '../../shared/documents-signes/documents-signes.component';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { TableModule } from 'primeng/table';
@@ -28,7 +29,8 @@ import { MessageService } from 'primeng/api';
     DialogModule,
     DropdownModule,
     InputTextareaModule,
-    ToastModule
+    ToastModule,
+    DocumentsSignesComponent
   ],
   providers: [MessageService],
   templateUrl: './reforme-console.component.html',

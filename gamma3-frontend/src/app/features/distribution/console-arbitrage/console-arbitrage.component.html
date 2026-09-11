@@ -329,6 +329,12 @@
       </div>
     </div>
 
+    <!-- Documents signés : scan du Bon de Sortie signé/cacheté, rattaché à cette demande -->
+    <app-documents-signes *ngIf="selectedDemande?.id && selectedDemande?.statut !== 'SOUMIS'"
+        typeDocument="BON_SORTIE"
+        [referenceId]="selectedDemande!.id!"
+        [referenceLibelle]="selectedDemande?.bonSortie?.numeroBs || selectedDemande?.numeroDemande"></app-documents-signes>
+
   </div>
   <ng-template pTemplate="footer">
     <p-button [label]="selectedDemande?.statut === 'SOUMIS' ? 'Annuler' : 'Fermer'" icon="pi pi-times" (click)="displayArbitrageDialog = false" styleClass="p-button-text"></p-button>

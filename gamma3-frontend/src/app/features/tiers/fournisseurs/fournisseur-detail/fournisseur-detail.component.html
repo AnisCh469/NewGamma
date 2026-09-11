@@ -197,12 +197,21 @@
                         <td>
                           <p-tag [value]="cmd.statut || 'EN_ATTENTE'" [severity]="cmd.statut === 'LIVRE' ? 'success' : (cmd.statut === 'ANNULE' ? 'danger' : 'warning')"></p-tag>
                         </td>
-                        <td class="text-right">
+                        <td class="text-right whitespace-nowrap">
                           <p-button icon="pi pi-file-pdf" label="Bon de commande" styleClass="p-button-text p-button-secondary p-button-sm" (onClick)="imprimerBonCommande(cmd)"></p-button>
+                          <p-button icon="pi pi-paperclip" pTooltip="Documents signés" styleClass="p-button-text p-button-secondary p-button-sm" (onClick)="docsCommande = cmd"></p-button>
                         </td>
                       </tr>
                     </ng-template>
                   </p-table>
+
+                  <p-dialog [header]="'Documents signés — ' + (docsCommande?.numeroCommande || '')"
+                            [visible]="!!docsCommande" (visibleChange)="docsCommande = $event ? docsCommande : null"
+                            [modal]="true" [style]="{width: '640px'}">
+                    <app-documents-signes *ngIf="docsCommande?.id" typeDocument="BON_COMMANDE"
+                                          [referenceId]="docsCommande!.id!"
+                                          [referenceLibelle]="docsCommande?.numeroCommande"></app-documents-signes>
+                  </p-dialog>
 
                   <div *ngIf="commandes.length === 0" class="border border-dashed border-slate-200 rounded-xl p-6 text-center bg-slate-50/50 mt-2">
                     <i class="pi pi-shopping-cart text-3xl text-slate-300 mb-2"></i>

@@ -19,6 +19,7 @@ import { QRCodeModule } from 'angularx-qrcode';
 import { PlanArmementService, DemandeDotation } from '../../../core/services/plan-armement.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { DocumentService } from '../../../core/services/document.service';
+import { DocumentsSignesComponent } from '../../../shared/documents-signes/documents-signes.component';
 
 @Component({
   selector: 'app-console-arbitrage',
@@ -36,7 +37,8 @@ import { DocumentService } from '../../../core/services/document.service';
     InputTextModule,
     ToastModule,
     TabViewModule,
-    QRCodeModule
+    QRCodeModule,
+    DocumentsSignesComponent
   ],
   providers: [MessageService],
   templateUrl: './console-arbitrage.component.html',

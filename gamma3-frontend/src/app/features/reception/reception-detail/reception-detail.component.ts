@@ -15,6 +15,7 @@ import { FournisseurService, Fournisseur } from '../../../core/services/fourniss
 import { MarcheService } from '../../../core/services/marche.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { DocumentService } from '../../../core/services/document.service';
+import { DocumentsSignesComponent } from '../../../shared/documents-signes/documents-signes.component';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { StepsModule } from 'primeng/steps';
@@ -42,7 +43,8 @@ import { environment } from '../../../../environments/environment';
     TagModule,
     DropdownModule,
     AutoCompleteModule,
-    InputTextModule
+    InputTextModule,
+    DocumentsSignesComponent
   ],
   providers: [MessageService],
   templateUrl: './reception-detail.component.html',

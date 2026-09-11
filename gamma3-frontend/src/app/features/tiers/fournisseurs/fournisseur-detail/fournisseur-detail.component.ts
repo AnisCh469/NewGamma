@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FournisseurService, Fournisseur } from '../../../../core/services/fournisseur.service';
 import { DocumentService } from '../../../../core/services/document.service';
+import { DocumentsSignesComponent } from '../../../../shared/documents-signes/documents-signes.component';
+import { TooltipModule } from 'primeng/tooltip';
 import { CardModule } from 'primeng/card';
 import { PanelModule } from 'primeng/panel';
 import { DividerModule } from 'primeng/divider';
@@ -41,7 +43,9 @@ import { environment } from '../../../../../environments/environment';
     TabViewModule,
     InputTextModule,
     DropdownModule,
-    TableModule
+    TableModule,
+    TooltipModule,
+    DocumentsSignesComponent
   ],
   providers: [MessageService],
   templateUrl: './fournisseur-detail.component.html',
@@ -65,6 +69,7 @@ export class FournisseurDetailComponent implements OnInit {
 
   marches: Marche[] = [];
   commandes: CommandeFournisseur[] = [];
+  docsCommande: CommandeFournisseur | null = null;
   loadingMarches: boolean = true;
 
   displayMarcheDialog: boolean = false;
