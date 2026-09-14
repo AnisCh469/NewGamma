@@ -27,8 +27,8 @@ donne-moi ta meilleure proposition. »*
 | **SC** | Section Comptabilité (DA) | Comptabilité matière, collationnement annuel (P07), dépouillement financier | ⚠️ Fondu dans `ADMIN`/`SUPER_ADMIN` |
 | **SCS** | Section Commande et Suivi (DA) | Commande et suivi du matériel (P02, responsable des étapes 1-3-5) | ⚠️ Fondu — P02 hors périmètre actuel |
 | **SEP** | Section Étude et Prévision (DA) | Prévisions (P01), **et co-responsable de P02** (étude des offres, nomenclatures — vu sur le logigramme partagé) | ⚠️ Fondu — P01 en projet |
-| **SeRef** | Section Réforme (DA) | Réforme et déclassement du matériel (P06) | ⚠️ Fondu dans `ADMIN`/`SUPER_ADMIN` |
-| **SR** | Section Recette (DA) | Réception du matériel (P03) | ⚠️ Fondu dans `ADMIN`/`SUPER_ADMIN`/`DA_MANAGER` |
+| **SeRef** | Section Réforme **et Remise** (DA) — acronyme officiel **SRR** dans le texte des procédures | Réforme et déclassement du matériel (P06) **et remise/reversement du matériel (P09)** — voir §1.2 | ⚠️ Fondu dans `ADMIN`/`SUPER_ADMIN` |
+| **SR** | Section Recette (DA) — acronyme officiel **SRE** dans le texte des procédures | Réception du matériel (P03) | ⚠️ Fondu dans `ADMIN`/`SUPER_ADMIN`/`DA_MANAGER` |
 
 ### 1.1 Confirmation par le logigramme complet de P02 (2026-09-14)
 
@@ -64,6 +64,46 @@ Les **7 autres groupes DA** (GEST, ADEST, SC, SCS, SEP, SeRef, SR) sont aujourd'
 dans deux rôles génériques (`ADMIN`, `SUPER_ADMIN`) qui peuvent TOUT faire côté DA — violant le
 principe même de séparation des privilèges que le projet applique déjà ailleurs (unité :
 Gestionnaire/Commandant ; système : SUPER_ADMIN/ADMIN).
+
+### 1.2 Découverte en relisant le document complet (2026-09-14) : une hiérarchie à 3 niveaux, pas 2
+
+En comptant systématiquement chaque occurrence des acronymes du texte des procédures (pas
+seulement le tableau des groupes), un niveau **au-dessus de GEST** apparaît, mentionné
+**~10 fois**, absent du tableau des 10 groupes car ce n'est pas un "groupe utilisateur" mais une
+fonction individuelle unique :
+
+> *« une commission présidée par le **CDA** et composée de l'Adjoint CDA, du **chef SGS**, du chef
+> SM et du chef SEP (…) »* (P01, RG relative aux prévisions budgétaires)
+
+**CDA = Chef de la Division Approvisionnement** — l'autorité suprême de toute la DA. Il préside
+les commissions majeures (prévisions budgétaires P01, remise P09), signe les décisions finales
+(prise en charge du matériel remis, PVR de matériel complet — P03/P09), et c'est *lui*, pas le
+GEST, qui est cité comme approbateur ultime dans la majorité des règles de gestion à enjeu
+important.
+
+Ce que ça révèle : le CCF distingue en réalité **3 niveaux au sein de la DA**, pas 2 :
+
+```
+CDA (Chef Division Approvisionnement)   ← autorité suprême, décisions finales
+        │
+    GEST / "chef SGS" (CSGS)            ← gestion opérationnelle quotidienne, arbitrage
+        │
+    chefs de section : MAG (chef SM) · ADEST · SC (CSC) · SCS · SEP · SeRef (CSRR) · SR (SRE)
+```
+
+**GAMMA 3 fusionne aujourd'hui CDA et GEST dans un seul rôle `ADMIN`** (et `SUPER_ADMIN` en
+superset système). C'est potentiellement plus qu'une simplification de confort : le **blocage au
+seuil de sécurité avec dérogation** livré cette session (RG16/17/68/102,
+`DistributionService.confirmerSortiePhysique`) réserve aujourd'hui la dérogation à tout compte
+`ADMIN`/`SUPER_ADMIN` — alors que le CCF dit explicitement que cette dérogation nécessite
+*« l'ordre de l'EMAM/BL »*, une autorité même au-dessus du CDA. Si l'on prend le CCF au pied de la
+lettre, un `ADMIN` "GEST" ordinaire ne devrait probablement pas pouvoir accorder seul cette
+dérogation — voir la question posée en §5.
+
+**⚠️ Point de doute — je n'ai pas tranché seul :** distinguer CDA de GEST est un changement de
+modèle plus structurant que le simple ajout de `FonctionDA` proposé au §2 (ça toucherait aussi
+`SUPER_ADMIN`/`ADMIN` eux-mêmes, pas seulement une nouvelle sous-catégorie). Je préfère poser la
+question plutôt que de deviner l'intention — voir §5, question 5.
 
 ---
 
@@ -114,7 +154,7 @@ l'utilisateur décide, section par section, jusqu'où aller.
 | `SC` | Réforme (sortie des comptes), Analyses | Collationnement (P07) |
 | `SCS` | — (P02 hors périmètre, voir audit §1) | Commande et suivi (P02), si construit un jour |
 | `SEP` | — | **Prévisions (P01)**, dès sa construction |
-| `SeRef` | **Réforme** (`ReformeController`, déjà bien couvert fonctionnellement) | — |
+| `SeRef` | **Réforme** (`ReformeController`) **et Remise/Reversement** (upload de documents signés, écran unité) — voir §1.2, acronyme officiel **SRR** | — |
 | `SR` | **Réception** (`ReceptionController`, déjà bien couvert fonctionnellement) | — |
 
 `SeRef` et `SR` sont les deux candidats **immédiatement actionnables** : leurs écrans existent
@@ -190,3 +230,21 @@ traçabilité par intervenant demandée à l'origine de la gouvernance des rôle
    assignée) ?** Recommandé : la garder comme valeur explicite assignable — utile le jour où
    l'utilisateur veut distinguer, dans le Journal d'Audit, un compte GEST (superviseur assumé) d'un
    compte ADMIN non catégorisé (créé avant l'introduction de ce champ).
+5. **CDA vs GEST (§1.2) : faut-il les distinguer, ou les garder fusionnés comme aujourd'hui ?**
+   C'est la question la plus structurante de ce document — elle ne se limite pas à `FonctionDA`,
+   elle touche potentiellement `SUPER_ADMIN`/`ADMIN` eux-mêmes. Trois options, sans recommandation
+   par défaut de ma part (je n'ai pas assez d'éléments sur l'organisation réelle de la DA pour
+   trancher) :
+   - **(a) Ne rien changer** — `ADMIN` continue d'incarner CDA+GEST fusionnés, comme aujourd'hui.
+     Le plus simple, cohérent avec la taille probable de l'équipe DA.
+   - **(b) Réserver certaines actions à `SUPER_ADMIN` seul** (pas `ADMIN`), en le traitant comme
+     l'équivalent numérique du CDA pour les décisions les plus lourdes — à commencer par la
+     **dérogation au seuil de sécurité** (§1.2), et possiblement l'approbation finale d'un dossier
+     de réforme complet. Le rôle `SUPER_ADMIN` porterait alors DEUX casquettes distinctes
+     (système ET CDA), ce qui reprend la même tension que celle résolue pour ADMIN/SUPER_ADMIN
+     lors de la Phase 1 de gouvernance des rôles — potentiellement à reproduire.
+   - **(c) Un `FonctionDA=CDA` dédié**, distinct de `GEST`, réservé aux actions à enjeu (dérogations,
+     approbations finales) — le plus fidèle au CCF, mais le plus de travail, et crée un rôle
+     "presque SUPER_ADMIN" à sécuriser avec le même soin (voir la faille `@EnableMethodSecurity`
+     découverte le 2026-09-11 — toute nouvelle porte d'accès à fort pouvoir doit être testée en
+     REFUS, pas seulement en accès nominal).
