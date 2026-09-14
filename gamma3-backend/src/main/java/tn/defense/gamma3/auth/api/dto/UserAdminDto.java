@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import tn.defense.gamma3.auth.domain.Role;
 import tn.defense.gamma3.auth.domain.FonctionUnite;
+import tn.defense.gamma3.auth.domain.FonctionDA;
 
 /**
  * DTOs de la console d'administration des comptes utilisateurs (voir UserAdminController).
@@ -29,6 +30,9 @@ public class UserAdminDto {
         private Long magasinId;
         private Long uniteId;
         private FonctionUnite fonctionUnite;
+        /** Facultatif, uniquement pour role=ADMIN — voir FonctionDA et
+         *  docs/PROPOSITION_ROLES_SECTIONS_DA.md (Phase A, 2026-09-14). */
+        private FonctionDA fonctionDA;
     }
 
     /** Mise à jour d'un compte existant (matricule et mot de passe non modifiables ici). */
@@ -42,6 +46,8 @@ public class UserAdminDto {
         private Long magasinId;
         private Long uniteId;
         private FonctionUnite fonctionUnite;
+        /** Facultatif, uniquement pour role=ADMIN — voir FonctionDA. */
+        private FonctionDA fonctionDA;
     }
 
     /** Blocage / déblocage d'un compte (voir User.enabled). */

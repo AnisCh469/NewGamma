@@ -13,6 +13,7 @@ import tn.defense.gamma3.audit.domain.TypeActionAudit;
 import tn.defense.gamma3.audit.service.JournalAuditService;
 import tn.defense.gamma3.auth.api.dto.UserAdminDto;
 import tn.defense.gamma3.auth.domain.FonctionUnite;
+import tn.defense.gamma3.auth.domain.FonctionDA;
 import tn.defense.gamma3.auth.domain.Role;
 import tn.defense.gamma3.auth.domain.User;
 import tn.defense.gamma3.auth.repository.UserRepository;
@@ -131,6 +132,7 @@ public class UserAdminController {
         Magasin magasin = null;
         UniteUtilisatrice unite = null;
         FonctionUnite fonctionUnite = null;
+        FonctionDA fonctionDA = null;
         if (role == Role.DA_MANAGER) {
             if (request.getMagasinId() == null) {
                 return ResponseEntity.badRequest()
@@ -146,6 +148,12 @@ public class UserAdminController {
             if (uniteError != null) return uniteError;
             unite = uniteRepository.findById(request.getUniteId()).orElseThrow();
             fonctionUnite = request.getFonctionUnite();
+        } else if (role == Role.ADMIN) {
+            // Facultative (Phase A, docs/PROPOSITION_ROLES_SECTIONS_DA.md) : aucune validation
+            // d'exclusivité contrairement à FonctionUnite — plusieurs comptes ADMIN peuvent
+            // partager la même section DA, et un compte ADMIN sans FonctionDA garde tous ses
+            // pouvoirs actuels (comportement inchangé).
+            fonctionDA = request.getFonctionDA();
         }
 
         User user = User.builder()
@@ -156,6 +164,7 @@ public class UserAdminController {
                 .magasin(magasin)
                 .unite(unite)
                 .fonctionUnite(fonctionUnite)
+                .fonctionDA(fonctionDA)
                 .enabled(true)
                 .build();
 
@@ -200,6 +209,7 @@ public class UserAdminController {
         Magasin magasin = null;
         UniteUtilisatrice unite = null;
         FonctionUnite fonctionUnite = null;
+        FonctionDA fonctionDA = null;
         if (role == Role.DA_MANAGER) {
             if (request.getMagasinId() == null) {
                 return ResponseEntity.badRequest()
@@ -215,6 +225,8 @@ public class UserAdminController {
             if (uniteError != null) return uniteError;
             unite = uniteRepository.findById(request.getUniteId()).orElseThrow();
             fonctionUnite = request.getFonctionUnite();
+        } else if (role == Role.ADMIN) {
+            fonctionDA = request.getFonctionDA();
         }
 
         user.setFullName(fullName);
@@ -222,6 +234,7 @@ public class UserAdminController {
         user.setMagasin(magasin);
         user.setUnite(unite);
         user.setFonctionUnite(fonctionUnite);
+        user.setFonctionDA(fonctionDA);
 
         User saved = userRepository.save(user);
         User admin = (User) authentication.getPrincipal();

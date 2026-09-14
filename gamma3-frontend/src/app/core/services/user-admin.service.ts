@@ -6,6 +6,10 @@ import { environment } from '../../../environments/environment';
 
 export type Role = 'SUPER_ADMIN' | 'ADMIN' | 'DA_MANAGER' | 'UNIT_USER';
 export type FonctionUnite = 'GESTIONNAIRE' | 'COMMANDANT';
+/** Fonction facultative d'un compte ADMIN au sein des sections de la DA — Phase A,
+ *  docs/PROPOSITION_ROLES_SECTIONS_DA.md (2026-09-14). Aucun contrôle d'accès n'est encore
+ *  conditionné par ce champ ; il sert la traçabilité et prépare les phases suivantes. */
+export type FonctionDA = 'GEST' | 'ADEST' | 'SC' | 'SCS' | 'SEP' | 'SRR' | 'SRE';
 
 export interface Magasin {
   id?: number;
@@ -28,6 +32,7 @@ export interface AdminUser {
   magasin?: Magasin | null;
   unite?: UniteUtilisatriceRef | null;
   fonctionUnite?: FonctionUnite | null;
+  fonctionDA?: FonctionDA | null;
   enabled?: boolean;
   twoFactorEnabled?: boolean;
 }
@@ -40,6 +45,7 @@ export interface CreateUserRequest {
   magasinId?: number | null;
   uniteId?: number | null;
   fonctionUnite?: FonctionUnite | null;
+  fonctionDA?: FonctionDA | null;
 }
 
 export interface UpdateUserRequest {
@@ -48,6 +54,7 @@ export interface UpdateUserRequest {
   magasinId?: number | null;
   uniteId?: number | null;
   fonctionUnite?: FonctionUnite | null;
+  fonctionDA?: FonctionDA | null;
 }
 
 @Injectable({

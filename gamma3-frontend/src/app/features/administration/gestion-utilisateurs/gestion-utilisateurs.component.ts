@@ -17,6 +17,7 @@ import {
   UniteUtilisatriceRef,
   Role,
   FonctionUnite,
+  FonctionDA,
   CreateUserRequest,
   UpdateUserRequest
 } from '../../../core/services/user-admin.service';
@@ -72,7 +73,8 @@ export class GestionUtilisateursComponent implements OnInit {
     magasinId: number | null;
     uniteId: number | null;
     fonctionUnite: FonctionUnite | null;
-  } = { matricule: '', password: '', fullName: '', role: null, magasinId: null, uniteId: null, fonctionUnite: null };
+    fonctionDA: FonctionDA | null;
+  } = { matricule: '', password: '', fullName: '', role: null, magasinId: null, uniteId: null, fonctionUnite: null, fonctionDA: null };
 
   roleOptions: { label: string; value: Role }[] = [
     { label: 'Administrateur Système (SUPER_ADMIN)', value: 'SUPER_ADMIN' },
@@ -84,6 +86,19 @@ export class GestionUtilisateursComponent implements OnInit {
   fonctionOptions: { label: string; value: FonctionUnite }[] = [
     { label: 'Gestionnaire (soumet les demandes)', value: 'GESTIONNAIRE' },
     { label: 'Commandant (valide les demandes)', value: 'COMMANDANT' }
+  ];
+
+  /** Fonction facultative d'un compte ADMIN au sein des sections de la DA — Phase A,
+   *  docs/PROPOSITION_ROLES_SECTIONS_DA.md (2026-09-14). N'a encore aucun effet sur les droits
+   *  d'accès : sert la traçabilité et prépare les phases suivantes. */
+  fonctionDAOptions: { label: string; value: FonctionDA }[] = [
+    { label: 'Gestionnaire (GEST — chef SGS, supervision transverse)', value: 'GEST' },
+    { label: 'Aire de Distribution (ADEST)', value: 'ADEST' },
+    { label: 'Section Comptabilité (SC)', value: 'SC' },
+    { label: 'Section Commande et Suivi (SCS)', value: 'SCS' },
+    { label: 'Section Étude et Prévision (SEP)', value: 'SEP' },
+    { label: 'Section Réforme et Remise (SRR)', value: 'SRR' },
+    { label: 'Section Réception (SRE)', value: 'SRE' }
   ];
 
   get magasinOptions(): { label: string; value: number }[] {
@@ -190,7 +205,7 @@ export class GestionUtilisateursComponent implements OnInit {
   }
 
   openNew(): void {
-    this.selectedUser = { matricule: '', password: '', fullName: '', role: null, magasinId: null, uniteId: null, fonctionUnite: null };
+    this.selectedUser = { matricule: '', password: '', fullName: '', role: null, magasinId: null, uniteId: null, fonctionUnite: null, fonctionDA: null };
     this.isEditMode = false;
     this.errorMessage = '';
     this.displayDialog = true;
@@ -205,7 +220,8 @@ export class GestionUtilisateursComponent implements OnInit {
       role: user.role,
       magasinId: user.magasin?.id ?? null,
       uniteId: user.unite?.id ?? null,
-      fonctionUnite: user.fonctionUnite ?? null
+      fonctionUnite: user.fonctionUnite ?? null,
+      fonctionDA: user.fonctionDA ?? null
     };
     this.isEditMode = true;
     this.errorMessage = '';
@@ -232,7 +248,8 @@ export class GestionUtilisateursComponent implements OnInit {
         role: this.selectedUser.role!,
         magasinId: this.selectedUser.role === 'DA_MANAGER' ? this.selectedUser.magasinId : null,
         uniteId: this.selectedUser.role === 'UNIT_USER' ? this.selectedUser.uniteId : null,
-        fonctionUnite: this.selectedUser.role === 'UNIT_USER' ? this.selectedUser.fonctionUnite : null
+        fonctionUnite: this.selectedUser.role === 'UNIT_USER' ? this.selectedUser.fonctionUnite : null,
+        fonctionDA: this.selectedUser.role === 'ADMIN' ? this.selectedUser.fonctionDA : null
       };
       this.userAdminService.updateUser(this.selectedUser.id, request).subscribe({
         next: () => {
@@ -253,7 +270,8 @@ export class GestionUtilisateursComponent implements OnInit {
         role: this.selectedUser.role!,
         magasinId: this.selectedUser.role === 'DA_MANAGER' ? this.selectedUser.magasinId : null,
         uniteId: this.selectedUser.role === 'UNIT_USER' ? this.selectedUser.uniteId : null,
-        fonctionUnite: this.selectedUser.role === 'UNIT_USER' ? this.selectedUser.fonctionUnite : null
+        fonctionUnite: this.selectedUser.role === 'UNIT_USER' ? this.selectedUser.fonctionUnite : null,
+        fonctionDA: this.selectedUser.role === 'ADMIN' ? this.selectedUser.fonctionDA : null
       };
       this.userAdminService.createUser(request).subscribe({
         next: () => {

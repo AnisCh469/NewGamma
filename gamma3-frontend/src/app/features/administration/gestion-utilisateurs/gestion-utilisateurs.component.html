@@ -105,7 +105,10 @@
           </td>
           <td class="py-1 px-4 text-slate-600 text-xs">
             <span *ngIf="user.magasin">{{ user.magasin.code }} — {{ user.magasin.nom }}</span>
-            <span *ngIf="!user.magasin" class="text-slate-400">—</span>
+            <span *ngIf="!user.magasin && user.fonctionDA" class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600" title="Fonction DA — n'a pas encore d'effet sur les droits d'accès">
+              {{ user.fonctionDA }}
+            </span>
+            <span *ngIf="!user.magasin && !user.fonctionDA" class="text-slate-400">—</span>
           </td>
           <td class="py-1 px-4 text-slate-600 text-xs">
             <span *ngIf="user.unite">
@@ -194,6 +197,16 @@
       <label for="fonction" class="block font-medium mb-2">Fonction *</label>
       <p-dropdown [options]="fonctionOptions" [(ngModel)]="selectedUser.fonctionUnite" inputId="fonction"
         placeholder="Sélectionner une fonction" appendTo="body" styleClass="w-full"></p-dropdown>
+    </div>
+    <div class="field mb-4" *ngIf="selectedUser.role === 'ADMIN'">
+      <label for="fonctionDA" class="block font-medium mb-2">Fonction DA (facultatif)</label>
+      <p-dropdown [options]="fonctionDAOptions" [(ngModel)]="selectedUser.fonctionDA" inputId="fonctionDA"
+        placeholder="Aucune (tous pouvoirs DA, comportement actuel)" [showClear]="true" appendTo="body" styleClass="w-full"></p-dropdown>
+      <p class="text-xs text-slate-400 mt-1">
+        Rattache ce compte à une section de la Division Approvisionnement, pour la traçabilité
+        (Journal d'Audit). N'a encore aucun effet sur les droits d'accès — laisser vide garde le
+        comportement actuel (tous les pouvoirs DA).
+      </p>
     </div>
     <div *ngIf="errorMessage" class="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
       {{ errorMessage }}

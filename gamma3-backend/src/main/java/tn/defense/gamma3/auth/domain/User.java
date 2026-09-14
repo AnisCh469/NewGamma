@@ -68,6 +68,18 @@ public class User implements UserDetails {
     @Column(name = "fonction_unite", nullable = true)
     private FonctionUnite fonctionUnite;
 
+    // ─── Fonction au sein de la Division Approvisionnement (pour Role.ADMIN) ──────
+    // RÔLE : Rattache facultativement un compte ADMIN à une section de la DA (CCF —
+    //        docs/PROPOSITION_ROLES_SECTIONS_DA.md, Phase A, 2026-09-14). NULL = comportement
+    //        actuel inchangé (l'ADMIN garde tous ses pouvoirs DA, rétro-compatible) ; une
+    //        valeur précise = compte volontairement associé à sa section pour la traçabilité —
+    //        AUCUN contrôle d'accès n'est encore conditionné par ce champ à ce stade (Phase A
+    //        uniquement, voir le document pour les phases suivantes). Toujours NULL pour
+    //        SUPER_ADMIN/DA_MANAGER/UNIT_USER.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "fonction_da", nullable = true)
+    private FonctionDA fonctionDA;
+
     @Builder.Default
     @Column(name = "two_factor_enabled", nullable = false, columnDefinition = "boolean default false")
     private boolean twoFactorEnabled = false;
