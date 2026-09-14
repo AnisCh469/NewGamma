@@ -4,8 +4,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import tn.defense.gamma3.auth.domain.FonctionDA;
 import tn.defense.gamma3.auth.domain.Role;
 import tn.defense.gamma3.auth.domain.User;
+import tn.defense.gamma3.auth.util.AccesDAUtil;
 import tn.defense.gamma3.reforme.domain.DossierReforme;
 import tn.defense.gamma3.reforme.domain.LigneReforme;
 import tn.defense.gamma3.reforme.service.ReformeService;
@@ -59,7 +61,14 @@ public class ReformeController {
         return ResponseEntity.ok(reformeService.creerDossier(uniteId, motif, lignes));
     }
 
-    /** La décision de la commission de réforme est un acte de la DA : ADMIN / DA_MANAGER. */
+    /**
+     * La décision de la commission de réforme est un acte de la DA : ADMIN / DA_MANAGER.
+     *
+     * CLOISONNEMENT PAR SECTION (Phase B, 2026-09-14, voir docs/PROPOSITION_ROLES_SECTIONS_DA.md
+     * §4) : correspond à la Section Réforme et Remise du CCF (acronyme officiel SRR, "SeRef"
+     * dans le tableau des groupes). Comportement historique inchangé pour tout compte ADMIN
+     * sans `fonctionDA` renseignée — voir {@link AccesDAUtil}.
+     */
     @PostMapping("/{id}/commission")
     public ResponseEntity<?> traiterCommission(
             @PathVariable Long id,
@@ -70,8 +79,8 @@ public class ReformeController {
             Authentication authentication) {
         User u = currentUser(authentication);
         if (u == null) return ResponseEntity.status(401).body("Authentification requise.");
-        if (u.getRole() != Role.SUPER_ADMIN && u.getRole() != Role.ADMIN && u.getRole() != Role.DA_MANAGER) {
-            return ResponseEntity.status(403).body("Seule la Division de l'Approvisionnement statue sur une commission de réforme.");
+        if (!AccesDAUtil.estAutorise(u, true, FonctionDA.SRR)) {
+            return ResponseEntity.status(403).body("Seule la Division de l'Approvisionnement (Section Réforme et Remise) statue sur une commission de réforme.");
         }
         LocalDate date = dateCommission != null ? LocalDate.parse(dateCommission) : LocalDate.now();
         return ResponseEntity.ok(reformeService.traiterDossierCommission(id, decision, membres, observations, date, u.getMatricule()));

@@ -426,6 +426,28 @@ Ce journal répertorie les difficultés techniques rencontrées au cours du dév
 * **Vérifié :** `compileJava` + `ng build` OK (mêmes warnings préexistants). Par `curl`, sur la base réelle : création d'un compte `ADMIN` avec `fonctionDA=SRR` → 201, champ bien persisté et renvoyé ; création d'un compte `ADMIN` sans `fonctionDA` → 201, `null`, comportement inchangé ; le compte `sgs` existant (sans `fonctionDA`) garde tous ses pouvoirs (`GET /demandes` → 200, zéro régression). Comptes de test désactivés après vérification (pas d'endpoint de suppression définitive, par conception du projet).
 * **Suite :** Phase B (cloisonnement réel de `SRR`→Réforme+Remise et `SRE`→Réception) en attente d'une nouvelle décision de l'utilisateur — voir `docs/PROPOSITION_ROLES_SECTIONS_DA.md` §4.
 
+## Entrée : 2026-09-14 (2)
+* **Tâche :** Sur demande explicite de l'utilisateur ("ok applique les modifications nécessaires"), Phase B de `docs/PROPOSITION_ROLES_SECTIONS_DA.md` — premier cloisonnement réel par section DA, sur les deux écrans déjà matures identifiés en Phase A : Réforme (section SRR) et Réception (section SRE).
+* **Difficulté rencontrée :** Aucune de conception (la Phase A avait déjà posé `User.fonctionDA` et l'enum `FonctionDA`) ; une confusion de test en cours de vérification — un compte de test `test_srr` créé lors de la vérification de la Phase A avait été désactivé (`enabled=false`) en fin de session, et une tentative de le réutiliser tel quel donnait un faux résultat (403 sur Réforme, alors qu'un compte SRR doit y être autorisé) à cause du filtre JWT qui vérifie `isEnabled()` à chaque requête (comportement volontaire, voir entrée du 2026-09-04 (5)) — pas un bug de la nouvelle logique. Résolu en réactivant le compte avant de rejouer le test.
+* **Cause technique racine :** Les Phases A n'avait posé aucune restriction ; il s'agissait cette fois d'appliquer réellement `User.fonctionDA` aux deux contrôleurs déjà couverts fonctionnellement.
+* **Solution retenue :**
+  1. Nouvel utilitaire partagé `AccesDAUtil.estAutorise(User, boolean daManagerAutorise, FonctionDA... sectionsAutorisees)` (package `auth/util`) — centralise la logique opt-in : `SUPER_ADMIN` toujours autorisé ; `DA_MANAGER` selon un paramètre explicite par appel ; `ADMIN` sans `fonctionDA` (ou taguée `GEST`) toujours autorisé (comportement historique inchangé) ; `ADMIN` taguée avec une section précise, autorisé uniquement si elle figure dans la liste attendue pour cet écran — sinon 403.
+  2. `ReceptionController.exigerRoleDA` (utilisé par toute la chaîne BPR→PV→BE) : `AccesDAUtil.estAutorise(u, true, FonctionDA.SRE)`.
+  3. `ReformeController.traiterCommission` (décision de la commission de réforme) : `AccesDAUtil.estAutorise(u, true, FonctionDA.SRR)`. `creerDossier` (soumission d'un dossier) reste volontairement non restreint par section — le CCF montre plusieurs acteurs possibles à cette étape (SEP, divisions techniques), pas seulement SRR.
+* **Vérifié :** `compileJava` + `ng build` OK (mêmes warnings préexistants, aucun nouveau — Phase B ne touche que le backend). Matrice complète testée par `curl` sur la base réelle, avec 5 comptes (sgs sans fonctionDA, magasin_centre DA_MANAGER, et 3 comptes de test tagués SC/SRR/SRE) × 2 écrans (Réception, Réforme) :
+
+  | Compte | Réception (SRE) | Réforme (SRR) |
+  |---|---|---|
+  | sgs (sans `fonctionDA`) | autorisé | autorisé |
+  | magasin_centre (DA_MANAGER) | autorisé | autorisé |
+  | test SC | **403 refusé** | **403 refusé** |
+  | test SRR | **403 refusé** | autorisé |
+  | test SRE | autorisé | **403 refusé** |
+
+  Exactement la matrice de cloisonnement attendue — comptes existants intacts (zéro régression), isolation croisée entre sections confirmée dans les deux sens. Comptes de test désactivés après vérification.
+* **Limitation connue, non traitée dans cette entrée :** le principe Zero-Trust UI du projet (`.antigravityrules` — "ne jamais exposer un bouton d'action à un rôle non autorisé") n'a pas encore été répercuté côté frontend pour ce cloisonnement précis : un compte `ADMIN` restreint à une section différente de SRR/SRE verrait toujours les boutons "Confirmer la commission"/"Créer un BPR" dans l'interface, et recevrait un 403 seulement au clic. Sans impact sécurité (le backend refuse bien l'action), mais une UX à améliorer si des comptes réellement restreints sont créés en pratique — à traiter alors, pas de manière préventive sur une fonctionnalité encore inutilisée.
+* **Suite :** Phase C (SEP dès P01, SC dès P07) en attente de la construction de ces procédures — voir `docs/PROPOSITION_PREVISIONS_ET_COLLATIONNEMENT.md`.
+
 ## [Modèle d'Entrée]
 * **Date :** AAAA-MM-JJ
 * **Tâche :** Description de la tâche ou de la fonctionnalité

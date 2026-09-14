@@ -4,8 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import tn.defense.gamma3.auth.domain.Role;
+import tn.defense.gamma3.auth.domain.FonctionDA;
 import tn.defense.gamma3.auth.domain.User;
+import tn.defense.gamma3.auth.util.AccesDAUtil;
 import tn.defense.gamma3.reception.domain.BonEntree;
 import tn.defense.gamma3.reception.domain.BonProvisoireReception;
 import tn.defense.gamma3.reception.domain.LigneReception;
@@ -39,13 +40,19 @@ public class ReceptionController {
      * opération INTERNE à la Division de l'Approvisionnement : réservée à ADMIN / DA_MANAGER.
      * Sans ce contrôle (audit 2026-09-09), n'importe quel compte authentifié pouvait créer
      * un bon d'entrée et donc incrémenter le stock d'un magasin.
-     * @throws AccesReceptionRefuseException (HTTP 403) si l'appelant n'a pas le bon rôle
+     *
+     * CLOISONNEMENT PAR SECTION (Phase B, 2026-09-14, voir docs/PROPOSITION_ROLES_SECTIONS_DA.md
+     * §4) : ceci correspond à la Section Réception du CCF (acronyme officiel SRE). Un compte
+     * ADMIN sans `fonctionDA` renseignée garde l'accès (comportement historique inchangé) ; un
+     * compte ADMIN explicitement tagué avec une AUTRE section (ex : SRR, SC…) est désormais
+     * refusé — voir {@link AccesDAUtil}.
+     * @throws AccesReceptionRefuseException (HTTP 403) si l'appelant n'a pas le bon rôle/section
      */
     private void exigerRoleDA(Authentication authentication) {
         User u = (authentication != null && authentication.getPrincipal() instanceof User user) ? user : null;
         if (u == null) throw new AccesReceptionRefuseException("Authentification requise.");
-        if (u.getRole() != Role.SUPER_ADMIN && u.getRole() != Role.ADMIN && u.getRole() != Role.DA_MANAGER) {
-            throw new AccesReceptionRefuseException("La gestion des réceptions est réservée à la Division de l'Approvisionnement.");
+        if (!AccesDAUtil.estAutorise(u, true, FonctionDA.SRE)) {
+            throw new AccesReceptionRefuseException("La gestion des réceptions est réservée à la Division de l'Approvisionnement (Section Réception).");
         }
     }
 
