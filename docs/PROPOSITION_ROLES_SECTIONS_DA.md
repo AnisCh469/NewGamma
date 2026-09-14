@@ -105,6 +105,59 @@ modèle plus structurant que le simple ajout de `FonctionDA` proposé au §2 (ç
 `SUPER_ADMIN`/`ADMIN` eux-mêmes, pas seulement une nouvelle sous-catégorie). Je préfère poser la
 question plutôt que de deviner l'intention — voir §5, question 5.
 
+### 1.3 Cartographie complète (2026-09-14) — les 8 logigrammes intégraux (P01, P03-P09)
+
+L'utilisateur a partagé les logigrammes complets de toutes les procédures restantes. Croisés avec
+le glossaire officiel (`2 Définition Abréviation.docx`, déjà extrait), ils révèlent une
+granularité **beaucoup plus fine** que le tableau des 10 groupes — chaque section a son propre
+"chef" nommé, et certaines contiennent elles-mêmes une mini-hiérarchie :
+
+| Acronyme | Signification (confirmée glossaire ou déduite du patron "chef + section") | Procédure(s) vu(es) |
+|---|---|---|
+| **CSEP** | Chef Section Étude et Prévision (chef de SEP) | P01, P03 |
+| **CSCS** | Chef Section Commande et Suivi (chef de SCS) | P03 |
+| **CSC** | Chef Section Comptabilité (chef de SC) — *confirmé glossaire* | P06, P07 |
+| **CSRR** | Chef Section Réforme et Remise (chef de SRR/SeRef) | P06, P09 |
+| **CSM** | Chef Service des Magasins (chef de MAG/SM) — *confirmé glossaire* | P04 |
+| **CR** | **Chef de Rayon** (sous-niveau dans MAG, sous CSM) en P04/P05/P08/P09 — *confirmé glossaire* — **MAIS** le même sigle désigne la **Commission de Réception** en P03 (glossaire : *« CR : commission de réception »*) : le CCF réutilise ce sigle pour deux choses différentes selon la procédure. |
+| **MCE** | Magasinier Chargé Étagère (niveau le plus bas dans MAG, sous CR) — *confirmé glossaire* | P04 |
+| **CAD** | Chef Aire de Distribution (chef d'ADEST) | P05, P08 |
+| **SSC** | Section Saisie et Contrôle — *confirmé glossaire*, **groupe absent du tableau des 10** | P05 |
+| **CRM** | Commission de Réception de Matériel (commission ad hoc désignée par l'EMAM, pas un groupe permanent) | P03 |
+| **SGSSR** | Lecture incertaine (photo) — probablement l'équivalent SGS au niveau d'un magasin régional | P08 |
+
+**Ce que ça révèle : MAG n'est pas un seul rôle, c'est une hiérarchie à 3 niveaux** (CSM → CR →
+MCE), tout comme la DA en a une à 3 niveaux dans son ensemble (CDA → GEST → sections). Reproduire
+cette profondeur en `FonctionDA` distincts (un rôle pour CSM, un pour CR, un pour MCE) serait de
+l'over-engineering pour un logiciel : le CCF a besoin de ces niveaux car **chaque étape papier
+exige une signature physique précise** ; un système numérique n'a besoin de savoir QUI (quel
+compte) peut faire QUOI (quelle action), pas de répliquer la chaîne de signatures papier
+interne à une section. **Recommandation : ne pas créer de `FonctionDA` pour CR/MCE — le compte
+`DA_MANAGER` continue de représenter tout MAG comme aujourd'hui.**
+
+**Ce qui change en revanche ma recommandation initiale : `ADEST` mérite sa propre `FonctionDA`,
+pas un simple repli sur `DA_MANAGER`.** Le §4 (recommandation 2) de ce document proposait de
+fondre `ADEST` dans `DA_MANAGER` faute de workflow distinct connu. Ce n'est plus vrai : **`CAD`
+(Chef Aire de Distribution) apparaît comme acteur responsable distinct dans DEUX procédures**
+(P05 Distribution ET P08 Réapprovisionnement régional), avec une responsabilité propre et stable
+— la remise physique au bénéficiaire ET la gestion de l'annulation après 1 mois sans retrait
+(RG072/RG105, actuellement non implémentées, voir l'audit CCF §3). C'est un signal plus fort que
+ce que j'avais au moment de la première proposition. Je corrige : **`ADEST` devient une
+`FonctionDA` à part entière dans la Phase A**, au même titre que `SEP`/`SC`/`SCS`/`SeRef`.
+
+**Ce qui ne nécessite AUCUNE modélisation nouvelle :**
+- **`SSC`** (Section Saisie et Contrôle) : son rôle historique — ressaisir manuellement une
+  demande papier reçue hors réseau (P05 OP02) — est **structurellement obsolète** dans GAMMA 3 :
+  le principe même du système est que `DDM`/`CDT` soumettent leur demande directement en ligne,
+  il n'y a plus de ressaisie manuelle à faire. Documenté ici pour la traçabilité de l'analyse,
+  mais **aucune action recommandée**.
+- **`CRM`** (Commission de Réception de Matériel) : une commission ad hoc désignée au cas par
+  cas, pas un groupe permanent avec des comptes dédiés — déjà traité par un simple champ texte
+  libre ailleurs dans GAMMA 3 (`DossierReforme.membresCommission`) ; le même patron suffirait si
+  besoin, sans nouveau rôle.
+- **`SGSSR`** : si ma lecture est correcte, c'est déjà `DA_MANAGER` (le magasinier régional, ex.
+  `magasin_centre`/`magasin_sud`) — aucun changement.
+
 ---
 
 ## 2. Ma recommandation : un `FonctionDA`, symétrique à `FonctionUnite`
@@ -219,10 +272,12 @@ traçabilité par intervenant demandée à l'origine de la gouvernance des rôle
 
 1. **Valider le principe `FonctionDA` opt-in** (plutôt qu'un `Role` éclaté en 7, ou plutôt que de
    ne rien faire et garder `ADMIN` monolithique) ?
-2. **`ADEST` : fondre dans `DA_MANAGER`, ou en faire une vraie `FonctionDA` distincte ?**
-   Recommandé : le laisser fondu dans `DA_MANAGER` pour l'instant (aucun workflow GAMMA 3 ne
-   distingue aujourd'hui "magasinier qui stocke" de "chef d'aire qui remet au bénéficiaire" — le
-   même compte fait les deux) ; séparer plus tard si l'organisation réelle le justifie.
+2. ~~`ADEST` : fondre dans `DA_MANAGER`, ou en faire une vraie `FonctionDA` distincte ?~~
+   **Tranché par les logigrammes complets (§1.3, 2026-09-14) : `ADEST` devient une `FonctionDA`
+   à part entière.** `CAD` (Chef Aire de Distribution) apparaît comme acteur responsable distinct
+   dans deux procédures (P05 ET P08), avec une responsabilité stable et propre (remise physique
+   + gestion des annulations après 1 mois) — un signal plus fort que ce que j'avais lors de la
+   première proposition, où je recommandais encore de le fondre dans `DA_MANAGER`.
 3. **Démarrer par la Phase A seule**, ou enchaîner directement A+B (Réforme/Réception restreintes
    dès cette session) ? Recommandé : A d'abord (fondations sans risque), B dans la foulée si le
    test convainc — les deux sont petits.
