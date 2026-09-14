@@ -30,6 +30,35 @@ donne-moi ta meilleure proposition. »*
 | **SeRef** | Section Réforme (DA) | Réforme et déclassement du matériel (P06) | ⚠️ Fondu dans `ADMIN`/`SUPER_ADMIN` |
 | **SR** | Section Recette (DA) | Réception du matériel (P03) | ⚠️ Fondu dans `ADMIN`/`SUPER_ADMIN`/`DA_MANAGER` |
 
+### 1.1 Confirmation par le logigramme complet de P02 (2026-09-14)
+
+L'utilisateur a partagé le logigramme intégral (pages 1/2 et 2/2) de la Procédure P02. Il **confirme
+le partage SCS/SEP déjà pressenti**, avec le détail étape par étape :
+
+| Étape | Acteur (R) | Action |
+|---|---|---|
+| 1 | **SCS** | Exploiter le CDMT |
+| 2, 3 | **SCS** | Lancer les fiches de commande ; créer les fiches de suivi et fiches signalétiques |
+| 4 | **SEP** (ou Division/Service) | Étudier les offres (5 branches : régie, bon de commande, appel d'offre, marché cadre, gré à gré) |
+| 5 | **SEP** + **SCS** (conjoint) | Mettre à jour les fiches signalétiques de commande et de suivi |
+| 6 | **SEP** | Préparer les nouvelles nomenclatures |
+| 7 | **SCS** | Mettre à jour les fiches signalétiques de commande (après notification du marché) |
+| — | **SRE** *(= SR/Section Recette, orthographe alternative rencontrée dans le texte des procédures P03)* | Réception (P03) → PV provisoire → si marché incomplet, boucle sur l'étape 7 ; si complet, PV final |
+
+**Lecture :** SCS porte tout le **cycle de vie administratif** de la commande (fiches, suivi,
+notification) ; SEP porte l'**évaluation technique** (étude des offres, nomenclatures). Les deux
+sont bien deux responsabilités distinctes, pas une hiérarchie où l'une engloberait l'autre — ce qui
+valide le choix de deux `FonctionDA` séparées plutôt qu'une seule "section commandes".
+
+**Ça ne change rien à la recommandation** : P02 reste hors périmètre actuel de GAMMA 3 (§1,
+`docs/AUDIT_CONFORMITE_CCF_2026-09-11.md`), donc `SCS` demeure une `FonctionDA` "Phase C, si P02
+est construit un jour" — ce logigramme apporte de la précision pour CE jour-là (qui devra créer/
+modifier une fiche de commande vs qui devra étudier une offre ou générer une nomenclature), sans
+avancer la priorité de ce chantier. Il confirme aussi le lien P02 → P03 déjà capté dans le premier
+audit (RG036 : *« Le PVR est provisoire pour les marchés. Un PVR définitif sera établi à
+l'expiration de la période de garantie »*) — la boucle "Incomplet" du logigramme est la
+représentation visuelle exacte de cette règle.
+
 **Constat central :** DDM/CDT (niveau unité) et MAG (niveau DA) sont déjà correctement modélisés.
 Les **7 autres groupes DA** (GEST, ADEST, SC, SCS, SEP, SeRef, SR) sont aujourd'hui fusionnés
 dans deux rôles génériques (`ADMIN`, `SUPER_ADMIN`) qui peuvent TOUT faire côté DA — violant le
