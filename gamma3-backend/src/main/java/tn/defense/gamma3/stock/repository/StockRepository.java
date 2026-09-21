@@ -22,4 +22,11 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
 
     @Query("SELECT s.item.id, SUM(s.quantite) FROM Stock s WHERE s.item.id IN :itemIds AND s.magasin.id = :magasinId GROUP BY s.item.id")
     List<Object[]> getQuantitiesByItemIdsAndMagasinId(@Param("itemIds") List<UUID> itemIds, @Param("magasinId") Long magasinId);
+
+    /** Stock total (tous magasins confondus), pour TOUS les articles ayant au moins une ligne
+     *  de stock — utilisé par la Procédure P01 (Prévisions) pour borner le calcul aux articles
+     *  réellement en circulation, plutôt que de parcourir tout le catalogue (63 000+ articles,
+     *  la plupart jamais mouvementés depuis la migration Gamma2). */
+    @Query("SELECT s.item.id, SUM(s.quantite) FROM Stock s GROUP BY s.item.id")
+    List<Object[]> getAllTotalQuantitiesByItem();
 }

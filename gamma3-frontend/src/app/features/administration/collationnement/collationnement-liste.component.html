@@ -1,0 +1,82 @@
+<div class="min-h-screen bg-slate-50 p-8">
+  <p-toast></p-toast>
+
+  <div class="mb-6 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+    <div>
+      <h1 class="text-3xl font-extrabold text-gamma-dark tracking-tight">Collationnement</h1>
+      <p class="text-slate-500 mt-1">
+        Comparaison de la dotation théorique du Plan d'Armement au constat physique d'une commission — Procédure P07 du cahier des charges.
+      </p>
+    </div>
+    <p-button label="Nouvelle campagne" icon="pi pi-plus" styleClass="p-button-primary" (onClick)="ouvrirCreation()"></p-button>
+  </div>
+
+  <div *ngIf="errorMessage" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+    <i class="pi pi-exclamation-triangle mr-2"></i>{{ errorMessage }}
+  </div>
+
+  <div class="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-slate-50 border-b border-slate-100">
+          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-left">Unité</th>
+          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-left">Date planifiée</th>
+          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-left">Statut</th>
+          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-left">Conclusion</th>
+          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-left">Date clôture</th>
+          <th class="py-3 px-4"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let c of campagnes" class="border-b border-slate-50 hover:bg-blue-50/40">
+          <td class="py-2.5 px-4 font-bold text-slate-700">{{ c.unite.nom }} ({{ c.unite.code }})</td>
+          <td class="py-2.5 px-4 text-slate-600">{{ c.datePlanifiee | date:'dd/MM/yyyy' }}</td>
+          <td class="py-2.5 px-4"><p-tag [value]="c.statut" [severity]="severiteStatut(c.statut)"></p-tag></td>
+          <td class="py-2.5 px-4">
+            <p-tag *ngIf="c.conclusionGenerale" [value]="c.conclusionGenerale === 'CONFORME' ? 'Conforme' : 'Écart constaté'" [severity]="severiteConclusion(c.conclusionGenerale)"></p-tag>
+            <span *ngIf="!c.conclusionGenerale" class="text-slate-300 italic">—</span>
+          </td>
+          <td class="py-2.5 px-4 text-slate-600">{{ c.dateCloture ? (c.dateCloture | date:'dd/MM/yyyy') : '—' }}</td>
+          <td class="py-2.5 px-4 text-right">
+            <a [routerLink]="['/administration/collationnement', c.id]" class="p-button p-button-text p-button-sm">
+              <i class="pi pi-arrow-right mr-1"></i>Ouvrir
+            </a>
+          </td>
+        </tr>
+        <tr *ngIf="!isLoading && !campagnes.length">
+          <td colspan="6" class="text-center py-12 text-slate-400">
+            <i class="pi pi-inbox text-3xl block mb-2"></i>Aucune campagne de collationnement pour l'instant.
+          </td>
+        </tr>
+        <tr *ngIf="isLoading">
+          <td colspan="6" class="text-center py-12 text-slate-400"><i class="pi pi-spin pi-spinner"></i></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<p-dialog header="Nouvelle campagne de collationnement" [(visible)]="displayCreation" [modal]="true" [style]="{width: '500px'}" styleClass="p-fluid">
+  <div class="flex flex-col gap-4 mt-2">
+    <div class="field">
+      <label class="font-bold text-gray-700 block mb-2">Unité</label>
+      <p-dropdown [options]="unites" [(ngModel)]="nouvelleCampagne.uniteId" optionLabel="nom" optionValue="id"
+                  [filter]="true" filterBy="nom,code" placeholder="Sélectionner une unité" appendTo="body" styleClass="w-full"></p-dropdown>
+    </div>
+    <div class="field">
+      <label class="font-bold text-gray-700 block mb-2">Date planifiée</label>
+      <input type="date" [(ngModel)]="nouvelleCampagne.datePlanifiee" class="w-full p-2 border border-gray-300 rounded">
+    </div>
+    <div class="field">
+      <label class="font-bold text-gray-700 block mb-2">Membres de la commission</label>
+      <textarea pInputTextarea [(ngModel)]="nouvelleCampagne.membresCommission" rows="3" class="w-full p-2 border border-gray-300 rounded" placeholder="Noms des membres désignés"></textarea>
+    </div>
+    <p class="text-xs text-slate-400 m-0">
+      Les lignes seront générées automatiquement à partir du Plan d'Armement de l'unité (dotation théorique figée à cet instant).
+    </p>
+  </div>
+  <ng-template pTemplate="footer">
+    <p-button label="Annuler" icon="pi pi-times" (onClick)="displayCreation = false" styleClass="p-button-text"></p-button>
+    <p-button label="Créer" icon="pi pi-check" [loading]="isCreation" [disabled]="!nouvelleCampagne.uniteId" (onClick)="creer()" styleClass="p-button-primary"></p-button>
+  </ng-template>
+</p-dialog>

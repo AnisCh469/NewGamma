@@ -1,0 +1,79 @@
+<div class="min-h-screen bg-slate-50 p-8">
+
+  <div class="mb-6 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+    <div>
+      <h1 class="text-3xl font-extrabold text-gamma-dark tracking-tight">Prévisions</h1>
+      <p class="text-slate-500 mt-1">
+        Articles dont le stock potentiel a atteint ou franchi leur seuil d'alerte (Sa) — Procédure
+        P01 du cahier des charges.
+        <span *ngIf="aCalcule"> {{ alertes.length }} article(s) en alerte.</span>
+      </p>
+    </div>
+    <p-button label="Calculer les prévisions" icon="pi pi-refresh"
+              styleClass="p-button-primary" [loading]="isLoading" (onClick)="calculer()"></p-button>
+  </div>
+
+  <div *ngIf="errorMessage" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+    <i class="pi pi-exclamation-triangle mr-2"></i>{{ errorMessage }}
+  </div>
+
+  <div class="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+    <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-slate-50 border-b border-slate-100">
+          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-left">Article</th>
+          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-right">Stock actuel</th>
+          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-right">Réservé</th>
+          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-right">Stock potentiel</th>
+          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-right">Seuil d'alerte (Sa)</th>
+          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-right">Cmoy3</th>
+          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-right">Ss / Smin calculés</th>
+          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-right">Stock sécurité (actuel)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let a of alertes" class="border-b border-slate-50 hover:bg-blue-50/40">
+          <td class="py-2.5 px-4">
+            <a [routerLink]="['/catalogue', a.itemId]" class="font-mono font-bold text-gamma-primary hover:underline">{{ a.nomenclature }}</a>
+            <span class="block text-xs text-slate-500">{{ a.designation }}</span>
+          </td>
+          <td class="py-2.5 px-4 text-right font-mono">{{ a.stockActuel | number:'1.0-2' }}</td>
+          <td class="py-2.5 px-4 text-right font-mono text-orange-600">{{ a.quantiteReservee | number:'1.0-2' }}</td>
+          <td class="py-2.5 px-4 text-right">
+            <p-tag [value]="(a.stockPotentiel | number:'1.0-2') + ''" [severity]="severite(a)"></p-tag>
+          </td>
+          <td class="py-2.5 px-4 text-right font-mono font-bold text-slate-700">{{ a.seuilAlerte | number:'1.0-2' }}</td>
+          <td class="py-2.5 px-4 text-right font-mono text-slate-500">{{ a.consommationMoyenneAnnuelle | number:'1.0-2' }}</td>
+          <td class="py-2.5 px-4 text-right font-mono text-slate-500">
+            <span *ngIf="a.seuilSecuriteCalcule !== null">{{ a.seuilSecuriteCalcule | number:'1.0-2' }} / {{ a.seuilMinimalCalcule | number:'1.0-2' }}</span>
+            <span *ngIf="a.seuilSecuriteCalcule === null" class="text-slate-300 italic">— (non critique)</span>
+          </td>
+          <td class="py-2.5 px-4 text-right font-mono text-slate-500">{{ a.stockSecuriteActuel | number:'1.0-2' }}</td>
+        </tr>
+        <tr *ngIf="!isLoading && aCalcule && !alertes.length">
+          <td colspan="8" class="text-center py-12 text-slate-400">
+            <i class="pi pi-check-circle text-3xl block mb-2 text-green-400"></i>Aucun article en alerte pour l'instant.
+          </td>
+        </tr>
+        <tr *ngIf="!isLoading && !aCalcule">
+          <td colspan="8" class="text-center py-12 text-slate-400">
+            <i class="pi pi-calculator text-3xl block mb-2"></i>Cliquez sur « Calculer les prévisions » pour lancer l'analyse.
+          </td>
+        </tr>
+        <tr *ngIf="isLoading">
+          <td colspan="8" class="text-center py-12 text-slate-400"><i class="pi pi-spin pi-spinner"></i></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
+    <i class="pi pi-info-circle mr-2"></i>
+    Le <strong>stock de sécurité</strong> qui bloque réellement une distribution reste une valeur
+    saisie à la main sur la fiche de l'article — le "Ss / Smin calculés" ci-dessus est la
+    référence officielle du cahier des charges, affichée à titre indicatif, jamais appliquée
+    automatiquement.
+  </div>
+</div>

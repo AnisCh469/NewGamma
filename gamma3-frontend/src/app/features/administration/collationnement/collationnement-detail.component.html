@@ -1,0 +1,97 @@
+<div class="min-h-screen bg-slate-50 p-8">
+  <p-toast></p-toast>
+
+  <div class="mb-6 flex items-center gap-3">
+    <a routerLink="/administration/collationnement" class="p-button p-button-text p-button-secondary p-button-sm">
+      <i class="pi pi-arrow-left mr-1"></i>Retour
+    </a>
+  </div>
+
+  <div *ngIf="isLoading" class="text-center py-12 text-slate-400"><i class="pi pi-spin pi-spinner text-2xl"></i></div>
+  <div *ngIf="errorMessage" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+    <i class="pi pi-exclamation-triangle mr-2"></i>{{ errorMessage }}
+  </div>
+
+  <ng-container *ngIf="!isLoading && campagne">
+    <div class="mb-6 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+      <div class="flex justify-between items-start">
+        <div>
+          <h1 class="text-2xl font-extrabold text-gamma-dark tracking-tight">
+            Collationnement — {{ campagne.unite.nom }} ({{ campagne.unite.code }})
+          </h1>
+          <p class="text-slate-500 mt-1">
+            Planifiée le {{ campagne.datePlanifiee | date:'dd/MM/yyyy' }}
+            <span *ngIf="campagne.membresCommission"> — Commission : {{ campagne.membresCommission }}</span>
+          </p>
+        </div>
+        <div class="flex flex-col items-end gap-1">
+          <p-tag [value]="campagne.statut"></p-tag>
+          <p-tag *ngIf="campagne.conclusionGenerale"
+                 [value]="campagne.conclusionGenerale === 'CONFORME' ? 'Conforme' : 'Écart constaté'"
+                 [severity]="campagne.conclusionGenerale === 'CONFORME' ? 'success' : 'danger'"></p-tag>
+        </div>
+      </div>
+      <div *ngIf="estTerminee" class="mt-4 p-3 bg-slate-50 rounded-lg text-sm text-slate-600">
+        Clôturée le {{ campagne.dateCloture | date:'dd/MM/yyyy' }}.
+        <span *ngIf="campagne.observationsGenerales"> Observations : {{ campagne.observationsGenerales }}</span>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-slate-50 border-b border-slate-100">
+            <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-left">Article</th>
+            <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-right">Dotation théorique</th>
+            <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-right">Constat physique</th>
+            <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-right">Écart</th>
+            <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-left">Observations</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let l of lignes" class="border-b border-slate-50 hover:bg-blue-50/40">
+            <td class="py-2.5 px-4">
+              <span class="font-mono font-bold text-gamma-primary">{{ l.item.nomenclature }}</span>
+              <span class="block text-xs text-slate-500">{{ l.item.designation }}</span>
+            </td>
+            <td class="py-2.5 px-4 text-right font-mono">{{ l.quantiteTheorique }}</td>
+            <td class="py-2.5 px-4 text-right">
+              <p-inputNumber *ngIf="!estTerminee" [(ngModel)]="l.quantitePhysiqueConstatee" [min]="0" styleClass="w-28"></p-inputNumber>
+              <span *ngIf="estTerminee" class="font-mono">{{ l.quantitePhysiqueConstatee ?? '—' }}</span>
+            </td>
+            <td class="py-2.5 px-4 text-right font-mono font-bold"
+                [ngClass]="{ 'text-red-600': (ecart(l) ?? 0) < 0, 'text-amber-600': (ecart(l) ?? 0) > 0, 'text-slate-400': ecart(l) === null }">
+              {{ ecart(l) === null ? '—' : (ecart(l)! > 0 ? '+' + ecart(l) : ecart(l)) }}
+            </td>
+            <td class="py-2.5 px-4">
+              <input *ngIf="!estTerminee" type="text" [(ngModel)]="l.observations" placeholder="Facultatif"
+                     class="w-full text-xs p-1.5 border border-gray-200 rounded">
+              <span *ngIf="estTerminee" class="text-xs text-slate-500">{{ l.observations || '—' }}</span>
+            </td>
+          </tr>
+          <tr *ngIf="!lignes.length">
+            <td colspan="5" class="text-center py-12 text-slate-400">Aucune ligne pour cette campagne.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="!estTerminee" class="mt-6 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-4">
+      <div class="flex justify-between items-center">
+        <p class="text-sm text-slate-500 m-0">
+          {{ toutesLignesComptees ? 'Toutes les lignes sont comptées — la campagne peut être clôturée.' : 'Certaines lignes n\'ont pas encore de constat physique.' }}
+        </p>
+        <p-button label="Enregistrer le comptage" icon="pi pi-save" styleClass="p-button-outlined"
+                  [loading]="isSavingComptage" (onClick)="enregistrerComptage()"></p-button>
+      </div>
+      <div class="border-t border-slate-100 pt-4 flex flex-col gap-2">
+        <label class="text-xs font-bold text-slate-500 uppercase">Observations générales (clôture)</label>
+        <textarea [(ngModel)]="observationsCloture" rows="2" class="w-full p-2 border border-gray-300 rounded text-sm"></textarea>
+        <div class="flex justify-end">
+          <p-button label="Clôturer la campagne" icon="pi pi-lock" styleClass="p-button-primary"
+                    [loading]="isCloture" [disabled]="!toutesLignesComptees" (onClick)="cloturer()"></p-button>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>

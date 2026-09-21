@@ -102,5 +102,23 @@ export const routes: Routes = [
     loadComponent: () => import('./features/administration/sauvegardes/sauvegardes.component').then(m => m.SauvegardesComponent),
     canActivate: [authGuard, roleGuard],
     data: { roles: ['SUPER_ADMIN'] }
+  },
+  {
+    path: 'administration/previsions',
+    loadComponent: () => import('./features/administration/previsions/previsions.component').then(m => m.PrevisionsComponent),
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['SUPER_ADMIN', 'ADMIN'] }
+  },
+  {
+    path: 'administration/collationnement',
+    loadComponent: () => import('./features/administration/collationnement/collationnement-liste.component').then(m => m.CollationnementListeComponent),
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['SUPER_ADMIN', 'ADMIN'] }
+  },
+  {
+    path: 'administration/collationnement/:id',
+    loadComponent: () => import('./features/administration/collationnement/collationnement-detail.component').then(m => m.CollationnementDetailComponent),
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['SUPER_ADMIN', 'ADMIN'] }
   }
 ];

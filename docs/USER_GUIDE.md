@@ -250,6 +250,25 @@ rôle "Administrateur Système (SUPER_ADMIN)" dans la liste déroulante).
 
 ---
 
+## 📈 Administration > Prévisions
+
+* **Accès :** Comptes ADMIN et SUPER_ADMIN, via le lien `Prévisions` du menu principal.
+* **À quoi ça sert :** Liste les articles dont le stock a atteint ou franchi leur seuil d'alerte officiel — le point à partir duquel il faut envisager un réapprovisionnement. Ce seuil est calculé automatiquement (consommation moyenne des 3 dernières années pour un consommable, 10% du parc en service pour un article d'armement), pas saisi à la main.
+* **Comment l'utiliser :** Cliquez sur `Calculer les prévisions` (le calcul porte sur tout le catalogue, il prend quelques secondes). Les articles s'affichent triés par urgence — le déficit le plus important en premier.
+* **Le stock de sécurité qui bloque une distribution reste inchangé :** cet écran affiche à titre indicatif la valeur "officielle" du seuil de sécurité, mais celle qui bloque réellement une sortie de matériel reste celle saisie sur la fiche de l'article (voir Fiche Signalétique).
+
+---
+
+## 📋 Administration > Collationnement
+
+* **Accès :** Comptes ADMIN et SUPER_ADMIN, via le lien `Collationnement` du menu principal.
+* **À quoi ça sert :** Organise la vérification périodique de ce qu'une unité détient réellement, comparé à ce que le système pense qu'elle détient (son Plan d'Armement).
+* **Lancer une campagne :** Cliquez sur `Nouvelle campagne`, choisissez l'unité et la date planifiée. La liste des articles à vérifier est générée automatiquement à partir du Plan d'Armement de l'unité au moment du lancement.
+* **Saisir le comptage :** Ouvrez la campagne, indiquez pour chaque article la quantité réellement constatée sur place. Le comptage peut se faire en plusieurs fois (bouton `Enregistrer le comptage`).
+* **Clôturer :** Une fois **toutes** les lignes comptées, le bouton `Clôturer la campagne` devient disponible. La conclusion (Conforme, ou Écart constaté) est déterminée automatiquement — vous ne la choisissez pas vous-même, elle reflète exactement ce qui a été compté.
+
+---
+
 ## ✅ Double Vérification des Demandes de Matériel (Gestionnaire + Commandant)
 
 * **Principe :** Chaque unité navigante ou corps dispose désormais de **deux comptes de connexion distincts** :

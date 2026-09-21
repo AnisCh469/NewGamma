@@ -20,5 +20,11 @@ public interface PlanArmementRepository extends JpaRepository<PlanArmement, Long
 
     @Query("SELECT p.unite.id, COUNT(p) FROM PlanArmement p GROUP BY p.unite.id")
     List<Object[]> countPlansGroupByUniteId();
+
+    /** Somme de la dotation réellement en service (tous unités confondues) par article — c'est
+     *  le "parc" (matériel en service) de la CCF RG6, utilisé pour le seuil d'alerte (Sa) d'un
+     *  article non consommable (armement/dotation). */
+    @Query("SELECT p.item.id, SUM(p.quantiteReelle) FROM PlanArmement p GROUP BY p.item.id")
+    List<Object[]> sommeQuantiteReelleParItem();
 }
 
