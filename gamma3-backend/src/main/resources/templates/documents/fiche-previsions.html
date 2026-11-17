@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title th:text="'État des Prévisions ' + ${numero}">État des Prévisions</title>
+  <style th:replace="~{documents/fragments/common :: styles}"></style>
+</head>
+<body>
+
+  <div th:replace="~{documents/fragments/common :: entete(${titre}, ${sousTitre}, ${numero}, ${dateDoc}, ${qr})}"></div>
+
+  <table class="bloc-infos">
+    <tr>
+      <td class="k">Section émettrice</td>
+      <td>
+        <span class="bold">Section Études &amp; Prévisions (SEP)</span>
+        <span class="small muted">— Division Approvisionnement</span>
+      </td>
+      <td class="k">Réf. État</td>
+      <td class="mono bold" th:text="${numero}">PREV-...</td>
+    </tr>
+    <tr>
+      <td class="k">Date de calcul</td>
+      <td th:text="${dateDoc}">--/--/----</td>
+      <td class="k">Articles en alerte</td>
+      <td><span class="bold" style="color:#b91c1c;" th:text="${totalArticles}">0</span> article(s) à réapprovisionner</td>
+    </tr>
+    <tr>
+      <td class="k">Fondement réglementaire</td>
+      <td colspan="3">
+        Procédure CCF P01 (RG3 à RG20) &bull; Seuil d'Alerte (Sa) calculé par lissage triennal (consommables) ou dotation parc (armement).
+      </td>
+    </tr>
+  </table>
+
+  <h4 class="mt-4">Articles ayant atteint ou franchi le seuil d'alerte (Stock potentiel &le; Sa)</h4>
+  <table class="articles">
+    <thead>
+      <tr>
+        <th style="width:4%">#</th>
+        <th style="width:16%">Nomenclature</th>
+        <th style="width:28%">Désignation</th>
+        <th style="width:10%" class="right">Stock Réel</th>
+        <th style="width:10%" class="right">Réservé</th>
+        <th style="width:10%" class="right">Potentiel</th>
+        <th style="width:11%" class="right">Seuil Sa</th>
+        <th style="width:11%" class="right">Cmoy3 / an</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="l : ${lignes}">
+        <td th:text="${l.rang}">1</td>
+        <td class="num-cell" th:text="${l.nomenclature}">0100AL000002</td>
+        <td th:text="${l.designation}">Désignation article</td>
+        <td class="right" th:text="${l.stockActuel}">0</td>
+        <td class="right" th:text="${l.stockReserve}">0</td>
+        <td class="right bold" style="color:#b91c1c;" th:text="${l.stockPotentiel}">0</td>
+        <td class="right bold" th:text="${l.seuilAlerte}">0</td>
+        <td class="right small" th:text="${l.cmoy3}">0</td>
+      </tr>
+      <tr th:if="${#lists.isEmpty(lignes)}">
+        <td colspan="8" class="center muted">Aucun article sous le seuil d'alerte. Situation des stocks nominale.</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="5">Total des articles critiques / en alerte :</td>
+        <td colspan="3" class="right"><span th:text="${totalArticles}">0</span> besoin(s) identifié(s)</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="note-securite">
+    <strong>Règle de gestion CCF P01 :</strong> Cet état est destiné à l'élaboration du Plan d'Approvisionnement Annuel (PADI/CDMT).
+    Le stock de sécurité légalement opposable au retrait physique reste celui figurant sur la fiche signalétique de l'article.
+  </div>
+
+  <table class="visas">
+    <tr>
+      <td style="width:50%">
+        <div class="visa-titre">Chef de Section Études &amp; Prévisions (SEP)</div>
+        <div class="visa-sous">(Établissement de l'état)</div>
+        <div class="visa-box"></div>
+      </td>
+      <td style="width:50%">
+        <div class="visa-titre">Directeur de l'Approvisionnement (DA)</div>
+        <div class="visa-sous">(Validation pour transmission EMAM/BL)</div>
+        <div class="visa-box"></div>
+      </td>
+    </tr>
+  </table>
+
+  <div th:replace="~{documents/fragments/common :: pied('Procédure P01 — Expression des Nouveaux Besoins &bull; Diffusion Interne Marine')}"></div>
+
+</body>
+</html>

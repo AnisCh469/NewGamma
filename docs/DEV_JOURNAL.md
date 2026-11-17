@@ -515,3 +515,28 @@ Ce journal répertorie les difficultés techniques rencontrées au cours du dév
 * **Cause technique racine :** Pourquoi le problème est survenu
 * **Solution retenue :** Comment le problème a été résolu (avec détails d'architecture ou de code)
 
+
+
+## Entrée : 2026-11-17 (4)
+* **Tâche :** Étape 4 de la feuille de route — Validation du Workflow Métier & Éditions Officielles (Génération PDF des Procédures CCF P01 Prévisions et P07 Collationnement).
+* **Difficulté rencontrée :** Les procédures P01 (`PrevisionService`) et P07 (`CollationnementService`) disposaient d'écrans de consultation et de saisie, mais manquaient d'éditions PDF officielles réglementaires (avec QR Code militaire, cartouche d'en-tête Marine Nationale et bloc de signatures/visas hiérarchiques). Par ailleurs, `Map.of()` en Java 21 standard est limité à 10 paires clé-valeur, ce qui a nécessité l'utilisation d'une `HashMap` mutable pour alimenter le modèle riche du PV de collationnement dans les tests unitaires automatisés.
+* **Cause technique racine :** Le générateur `DocumentPdfService` (OpenHtmlToPdf + Thymeleaf) n'avait pas encore de templates HTML pour P01 et P07, ni d'endpoints correspondants dans `DocumentController` et `DocumentDataService`.
+* **Solution retenue :**
+  1. **Templates Thymeleaf (`resources/templates/documents/`) :**
+     - `pv-collationnement.html` : Procédure P07, état contradictoire complet (unité, commission, dates, tableau dotation théorique vs constat physique, écarts, conclusions CONFORME/ÉCART CONSTATÉ, et visas Chef d'Unité / Section Comptabilité SC / Directeur DA).
+     - `fiche-previsions.html` : Procédure P01, état récapitulatif des alertes de réapprovisionnement (stock réel, réservations, stock potentiel, seuil d'alerte Sa, consommation triennale moyenne Cmoy3, rappel réglementaire du stock de sécurité et visas Chef de Section SEP / Directeur DA).
+  2. **Modélisation & Métier (`DocumentDataService.java`) :**
+     - `pvCollationnement(Long campagneId)` : injection de `CampagneCollationnementRepository` et `LigneCollationnementRepository`, calcul des agrégats (articles contrôlés, conformes, en écart), formatage des données simples pour éviter tout risque de `LazyInitializationException`.
+     - `fichePrevisions()` : injection de `PrevisionService`, mapping des `PrevisionDto` en lignes imprimables horodatées.
+  3. **Sécurisation & Cloisonnement (`DocumentController.java`) :**
+     - Endpoint `GET /api/v1/documents/pv-collationnement/{campagneId}` : vérification d'habilitation via `AccesDAUtil.estAutorise(u, true, FonctionDA.SC)` ou contrôle de concordance d'unité pour `UNIT_USER`.
+     - Endpoint `GET /api/v1/documents/fiche-previsions` : vérification d'habilitation réservée à la section `SEP` (`AccesDAUtil.estAutorise(u, false, FonctionDA.SEP)`).
+  4. **Frontend Angular :**
+     - Bouton d'impression PDF sur `CollationnementDetailComponent` activé dès que la campagne est clôturée.
+     - Bouton d'impression PDF sur `PrevisionsComponent` activé dès que le calcul a identifié des articles en alerte.
+     - Respect du Zero-Trust UI sur les deux boutons.
+  5. **Validation par Tests Automatisés :**
+     - Création de `DocumentPdfServiceTest.java` validant la génération binaire de PDF valides (`%PDF...`) pour `pv-collationnement` et `fiche-previsions`.
+     - `./gradlew test` validé à 100% (13 tests passés avec succès).
+     - `ng build` complété avec 0 erreur bloquante.
+     - Mise à jour du Guide Utilisateur (`docs/USER_GUIDE.md`).

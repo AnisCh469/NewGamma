@@ -7,8 +7,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import tn.defense.gamma3.auth.domain.FonctionDA;
 import tn.defense.gamma3.auth.domain.Role;
 import tn.defense.gamma3.auth.domain.User;
+import tn.defense.gamma3.auth.util.AccesDAUtil;
 import tn.defense.gamma3.document.service.DocumentDataService;
 import tn.defense.gamma3.document.service.DocumentPdfService;
 
@@ -63,6 +65,33 @@ public class DocumentController {
         exigerRole(auth, Role.SUPER_ADMIN, Role.ADMIN, Role.DA_MANAGER);
         Map<String, Object> model = data.facture(commandeId);
         return pdfInline(pdf.render("facture", model), (String) model.get("numero"), "bon-commande");
+    }
+
+    @GetMapping("/pv-collationnement/{campagneId}")
+    public ResponseEntity<byte[]> pvCollationnement(@PathVariable Long campagneId, Authentication auth) {
+        User u = user(auth);
+        if (u == null) throw new AccesRefuseException("Authentification requise.");
+        Map<String, Object> model = data.pvCollationnement(campagneId);
+        Long uniteId = (Long) model.get("uniteId");
+
+        boolean isDaAutorise = AccesDAUtil.estAutorise(u, true, FonctionDA.SC);
+        boolean isUniteConcernee = u.getRole() == Role.UNIT_USER && u.getUnite() != null && u.getUnite().getId().equals(uniteId);
+
+        if (!isDaAutorise && !isUniteConcernee) {
+            throw new AccesRefuseException("Accès refusé au procès-verbal de collationnement.");
+        }
+        return pdfInline(pdf.render("pv-collationnement", model), (String) model.get("numero"), "pv-collationnement");
+    }
+
+    @GetMapping("/fiche-previsions")
+    public ResponseEntity<byte[]> fichePrevisions(Authentication auth) {
+        User u = user(auth);
+        if (u == null) throw new AccesRefuseException("Authentification requise.");
+        if (!AccesDAUtil.estAutorise(u, false, FonctionDA.SEP)) {
+            throw new AccesRefuseException("L'état des prévisions est réservé à la Division de l'Approvisionnement (Section Études & Prévisions).");
+        }
+        Map<String, Object> model = data.fichePrevisions();
+        return pdfInline(pdf.render("fiche-previsions", model), (String) model.get("numero"), "fiche-previsions");
     }
 
     // ─────────────────────────── Fiches ───────────────────────────

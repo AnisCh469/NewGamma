@@ -5,6 +5,7 @@ import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { PrevisionService, AlertePrevision } from '../../../core/services/prevision.service';
 import { AuthService } from '../../../core/auth/auth.service';
+import { DocumentService } from '../../../core/services/document.service';
 
 /**
  * Écran « Administration > Prévisions » — Procédure P01 du CCF, version allégée (voir
@@ -28,6 +29,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 export class PrevisionsComponent {
   private service = inject(PrevisionService);
   public authService = inject(AuthService);
+  public documentService = inject(DocumentService);
 
   alertes: AlertePrevision[] = [];
   isLoading = false;

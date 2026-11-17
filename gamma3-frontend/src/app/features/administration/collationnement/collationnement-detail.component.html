@@ -31,9 +31,16 @@
                  [severity]="campagne.conclusionGenerale === 'CONFORME' ? 'success' : 'danger'"></p-tag>
         </div>
       </div>
-      <div *ngIf="estTerminee" class="mt-4 p-3 bg-slate-50 rounded-lg text-sm text-slate-600">
-        Clôturée le {{ campagne.dateCloture | date:'dd/MM/yyyy' }}.
-        <span *ngIf="campagne.observationsGenerales"> Observations : {{ campagne.observationsGenerales }}</span>
+      <div *ngIf="estTerminee" class="mt-4 p-4 bg-slate-50 rounded-xl text-sm text-slate-700 flex flex-wrap justify-between items-center gap-3 border border-slate-200">
+        <div>
+          <span class="font-bold">Clôturée le {{ campagne.dateCloture | date:'dd/MM/yyyy' }}.</span>
+          <span *ngIf="campagne.observationsGenerales" class="text-slate-600 block mt-0.5"> Observations : {{ campagne.observationsGenerales }}</span>
+        </div>
+        <p-button label="Imprimer le PV Officiel (PDF)"
+                  icon="pi pi-file-pdf"
+                  styleClass="p-button-danger p-button-sm"
+                  (onClick)="documentService.ouvrir('pv-collationnement/' + campagne.id)">
+        </p-button>
       </div>
     </div>
 

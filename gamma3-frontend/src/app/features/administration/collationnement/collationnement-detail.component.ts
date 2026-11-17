@@ -10,6 +10,7 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { CollationnementService, CampagneCollationnement, LigneCollationnement } from '../../../core/services/collationnement.service';
 import { AuthService } from '../../../core/auth/auth.service';
+import { DocumentService } from '../../../core/services/document.service';
 
 /**
  * Détail d'une campagne de collationnement : saisie du constat physique ligne par ligne, puis
@@ -28,6 +29,7 @@ export class CollationnementDetailComponent implements OnInit {
   private service = inject(CollationnementService);
   private messageService = inject(MessageService);
   public authService = inject(AuthService);
+  public documentService = inject(DocumentService);
 
   campagne: CampagneCollationnement | null = null;
   lignes: LigneCollationnement[] = [];

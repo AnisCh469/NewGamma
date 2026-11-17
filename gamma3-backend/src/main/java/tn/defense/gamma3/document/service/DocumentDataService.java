@@ -5,11 +5,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tn.defense.gamma3.catalogue.domain.Item;
 import tn.defense.gamma3.catalogue.repository.ItemRepository;
+import tn.defense.gamma3.collationnement.domain.CampagneCollationnement;
+import tn.defense.gamma3.collationnement.domain.LigneCollationnement;
+import tn.defense.gamma3.collationnement.repository.CampagneCollationnementRepository;
+import tn.defense.gamma3.collationnement.repository.LigneCollationnementRepository;
 import tn.defense.gamma3.distribution.domain.BonSortie;
 import tn.defense.gamma3.distribution.domain.DemandeMateriel;
 import tn.defense.gamma3.distribution.domain.LigneDemande;
 import tn.defense.gamma3.distribution.repository.DemandeMaterielRepository;
 import tn.defense.gamma3.distribution.repository.LigneDemandeRepository;
+import tn.defense.gamma3.prevision.dto.PrevisionDto;
+import tn.defense.gamma3.prevision.service.PrevisionService;
 import tn.defense.gamma3.reception.domain.*;
 import tn.defense.gamma3.reception.repository.*;
 import tn.defense.gamma3.reforme.domain.DossierReforme;
@@ -58,6 +64,9 @@ public class DocumentDataService {
     private final FournisseurRepository fournisseurRepository;
     private final ItemRepository itemRepository;
     private final UniteUtilisatriceRepository uniteRepository;
+    private final CampagneCollationnementRepository campagneCollationnementRepository;
+    private final LigneCollationnementRepository ligneCollationnementRepository;
+    private final PrevisionService previsionService;
     private final BarcodeService barcode;
 
     private static final DateTimeFormatter D = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -354,6 +363,99 @@ public class DocumentDataService {
         m.put("qr", barcode.qrCodeDataUri("UNIT:" + u.getCode(), 300));
         m.put("code128", barcode.code128DataUri(u.getCode(), 440, 70));
         m.put("genereLe", LocalDateTime.now().format(DT));
+        return m;
+    }
+
+    // ═══════════════════════════ COLLATIONNEMENT & PRÉVISIONS ═══════════════════════════
+
+    public Map<String, Object> pvCollationnement(Long campagneId) {
+        CampagneCollationnement c = campagneCollationnementRepository.findByIdWithRelations(campagneId)
+                .orElseThrow(() -> new IntrouvableException("Campagne de collationnement " + campagneId + " introuvable."));
+        UniteUtilisatrice unite = c.getUnite();
+        List<LigneCollationnement> lignes = ligneCollationnementRepository.findByCampagneId(campagneId);
+
+        String refNumero = String.format("PV-COL-%04d", c.getId());
+        String qrContenu = "PV-COL:" + c.getId()
+                + "|UNIT:" + (unite != null ? unite.getCode() : "?")
+                + "|STAT:" + c.getStatut();
+
+        Map<String, Object> m = base("PROCÈS-VERBAL DE COLLATIONNEMENT",
+                "Contrôle annuel des dotations du Plan d'Armement — Procédure CCF P07",
+                refNumero, c.getDateCloture() != null ? c.getDateCloture() : c.getDatePlanifiee(),
+                qrContenu);
+
+        m.put("uniteId", unite != null ? unite.getId() : null);
+        m.put("uniteNom", unite != null ? unite.getNom() : "—");
+        m.put("uniteCode", unite != null ? unite.getCode() : "—");
+        m.put("datePlanifiee", c.getDatePlanifiee() != null ? c.getDatePlanifiee().format(D) : "—");
+        m.put("dateCloture", c.getDateCloture() != null ? c.getDateCloture().format(D) : "Non clôturée");
+        m.put("statut", c.getStatut());
+        m.put("conclusionGenerale", ns(c.getConclusionGenerale(), "—"));
+        m.put("membresCommission", ns(c.getMembresCommission(), "Non renseignés"));
+        m.put("observationsGenerales", c.getObservationsGenerales());
+
+        List<Map<String, Object>> lignesModel = new ArrayList<>();
+        int rang = 1;
+        int conformes = 0;
+        int ecarts = 0;
+        for (LigneCollationnement l : lignes) {
+            Item item = l.getItem();
+            BigDecimal theo = nz(l.getQuantiteTheorique());
+            BigDecimal phys = l.getQuantitePhysiqueConstatee();
+            BigDecimal ecart = l.getEcart();
+
+            if (ecart != null && ecart.compareTo(BigDecimal.ZERO) != 0) {
+                ecarts++;
+            } else if (phys != null) {
+                conformes++;
+            }
+
+            Map<String, Object> lm = new LinkedHashMap<>();
+            lm.put("rang", rang++);
+            lm.put("nomenclature", item != null ? item.getNomenclature() : "—");
+            lm.put("designation", item != null ? ns(item.getDesignation()) : "—");
+            lm.put("quantiteTheorique", num(theo));
+            lm.put("quantitePhysique", phys != null ? num(phys) : "Non compté");
+            lm.put("ecart", ecart != null ? (ecart.compareTo(BigDecimal.ZERO) > 0 ? "+" + num(ecart) : num(ecart)) : "—");
+            lm.put("observations", ns(l.getObservations(), "—"));
+            lignesModel.add(lm);
+        }
+
+        m.put("lignes", lignesModel);
+        m.put("totalArticles", lignes.size());
+        m.put("totalConformes", conformes);
+        m.put("totalEcarts", ecarts);
+        return m;
+    }
+
+    public Map<String, Object> fichePrevisions() {
+        List<PrevisionDto> alertes = previsionService.calculerAlertes();
+
+        String refNumero = "PREV-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String qrContenu = "PREV:" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                + "|ALERTES:" + alertes.size();
+
+        Map<String, Object> m = base("ÉTAT DES PRÉVISIONS DE RÉAPPROVISIONNEMENT",
+                "Procédure P01 du CCF — Calcul des Seuils d'Alerte et Besoins Annuels",
+                refNumero, LocalDate.now(), qrContenu);
+
+        List<Map<String, Object>> lignesModel = new ArrayList<>();
+        int rang = 1;
+        for (PrevisionDto a : alertes) {
+            Map<String, Object> lm = new LinkedHashMap<>();
+            lm.put("rang", rang++);
+            lm.put("nomenclature", a.nomenclature());
+            lm.put("designation", ns(a.designation()));
+            lm.put("stockActuel", num(a.stockActuel()));
+            lm.put("stockReserve", num(a.quantiteReservee()));
+            lm.put("stockPotentiel", num(a.stockPotentiel()));
+            lm.put("seuilAlerte", num(a.seuilAlerte()));
+            lm.put("cmoy3", num(a.consommationMoyenneAnnuelle()));
+            lignesModel.add(lm);
+        }
+
+        m.put("lignes", lignesModel);
+        m.put("totalArticles", alertes.size());
         return m;
     }
 

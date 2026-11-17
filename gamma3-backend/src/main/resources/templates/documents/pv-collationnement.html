@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <title th:text="'PV de Collationnement ' + ${numero}">PV de Collationnement</title>
+  <style th:replace="~{documents/fragments/common :: styles}"></style>
+</head>
+<body>
+
+  <div th:replace="~{documents/fragments/common :: entete(${titre}, ${sousTitre}, ${numero}, ${dateDoc}, ${qr})}"></div>
+
+  <table class="bloc-infos">
+    <tr>
+      <td class="k">Unité contrôlée</td>
+      <td>
+        <span class="bold" th:text="${uniteNom}">Unité</span>
+        <span class="mono small" th:text="'(' + ${uniteCode} + ')'">(CODE)</span>
+      </td>
+      <td class="k">Réf. Campagne</td>
+      <td class="mono bold" th:text="${numero}">PV-COL-0001</td>
+    </tr>
+    <tr>
+      <td class="k">Date planifiée</td>
+      <td th:text="${datePlanifiee}">--/--/----</td>
+      <td class="k">Date de clôture</td>
+      <td th:text="${dateCloture}">--/--/----</td>
+    </tr>
+    <tr>
+      <td class="k">Statut de la campagne</td>
+      <td th:text="${statut}">TERMINEE</td>
+      <td class="k">Conclusion générale</td>
+      <td>
+        <span th:if="${conclusionGenerale == 'CONFORME'}" class="bold" style="color:#0b3d2c;">CONFORME (Aucun écart)</span>
+        <span th:if="${conclusionGenerale == 'ECART_CONSTATE'}" class="bold" style="color:#b91c1c;">ÉCART CONSTATÉ</span>
+        <span th:if="${conclusionGenerale != 'CONFORME' and conclusionGenerale != 'ECART_CONSTATE'}" th:text="${conclusionGenerale}">--</span>
+      </td>
+    </tr>
+    <tr>
+      <td class="k">Membres de la commission</td>
+      <td colspan="3" th:text="${membresCommission}">Commission de collationnement</td>
+    </tr>
+    <tr th:if="${observationsGenerales}">
+      <td class="k">Observations de clôture</td>
+      <td colspan="3" th:text="${observationsGenerales}">—</td>
+    </tr>
+  </table>
+
+  <h4 class="mt-4">Résultats du constat contradictoire physique vs. dotation théorique</h4>
+  <table class="articles">
+    <thead>
+      <tr>
+        <th style="width:4%">#</th>
+        <th style="width:18%">Nomenclature</th>
+        <th style="width:34%">Désignation</th>
+        <th style="width:12%" class="right">Dotation Réf.</th>
+        <th style="width:12%" class="right">Physique</th>
+        <th style="width:8%" class="right">Écart</th>
+        <th style="width:12%">Constats</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="l : ${lignes}">
+        <td th:text="${l.rang}">1</td>
+        <td class="num-cell" th:text="${l.nomenclature}">0100AL000002</td>
+        <td th:text="${l.designation}">Désignation article</td>
+        <td class="right" th:text="${l.quantiteTheorique}">0</td>
+        <td class="right bold" th:text="${l.quantitePhysique}">0</td>
+        <td class="right bold" th:text="${l.ecart}">0</td>
+        <td class="small" th:text="${l.observations}">—</td>
+      </tr>
+      <tr th:if="${#lists.isEmpty(lignes)}">
+        <td colspan="7" class="center muted">Aucun article au Plan d'Armement de cette unité.</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3">Bilan : <span th:text="${totalArticles}">0</span> article(s) contrôlé(s)</td>
+        <td colspan="2" class="right">Conformes : <span th:text="${totalConformes}">0</span></td>
+        <td colspan="2" class="right" style="color:#b91c1c;">En écart : <span th:text="${totalEcarts}">0</span></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <table class="visas">
+    <tr>
+      <td>
+        <div class="visa-titre">Le Chef de l'Unité</div>
+        <div class="visa-sous">(Visa &amp; Signature)</div>
+        <div class="visa-box"></div>
+      </td>
+      <td>
+        <div class="visa-titre">Président de Commission</div>
+        <div class="visa-sous">Section Comptabilité (SC)</div>
+        <div class="visa-box"></div>
+      </td>
+      <td>
+        <div class="visa-titre">Directeur de l'Approvisionnement</div>
+        <div class="visa-sous">(Approbation définitive)</div>
+        <div class="visa-box"></div>
+      </td>
+    </tr>
+  </table>
+
+  <div th:replace="~{documents/fragments/common :: pied('Procédure P07 — Collationnement Annuel &bull; Document officiel de contrôle comptable')}"></div>
+
+</body>
+</html>
