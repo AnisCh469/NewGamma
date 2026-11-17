@@ -959,7 +959,7 @@ infirmer table par table via `Administration > Audit Gamma2`.
 | 1 | ~~Pas de Flyway/Liquibase~~ **Flyway introduit le 2026-09-09** ; `ddl-auto` encore sur `update` (transition) | Résiduel : tant que le baseline complet n'est pas écrit et `ddl-auto` pas passé à `validate`, Hibernate peut encore appliquer des changements de schéma non tracés | 6.6 |
 | 2 | Import initial des 63 283 `Item` non rejouable, non tracé en code | Impossible de reconstruire le catalogue depuis zéro sans la sauvegarde de base actuelle | 7.1 |
 | 3 | `BonSortie.magasinId` sans relation JPA | Pas de contrainte d'intégrité référentielle, navigation Java impossible | 6.7 |
-| 4 | Aucun index déclaré (`@Index`) sur l'ensemble du schéma (vérifié par recherche exhaustive) | Risque de dégradation de performance sur les colonnes fréquemment filtrées (`nomenclature`, `statut`, `unite_id`, `matricule`) à mesure que le volume augmente — seules les contraintes `UNIQUE` créent un index implicite | tout le document |
+| 4 | ~~Aucun index déclaré~~ **12 index critiques ajoutés le 2026-11-17 (Flyway V5 & JPA)** | Résolu : index B-Tree composites créés sur les tables volumineuses (`mouvements_stock`, `demandes_materiel`, `lignes_demande`, `plans_armement`, `stocks`, `users`, `journal_audit`) | 10.2 |
 | 5 | `DemandeDotation` vs `DemandeMateriel` — nommage très proche | Confusion probable pour un nouveau développeur (deux entités, deux tables, deux workflows différents portant des noms presque identiques) | 4.5 |
 | 6 | Statuts en `String` brut sans enum ni contrainte `CHECK` (`DemandeDotation.statut`, `BonSortie.statut`, `DossierReforme.statut`/`.decisionCommission`) | Une valeur mal orthographiée passe silencieusement en base, aucune erreur de compilation ni de contrainte SQL pour la détecter | 5 |
 | 7 | `Notification` sans FK réelle (`uniteCode` en texte, `referenceId` polymorphe non typé) | Un changement de `code` sur une `UniteUtilisatrice` existante casse silencieusement le ciblage des notifications déjà en base | 4.9 |
@@ -978,11 +978,15 @@ infirmer table par table via `Administration > Audit Gamma2`.
    (b) une fois le schéma entièrement couvert par des scripts, passer
    `spring.jpa.hibernate.ddl-auto` de `update` à `validate` pour qu'Hibernate ne modifie
    plus jamais le schéma de lui-même.
-2. **Ajouter les index manquants** en priorité sur : `items.nomenclature` (déjà indexé via
-   `UNIQUE`, mais un index composé sur les 5 segments décodés serait utile si des filtres par
-   classe/sous-classe deviennent fréquents), `demandes_materiel.statut` +
-   `demandes_materiel.unite_id` (filtrés à chaque affichage de liste), `users.unite_id` +
-   `users.fonction_unite` (filtrés à chaque contrôle d'accès du workflow de double validation).
+2. ✅ **Index de performance critiques ajoutés le 2026-11-17** (Migration Flyway `V5` + annotations
+   `@Table(indexes = { ... })` sur les entités JPA) :
+   - `mouvements_stock` : `(item_id, date_mouvement, type_mouvement)` et `(magasin_id, date_mouvement)`
+   - `demandes_materiel` : `(unite_id, statut)`, `(statut, date_demande)`, `(magasin_designe_id)`
+   - `lignes_demande` : `(demande_id)`, `(item_id)`
+   - `plans_armement` : `(item_id)`
+   - `stocks` : `(magasin_id)`
+   - `users` : `(unite_id, fonction_unite)`
+   - `journal_audit` : `(date_evenement DESC)`, `(acteur_matricule)`
 3. **Corriger `BonSortie.magasinId`** en véritable `@ManyToOne` vers `Magasin`, après
    validation de l'équipe fonctionnelle (impact sur les données déjà en base à vérifier).
 4. **Documenter ou refactorer les 3 champs `String` de statut restants** (`DemandeDotation`,

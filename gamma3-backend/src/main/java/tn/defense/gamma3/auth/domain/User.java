@@ -12,7 +12,9 @@ import java.util.Collection;
 import java.util.List;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", indexes = {
+    @Index(name = "idx_users_unite_fonction", columnList = "unite_id, fonction_unite")
+})
 @Data
 @Builder
 @NoArgsConstructor

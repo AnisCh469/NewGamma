@@ -7,7 +7,10 @@ import tn.defense.gamma3.catalogue.domain.Item;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "lignes_demande")
+@Table(name = "lignes_demande", indexes = {
+    @Index(name = "idx_lignes_demande_demande_id", columnList = "demande_id"),
+    @Index(name = "idx_lignes_demande_item_id", columnList = "item_id")
+})
 @Data
 @Builder
 @NoArgsConstructor

@@ -12,7 +12,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "mouvements_stock")
+@Table(name = "mouvements_stock", indexes = {
+    @Index(name = "idx_mouvements_stock_item_date_type", columnList = "item_id, date_mouvement, type_mouvement"),
+    @Index(name = "idx_mouvements_stock_magasin_date", columnList = "magasin_id, date_mouvement")
+})
 @Data
 @Builder
 @NoArgsConstructor

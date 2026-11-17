@@ -18,7 +18,10 @@ import java.time.LocalDateTime;
  * {@code JournalAuditService.enregistrer(...)}.
  */
 @Entity
-@Table(name = "journal_audit")
+@Table(name = "journal_audit", indexes = {
+    @Index(name = "idx_journal_audit_date", columnList = "date_evenement DESC"),
+    @Index(name = "idx_journal_audit_acteur", columnList = "acteur_matricule")
+})
 @Data
 @Builder
 @NoArgsConstructor

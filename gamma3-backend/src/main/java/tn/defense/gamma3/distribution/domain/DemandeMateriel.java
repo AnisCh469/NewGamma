@@ -10,7 +10,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "demandes_materiel")
+@Table(name = "demandes_materiel", indexes = {
+    @Index(name = "idx_demandes_materiel_unite_statut", columnList = "unite_id, statut"),
+    @Index(name = "idx_demandes_materiel_statut_date", columnList = "statut, date_demande"),
+    @Index(name = "idx_demandes_materiel_magasin", columnList = "magasin_designe_id")
+})
 @Data
 @Builder
 @NoArgsConstructor

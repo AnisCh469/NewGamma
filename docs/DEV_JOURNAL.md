@@ -491,6 +491,23 @@ Ce journal répertorie les difficultés techniques rencontrées au cours du dév
      - Collationnement : boutons *Nouvelle campagne*, *Enregistrer le comptage* et *Clôturer la campagne* réservés à la section SC.
   6. **Documentation & Validation :** Mise à jour du Guide Utilisateur (`docs/USER_GUIDE.md`). Validation de compilation et de tests : backend `BUILD SUCCESSFUL` (11/11 tests passés), frontend `ng build` complété avec 0 erreur bloquante.
 
+## Entrée : 2026-11-17 (3)
+* **Tâche :** Étape 3 de la feuille de route — Optimisation & Indexation SQL (Migration Flyway V5 pour tables à fort volume).
+* **Difficulté rencontrée :** Risque critique de saturation et dégradation des temps de réponse sur les tables volumineuses (163 000+ mouvements de stock, 63 000+ articles du catalogue, historique des demandes et journal d'audit) en raison de l'absence totale d'index B-Tree explicites hors contraintes `UNIQUE` (lacune relevée dans `DATABASE_ARCHITECTURE.md` §9.4). Les calculs d'agrégats de P01 (`PrevisionService` par lissage sur 3 ans), le filtrage des demandes par unité/statut et le contrôle d'accès Commandant/Gestionnaire imposaient des scans séquentiels intégaux de tables (*Sequential Scan*).
+* **Cause technique racine :** Sous PostgreSQL, les contraintes de clés étrangères (`FOREIGN KEY`) ne génèrent aucun index implicite. De plus, aucune entité JPA ne déclarait d'annotation `@Index` dans `@Table`.
+* **Solution retenue :**
+  1. **Migration Flyway V5 :** Création du script versionné `V5__ajoute_index_performance_critiques.sql` posant 12 index composites indispensables :
+     - `mouvements_stock` : `(item_id, date_mouvement, type_mouvement)` et `(magasin_id, date_mouvement)`.
+     - `demandes_materiel` : `(unite_id, statut)`, `(statut, date_demande)` et `(magasin_designe_id)`.
+     - `lignes_demande` : `(demande_id)` et `(item_id)`.
+     - `plans_armement` : `(item_id)`.
+     - `stocks` : `(magasin_id)`.
+     - `users` : `(unite_id, fonction_unite)`.
+     - `journal_audit` : `(date_evenement DESC)` et `(acteur_matricule)`.
+     Garde défensive `DO $$ BEGIN IF to_regclass(...) IS NOT NULL THEN CREATE INDEX IF NOT EXISTS ... END $$;` garantissant l'innocuité sur base vierge et l'optimisation immédiate sur base existante.
+  2. **Synchronisation JPA :** Déclaration formelle des index sur chaque entité Java (`MouvementStock`, `DemandeMateriel`, `LigneDemande`, `PlanArmement`, `Stock`, `User`, `JournalAudit`) pour assurer la cohérence entre le modèle objet et le schéma relationnel.
+  3. **Application & Validation :** Migration Flyway V5 exécutée avec succès (`now at version v5`). Présence des 12 index vérifiée dans `pg_indexes` et `flyway_schema_history`. Tests automatisés `./gradlew test` validés à 100% (11/11 tests passés). Mise à jour de `docs/DATABASE_ARCHITECTURE.md`.
+
 ## [Modèle d'Entrée]
 * **Date :** AAAA-MM-JJ
 * **Tâche :** Description de la tâche ou de la fonctionnalité
