@@ -292,3 +292,15 @@ rôle "Administrateur Système (SUPER_ADMIN)" dans la liste déroulante).
   * la **Fonction** : Gestionnaire ou Commandant.
 * Le matricule est libre pour les deux comptes (il n'est plus obligatoirement égal au code de l'unité).
 * Un seul compte actif par (unité, fonction) est autorisé : impossible de créer deux Gestionnaires ou deux Commandants actifs pour la même unité — bloquez d'abord l'ancien compte pour en créer un nouveau.
+
+---
+
+## 🔒 Cloisonnement des Sections de l'Approvisionnement (Zero-Trust UI)
+
+* **Principe :** Pour respecter la séparation stricte des fonctions au sein de la Direction de l'Approvisionnement (DA), l'interface s'adapte automatiquement à la section à laquelle votre compte est rattaché. Aucun bouton d'action ou menu non autorisé ne vous sera présenté :
+  * **Section Réceptions (SRE) :** Vous visualisez l'onglet `Réceptions` et pouvez créer des BPR, enregistrer les PV de commission technique et générer les Bons d'Entrée (BE). Les modules Réforme, Prévisions et Collationnement ne vous sont pas présentés.
+  * **Section Réformes et Rebuts (SRR) :** Vous visualisez l'onglet `Réforme` et pouvez examiner les dossiers de réforme et acter les décisions de commission. Les modules Réception, Prévisions et Collationnement sont masqués.
+  * **Section Études et Prévisions (SEP) :** Vous visualisez l'onglet `Prévisions` et pouvez déclencher le calcul des seuils d'alerte.
+  * **Section Comptabilité (SC) :** Vous visualisez l'onglet `Collationnement` et pouvez créer de nouvelles campagnes d'inventaire, consigner les comptages physiques et clôturer les campagnes.
+  * **Comptes Généraux (SUPER_ADMIN ou ADMIN Gestionnaire en Chef GEST / ADEST) :** Conservent une vue et des actions complètes sur l'ensemble des modules DA pour supervision et arbitrage transversal.
+

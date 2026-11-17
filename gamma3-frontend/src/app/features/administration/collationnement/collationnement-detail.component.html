@@ -81,14 +81,14 @@
         <p class="text-sm text-slate-500 m-0">
           {{ toutesLignesComptees ? 'Toutes les lignes sont comptées — la campagne peut être clôturée.' : 'Certaines lignes n\'ont pas encore de constat physique.' }}
         </p>
-        <p-button label="Enregistrer le comptage" icon="pi pi-save" styleClass="p-button-outlined"
+        <p-button *ngIf="authService.hasSectionAccess(['SC'], false)" label="Enregistrer le comptage" icon="pi pi-save" styleClass="p-button-outlined"
                   [loading]="isSavingComptage" (onClick)="enregistrerComptage()"></p-button>
       </div>
       <div class="border-t border-slate-100 pt-4 flex flex-col gap-2">
         <label class="text-xs font-bold text-slate-500 uppercase">Observations générales (clôture)</label>
         <textarea [(ngModel)]="observationsCloture" rows="2" class="w-full p-2 border border-gray-300 rounded text-sm"></textarea>
         <div class="flex justify-end">
-          <p-button label="Clôturer la campagne" icon="pi pi-lock" styleClass="p-button-primary"
+          <p-button *ngIf="authService.hasSectionAccess(['SC'], false)" label="Clôturer la campagne" icon="pi pi-lock" styleClass="p-button-primary"
                     [loading]="isCloture" [disabled]="!toutesLignesComptees" (onClick)="cloturer()"></p-button>
         </div>
       </div>

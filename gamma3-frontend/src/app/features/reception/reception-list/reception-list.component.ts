@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ReceptionService, BonProvisoireReception } from '../../../core/services/reception.service';
+import { AuthService } from '../../../core/auth/auth.service';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -15,6 +16,7 @@ import { TagModule } from 'primeng/tag';
 })
 export class ReceptionListComponent implements OnInit {
   private receptionService = inject(ReceptionService);
+  public authService = inject(AuthService);
 
   bprs: BonProvisoireReception[] = [];
   loading: boolean = true;

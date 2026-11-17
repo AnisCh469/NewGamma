@@ -20,6 +20,9 @@ import { AuthService } from '../auth/auth.service';
  *
  * Un objet `data.fonctionsUnite` optionnel permet de restreindre en plus par fonction
  * d'unité (GESTIONNAIRE / COMMANDANT) pour les comptes UNIT_USER.
+ *
+ * Un objet `data.sectionsDA` optionnel (ex: ['SRR'], ['SRE']) permet de restreindre
+ * par section spécialisée DA pour les comptes ADMIN (Zero-Trust UI).
  */
 export const roleGuard: CanActivateFn = (route, _state) => {
   const authService = inject(AuthService);
@@ -44,6 +47,15 @@ export const roleGuard: CanActivateFn = (route, _state) => {
     (!user.fonctionUnite || !fonctionsAutorisees.includes(user.fonctionUnite))
   ) {
     return router.createUrlTree(['/catalogue']);
+  }
+
+  // ─── Contrôle Zero-Trust UI par section DA (Phase B CCF) ─────────────────
+  const sectionsDAAutorisees = route.data?.['sectionsDA'];
+  if (sectionsDAAutorisees && sectionsDAAutorisees.length > 0) {
+    const daManagerAutorise = route.data?.['daManagerAutorise'] ?? true;
+    if (!authService.hasSectionAccess(sectionsDAAutorisees, daManagerAutorise)) {
+      return router.createUrlTree(['/catalogue']);
+    }
   }
 
   return true;

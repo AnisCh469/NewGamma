@@ -12,6 +12,7 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { CollationnementService, CampagneCollationnement } from '../../../core/services/collationnement.service';
 import { UniteService, UniteUtilisatrice } from '../../../core/services/unite.service';
+import { AuthService } from '../../../core/auth/auth.service';
 
 /**
  * Écran « Administration > Collationnement » — liste des campagnes (Procédure P07 du CCF,
@@ -30,6 +31,7 @@ export class CollationnementListeComponent implements OnInit {
   private service = inject(CollationnementService);
   private uniteService = inject(UniteService);
   private messageService = inject(MessageService);
+  public authService = inject(AuthService);
 
   campagnes: CampagneCollationnement[] = [];
   unites: UniteUtilisatrice[] = [];

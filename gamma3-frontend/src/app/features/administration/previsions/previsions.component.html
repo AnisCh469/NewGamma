@@ -9,7 +9,7 @@
         <span *ngIf="aCalcule"> {{ alertes.length }} article(s) en alerte.</span>
       </p>
     </div>
-    <p-button label="Calculer les prévisions" icon="pi pi-refresh"
+    <p-button *ngIf="authService.hasSectionAccess(['SEP'], false)" label="Calculer les prévisions" icon="pi pi-refresh"
               styleClass="p-button-primary" [loading]="isLoading" (onClick)="calculer()"></p-button>
   </div>
 

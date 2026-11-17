@@ -14,7 +14,7 @@
         <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-500 transition-colors z-10"></i>
         <input pInputText type="text" (input)="dtBprs.filterGlobal($any($event.target).value, 'contains')" placeholder="Rechercher un BPR, Fournisseur..." class="w-full pl-11 pr-4 py-3 bg-gray-50 border-gray-200 hover:bg-white focus:bg-white rounded-xl transition-all shadow-none">
       </div>
-      <p-button icon="pi pi-plus" label="Nouvelle Réception" styleClass="p-button-primary font-bold rounded-xl px-6 py-3" routerLink="/receptions/new"></p-button>
+      <p-button *ngIf="authService.hasSectionAccess(['SRE'], true)" icon="pi pi-plus" label="Nouvelle Réception" styleClass="p-button-primary font-bold rounded-xl px-6 py-3" routerLink="/receptions/new"></p-button>
     </div>
   </div>
 

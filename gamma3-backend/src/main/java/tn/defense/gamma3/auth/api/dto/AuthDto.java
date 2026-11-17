@@ -6,7 +6,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import tn.defense.gamma3.auth.domain.Role;
 import tn.defense.gamma3.auth.domain.FonctionUnite;
+import tn.defense.gamma3.auth.domain.FonctionDA;
 
+/**
+ * Objets de Transfert de Données (DTO) pour le module d'authentification et de session.
+ * Centralise les requêtes de connexion, validation TOTP 2FA et la réponse d'habilitation complète.
+ */
 public class AuthDto {
 
     @Data
@@ -36,6 +41,12 @@ public class AuthDto {
         private Long uniteId;
         private String uniteCode;
         private FonctionUnite fonctionUnite;
+
+        // ─── Rattachement Section DA (pour Role.ADMIN) ─────────────────────────
+        // RÔLE : Indique la section spécialisée de la Direction de l'Approvisionnement
+        //        (SRR, SRE, SEP, SC, SCS, GEST, ADEST). Permet au frontend de respecter
+        //        le principe Zero-Trust UI en masquant les modules hors habilitation.
+        private FonctionDA fonctionDA;
     }
 
     @Data

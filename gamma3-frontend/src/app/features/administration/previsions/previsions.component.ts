@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { PrevisionService, AlertePrevision } from '../../../core/services/prevision.service';
+import { AuthService } from '../../../core/auth/auth.service';
 
 /**
  * Écran « Administration > Prévisions » — Procédure P01 du CCF, version allégée (voir
@@ -26,6 +27,7 @@ import { PrevisionService, AlertePrevision } from '../../../core/services/previs
 })
 export class PrevisionsComponent {
   private service = inject(PrevisionService);
+  public authService = inject(AuthService);
 
   alertes: AlertePrevision[] = [];
   isLoading = false;

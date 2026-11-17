@@ -47,7 +47,7 @@
             <p-tag [severity]="getDecisionSeverity(dossier.decisionCommission)" [value]="getDecisionLabel(dossier.decisionCommission)"></p-tag>
           </td>
           <td class="py-2.5 px-4 text-xs text-right space-x-1.5 whitespace-nowrap">
-            <button *ngIf="dossier.statut === 'SOUMIS'" pButton icon="pi pi-check-square" 
+            <button *ngIf="dossier.statut === 'SOUMIS' && authService.hasSectionAccess(['SRR'], true)" pButton icon="pi pi-check-square" 
                     class="p-button-sm p-button-outlined" label="Examen Commission" 
                     (click)="openCommissionModal(dossier)"></button>
             <button *ngIf="dossier.statut === 'TRAITE'" pButton icon="pi pi-print" 
@@ -188,7 +188,7 @@
     <ng-template pTemplate="footer">
       <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
         <button pButton label="Fermer" class="p-button-text p-button-secondary" (click)="displayCommissionDialog = false"></button>
-        <button *ngIf="selectedDossier?.statut === 'SOUMIS'" pButton label="Acter la Décision" icon="pi pi-check" 
+        <button *ngIf="selectedDossier?.statut === 'SOUMIS' && authService.hasSectionAccess(['SRR'], true)" pButton label="Acter la Décision" icon="pi pi-check" 
                 class="p-button-primary" (click)="saveCommissionDecision()"></button>
       </div>
     </ng-template>

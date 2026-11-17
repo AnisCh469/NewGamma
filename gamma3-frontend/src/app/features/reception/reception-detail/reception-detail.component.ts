@@ -56,7 +56,7 @@ export class ReceptionDetailComponent implements OnInit {
   private receptionService = inject(ReceptionService);
   private fournisseurService = inject(FournisseurService);
   private marcheService = inject(MarcheService);
-  private authService = inject(AuthService);
+  public authService = inject(AuthService);
   private messageService = inject(MessageService);
   private http = inject(HttpClient);
   private documentService = inject(DocumentService);

@@ -75,6 +75,7 @@ public class AuthenticationService {
                     .uniteId(user.getUnite() != null ? user.getUnite().getId() : null)
                     .uniteCode(user.getUnite() != null ? user.getUnite().getCode() : null)
                     .fonctionUnite(user.getFonctionUnite())
+                    .fonctionDA(user.getFonctionDA())
                     .build();
         }
 
@@ -89,6 +90,7 @@ public class AuthenticationService {
                 .uniteId(user.getUnite() != null ? user.getUnite().getId() : null)
                 .uniteCode(user.getUnite() != null ? user.getUnite().getCode() : null)
                 .fonctionUnite(user.getFonctionUnite())
+                .fonctionDA(user.getFonctionDA())
                 .build();
     }
 
@@ -124,6 +126,7 @@ public class AuthenticationService {
                 .uniteId(user.getUnite() != null ? user.getUnite().getId() : null)
                 .uniteCode(user.getUnite() != null ? user.getUnite().getCode() : null)
                 .fonctionUnite(user.getFonctionUnite())
+                .fonctionDA(user.getFonctionDA())
                 .build();
     }
 

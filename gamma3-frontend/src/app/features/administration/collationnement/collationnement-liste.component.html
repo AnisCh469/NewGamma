@@ -8,7 +8,7 @@
         Comparaison de la dotation théorique du Plan d'Armement au constat physique d'une commission — Procédure P07 du cahier des charges.
       </p>
     </div>
-    <p-button label="Nouvelle campagne" icon="pi pi-plus" styleClass="p-button-primary" (onClick)="ouvrirCreation()"></p-button>
+    <p-button *ngIf="authService.hasSectionAccess(['SC'], false)" label="Nouvelle campagne" icon="pi pi-plus" styleClass="p-button-primary" (onClick)="ouvrirCreation()"></p-button>
   </div>
 
   <div *ngIf="errorMessage" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">

@@ -474,6 +474,23 @@ Ce journal répertorie les difficultés techniques rencontrées au cours du dév
   4. Re-test complet du build frontend Angular : `Application bundle generation complete`, 0 erreur bloquante.
   5. Vérification des conteneurs Docker (`gamma3_postgres` sur port 5433 avec ses 28 tables et 5 migrations Flyway appliquées, `gamma3_sqlserver` sur port 1434).
 
+## Entrée : 2026-11-17 (2)
+* **Tâche :** Étape 2 de la feuille de route — Respect strict du principe "Zero-Trust UI" sur le cloisonnement par section de la Direction de l'Approvisionnement (SRE, SRR, SEP, SC).
+* **Difficulté rencontrée :** Bien que le backend interdise l'accès aux sections non autorisées via HTTP 403 (`AccesDAUtil.estAutorise`), le frontend Angular affichait encore tous les liens de menu dans la barre de navigation et tous les boutons d'action (création de BPR, PV de commission, clôture de collationnement, calcul des prévisions) aux opérateurs non habilités. Cela violait la règle système Zero-Trust UI (`.antigravityrules` §1). De plus, l'objet de session client (`AuthResponse`) ne recevait pas le champ `fonctionDA` lors de l'authentification.
+* **Cause technique racine :** Le DTO d'authentification backend `AuthDto.AuthResponse` n'exposait pas l'attribut `User.fonctionDA`. Le routeur Angular (`roleGuard`) et les templates HTML ne disposaient d'aucun moyen réactif pour évaluer l'habilitation de section de l'opérateur connecté.
+* **Solution retenue :**
+  1. **Backend :** Ajout de `fonctionDA` (`FonctionDA`) dans `AuthDto.AuthResponse`. Alimentation systématique dans `AuthenticationService.java` lors des flux d'authentification mot de passe et validation 2FA TOTP.
+  2. **Service d'Authentification Frontend :** Ajout de `fonctionDA` dans l'interface `AuthResponse` de `auth.service.ts` et implémentation de la méthode `hasSectionAccess(sections, daManagerAutorise = true)`. Cette méthode réplique fidèlement la matrice de décision d'`AccesDAUtil` (accès total `SUPER_ADMIN` et `ADMIN` non restreint ou `GEST`, accès conditionné à la section pour `ADMIN` restreint, contrôle d'habilitation pour `DA_MANAGER`).
+  3. **Garde de Route Angular :** Extension de `roleGuard.ts` pour évaluer `route.data['sectionsDA']` et rediriger préventivement vers `/catalogue` si l'opérateur tente un accès direct par URL.
+  4. **Routes Protégées (`app.routes.ts`) :** Renseignement de `sectionsDA` sur `/receptions` (`SRE`), `/reformes` (`SRR`), `/administration/previsions` (`SEP`) et `/administration/collationnement` (`SC`).
+  5. **Zero-Trust UI sur les Vues :**
+     - Barre de navigation (`app.component.html`) : liens Réceptions, Réforme, Prévisions, Collationnement conditionnés par `authService.hasSectionAccess(...)`.
+     - Réception : boutons *Nouvelle Réception*, *Créer le BPR*, *Enregistrer le PV*, *Générer BE & Mettre en Stock* réservés à la section SRE.
+     - Réforme : boutons *Examen Commission* et *Acter la Décision* réservés à la section SRR.
+     - Prévisions : bouton *Calculer les prévisions* réservé à la section SEP.
+     - Collationnement : boutons *Nouvelle campagne*, *Enregistrer le comptage* et *Clôturer la campagne* réservés à la section SC.
+  6. **Documentation & Validation :** Mise à jour du Guide Utilisateur (`docs/USER_GUIDE.md`). Validation de compilation et de tests : backend `BUILD SUCCESSFUL` (11/11 tests passés), frontend `ng build` complété avec 0 erreur bloquante.
+
 ## [Modèle d'Entrée]
 * **Date :** AAAA-MM-JJ
 * **Tâche :** Description de la tâche ou de la fonctionnalité

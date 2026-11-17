@@ -4,6 +4,8 @@ import { Observable, tap } from 'rxjs';
 import { Router } from '@angular/router';
 
 import { environment } from '../../../environments/environment';
+export type FonctionDACode = 'GEST' | 'ADEST' | 'SC' | 'SCS' | 'SEP' | 'SRR' | 'SRE';
+
 export interface AuthResponse {
   token: string;
   matricule: string;
@@ -16,6 +18,10 @@ export interface AuthResponse {
   uniteId?: number | null;
   uniteCode?: string | null;
   fonctionUnite?: 'GESTIONNAIRE' | 'COMMANDANT' | null;
+  /** Section spécialisée Direction de l'Approvisionnement (ADMIN uniquement) — voir
+   *  User.fonctionDA côté backend. Permet au frontend de respecter le principe Zero-Trust UI
+   *  en masquant les modules et boutons d'action hors habilitation de section. */
+  fonctionDA?: FonctionDACode | null;
 }
 
 export interface LoginRequest {
@@ -128,6 +134,38 @@ export class AuthService {
 
   isAuthenticated(): boolean {
     return !!this.getToken();
+  }
+
+  /**
+   * RÔLE : Vérifie si l'utilisateur actuellement connecté est habilité à accéder
+   * à une ressource ou action rattachée à une (ou plusieurs) section(s) DA.
+   *
+   * CONFORMITÉ ZERO-TRUST UI (.antigravityrules §1) & CCF Phase B :
+   * Cette logique reproduit strictement la matrice de décision du backend (AccesDAUtil.java) :
+   * 1. SUPER_ADMIN : toujours autorisé (superset système).
+   * 2. DA_MANAGER : autorisé selon le paramètre daManagerAutorise.
+   * 3. ADMIN généraliste (sans section ou explicitement 'GEST') : toujours autorisé (comportement historique).
+   * 4. ADMIN restreint (ex: 'SRR', 'SRE', 'SEP', 'SC', 'SCS') : autorisé UNIQUEMENT si sa section figure dans les sections demandées.
+   * 5. Tout autre rôle (UNIT_USER, non connecté) : refusé (false).
+   *
+   * @param sections Liste des codes de section autorisés (ex: ['SRR'])
+   * @param daManagerAutorise Indique si un magasinier (DA_MANAGER) est habilité sur cet écran/action (true par défaut)
+   * @returns boolean true si autorisé, false sinon
+   */
+  hasSectionAccess(
+    sections: FonctionDACode[],
+    daManagerAutorise: boolean = true
+  ): boolean {
+    const user = this.currentUser();
+    if (!user) return false;
+    if (user.role === 'SUPER_ADMIN') return true;
+    if (user.role === 'DA_MANAGER') return daManagerAutorise;
+    if (user.role === 'ADMIN') {
+      const f = user.fonctionDA;
+      if (!f || f === 'GEST') return true;
+      return sections.includes(f);
+    }
+    return false;
   }
 
   private stockerSession(response: AuthResponse): void {

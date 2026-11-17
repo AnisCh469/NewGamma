@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ReformeService, DossierReforme, LigneReforme } from '../../core/services/reforme.service';
+import { AuthService } from '../../core/auth/auth.service';
 import { DocumentService } from '../../core/services/document.service';
 import { DocumentsSignesComponent } from '../../shared/documents-signes/documents-signes.component';
 import { CardModule } from 'primeng/card';
@@ -38,6 +39,7 @@ import { MessageService } from 'primeng/api';
 })
 export class ReformeConsoleComponent implements OnInit {
   private reformeService = inject(ReformeService);
+  public authService = inject(AuthService);
   private messageService = inject(MessageService);
   private documentService = inject(DocumentService);
   private router = inject(Router);

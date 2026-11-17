@@ -34,13 +34,13 @@ export const routes: Routes = [
     path: 'receptions',
     loadComponent: () => import('./features/reception/reception-list/reception-list.component').then(m => m.ReceptionListComponent),
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['SUPER_ADMIN', 'ADMIN', 'DA_MANAGER'] }
+    data: { roles: ['SUPER_ADMIN', 'ADMIN', 'DA_MANAGER'], sectionsDA: ['SRE'], daManagerAutorise: true }
   },
   {
     path: 'receptions/:id',
     loadComponent: () => import('./features/reception/reception-detail/reception-detail.component').then(m => m.ReceptionDetailComponent),
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['SUPER_ADMIN', 'ADMIN', 'DA_MANAGER'] }
+    data: { roles: ['SUPER_ADMIN', 'ADMIN', 'DA_MANAGER'], sectionsDA: ['SRE'], daManagerAutorise: true }
   },
   {
     path: 'distribution',
@@ -77,7 +77,7 @@ export const routes: Routes = [
     path: 'reformes',
     loadComponent: () => import('./features/reforme/reforme-console.component').then(m => m.ReformeConsoleComponent),
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['SUPER_ADMIN', 'ADMIN', 'DA_MANAGER'] }
+    data: { roles: ['SUPER_ADMIN', 'ADMIN', 'DA_MANAGER'], sectionsDA: ['SRR'], daManagerAutorise: true }
   },
   {
     path: 'administration/utilisateurs',
@@ -107,18 +107,18 @@ export const routes: Routes = [
     path: 'administration/previsions',
     loadComponent: () => import('./features/administration/previsions/previsions.component').then(m => m.PrevisionsComponent),
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['SUPER_ADMIN', 'ADMIN'] }
+    data: { roles: ['SUPER_ADMIN', 'ADMIN'], sectionsDA: ['SEP'], daManagerAutorise: false }
   },
   {
     path: 'administration/collationnement',
     loadComponent: () => import('./features/administration/collationnement/collationnement-liste.component').then(m => m.CollationnementListeComponent),
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['SUPER_ADMIN', 'ADMIN'] }
+    data: { roles: ['SUPER_ADMIN', 'ADMIN'], sectionsDA: ['SC'], daManagerAutorise: false }
   },
   {
     path: 'administration/collationnement/:id',
     loadComponent: () => import('./features/administration/collationnement/collationnement-detail.component').then(m => m.CollationnementDetailComponent),
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['SUPER_ADMIN', 'ADMIN'] }
+    data: { roles: ['SUPER_ADMIN', 'ADMIN'], sectionsDA: ['SC'], daManagerAutorise: false }
   }
 ];

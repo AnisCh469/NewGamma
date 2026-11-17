@@ -57,7 +57,7 @@
 
         <div class="mt-4 pt-4 border-t border-slate-100 flex gap-2">
           <p-button label="Annuler" icon="pi pi-times" styleClass="p-button-text p-button-secondary w-full p-button-sm" routerLink="/receptions"></p-button>
-          <p-button label="Créer le BPR" icon="pi pi-check" styleClass="p-button-primary w-full p-button-sm" (onClick)="saveBpr()" [disabled]="!newBpr.numeroBpr || !newBpr.fournisseur || !newBpr.magasin || newLignes.length === 0"></p-button>
+          <p-button *ngIf="authService.hasSectionAccess(['SRE'], true)" label="Créer le BPR" icon="pi pi-check" styleClass="p-button-primary w-full p-button-sm" (onClick)="saveBpr()" [disabled]="!newBpr.numeroBpr || !newBpr.fournisseur || !newBpr.magasin || newLignes.length === 0"></p-button>
         </div>
       </div>
 
@@ -186,7 +186,7 @@
               Le matériel a été réceptionné physiquement. Enregistrer le Procès-Verbal de conformité de la commission technique afin de débloquer l'entrée définitive en stock.
             </p>
           </div>
-          <p-button label="Enregistrer le PV de Commission" icon="pi pi-file" styleClass="p-button-primary p-button-sm font-bold px-4 py-2" (onClick)="activeIndex = 1"></p-button>
+          <p-button *ngIf="authService.hasSectionAccess(['SRE'], true)" label="Enregistrer le PV de Commission" icon="pi pi-file" styleClass="p-button-primary p-button-sm font-bold px-4 py-2" (onClick)="activeIndex = 1"></p-button>
         </div>
       </div>
 
@@ -227,7 +227,7 @@
 
             <div class="text-right pt-4 border-t border-slate-100">
               <p-button label="Retour aux détails physiques" icon="pi pi-chevron-left" styleClass="p-button-text p-button-secondary mr-2" (onClick)="activeIndex = 0"></p-button>
-              <p-button label="Enregistrer le PV" icon="pi pi-check" styleClass="p-button-primary font-bold" (onClick)="validerPv()" [disabled]="!newPv.numeroPv || !newPv.membres" [loading]="validatingPv"></p-button>
+              <p-button *ngIf="authService.hasSectionAccess(['SRE'], true)" label="Enregistrer le PV" icon="pi pi-check" styleClass="p-button-primary font-bold" (onClick)="validerPv()" [disabled]="!newPv.numeroPv || !newPv.membres" [loading]="validatingPv"></p-button>
             </div>
           </div>
         </div>
@@ -279,7 +279,7 @@
                   <input type="date" pInputText id="dateEntree" [(ngModel)]="newBe.dateEntree" required class="w-full text-sm" />
                 </div>
                 <div>
-                  <p-button label="Générer BE & Mettre en Stock" icon="pi pi-box" styleClass="p-button-success font-bold w-full p-button-sm h-[40px]" (onClick)="genererBe()" [loading]="generatingBe" [disabled]="!newBe.numeroBe"></p-button>
+                  <p-button *ngIf="authService.hasSectionAccess(['SRE'], true)" label="Générer BE & Mettre en Stock" icon="pi pi-box" styleClass="p-button-success font-bold w-full p-button-sm h-[40px]" (onClick)="genererBe()" [loading]="generatingBe" [disabled]="!newBe.numeroBe"></p-button>
                 </div>
               </div>
             </div>
