@@ -463,6 +463,17 @@ Ce journal répertorie les difficultés techniques rencontrées au cours du dév
 * **Limitations assumées, documentées dans la proposition (§2.3/§3.3) :** le cycle budgétaire PADI/CDMT complet (P01) et les formulaires C5/C5 bis/M16 (P07) restent hors périmètre, comme convenu — GAMMA3 produit la donnée d'alerte/d'écart qui les alimenterait, sans reconstruire tout le formalisme papier. Pas de génération PDF du PV de collationnement dans cette première version (le patron `DocumentDataService` existe déjà si le besoin se confirme à l'usage). Pas de nouveau type d'événement Journal d'Audit pour les campagnes — la campagne elle-même (statut, dates, membres, conclusion) porte déjà l'essentiel de la traçabilité ; à ajouter si le besoin se précise.
 * **Suite :** avec P01 et P07 livrés, les 9 procédures + P07 Bis du CCF ont désormais toutes une couverture GAMMA 3 au moins partielle — plus aucun chantier "entièrement absent" au sens de `docs/AUDIT_CONFORMITE_CCF_2026-09-11.md` §1.
 
+## Entrée : 2026-11-17
+* **Tâche :** Contrôle d'intégrité global de la version pour reprise des travaux (dépôt Git, bases de données Docker, compilation backend Java / frontend Angular, tests automatisés et hygiène du dépôt).
+* **Difficulté rencontrée :** Échec de `./gradlew test` (`Gamma3BackendApplicationTests` et `ReformeServiceIT`, 3 tests en échec sur 11) provoqué par l'exécution automatique de Flyway sur la base H2 en mémoire des tests. Flyway tentait d'exécuter `V1__fix_statut_demande_check_constraint.sql` contenant un bloc PL/pgSQL PostgreSQL (`DO $$ BEGIN ... END $$;`), syntaxe non reconnue par H2 (`JdbcSQLSyntaxErrorException`). Présence par ailleurs de 3 crash dumps JVM non versionnés (`gamma3-backend/*.hprof`) totalisant ~2.4 Go et non couverts par `.gitignore`.
+* **Cause technique racine :** L'activation globale de Flyway (`spring.flyway.enabled: true`) dans `gamma3-backend/src/main/resources/application.yml` était héritée par le contexte de test sans être surchargée dans `src/test/resources/application.yml` et `application-test.yml`.
+* **Solution retenue :**
+  1. Désactivation explicite de Flyway dans les configurations de test (`spring.flyway.enabled: false`), laissant Hibernate (`ddl-auto: create-drop`) instancier directement le schéma mémoire H2 conforme aux entités JPA.
+  2. Ajout de `*.hprof` dans `gamma3-backend/.gitignore` et `.gitignore` racine, ainsi que `.claude/` pour préserver un statut Git propre.
+  3. Re-test complet du backend : `BUILD SUCCESSFUL`, 100% des tests validés (11/11).
+  4. Re-test complet du build frontend Angular : `Application bundle generation complete`, 0 erreur bloquante.
+  5. Vérification des conteneurs Docker (`gamma3_postgres` sur port 5433 avec ses 28 tables et 5 migrations Flyway appliquées, `gamma3_sqlserver` sur port 1434).
+
 ## [Modèle d'Entrée]
 * **Date :** AAAA-MM-JJ
 * **Tâche :** Description de la tâche ou de la fonctionnalité

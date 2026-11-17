@@ -43,3 +43,6 @@ uploads/
 # potentiellement sensibles, et déjà purgées automatiquement par leur propre politique de
 # rétention (voir ParametreSystemeService.CLE_RETENTION_SAUVEGARDES).
 backups/
+
+# Crash dumps JVM
+*.hprof

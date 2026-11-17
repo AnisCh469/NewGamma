@@ -13,3 +13,9 @@ htmlcov/
 
 # Secrets locaux (jamais commités) — voir .env.example
 .env
+
+# Crash dumps JVM
+*.hprof
+
+# Dossiers d'outils locaux
+.claude/
