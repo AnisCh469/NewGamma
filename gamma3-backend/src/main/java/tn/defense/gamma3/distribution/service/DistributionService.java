@@ -219,7 +219,7 @@ public class DistributionService {
         String baseNavale = unite.getBaseNavale() != null ? unite.getBaseNavale().toLowerCase() : "";
 
         // Mapping géographique : base navale → soute assignée
-        // TODO: Ce mapping peut être externalisé dans une table configurable `mappings_region_magasin`.
+        // Règle de routage géographique Marine Nationale : base navale assignée à sa soute régionale de rattachement.
         Long magasinId;
         if (baseNavale.contains("bizerte") || baseNavale.contains("nord") || baseNavale.contains("sgs")) {
             magasinId = SGS_ID;       // Nord → SGS

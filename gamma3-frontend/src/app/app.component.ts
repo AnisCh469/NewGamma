@@ -22,6 +22,8 @@ export class AppComponent {
   router = inject(Router);
 
   isDrawerOpen = false;
+  isMobileMenuOpen = false;
+  activeDropdown: string | null = null;
   unitId: number | null = null;
 
   @HostListener('document:click', ['$event'])
@@ -29,6 +31,24 @@ export class AppComponent {
     if (this.isDrawerOpen) {
       this.closeDrawer();
     }
+    this.closeDropdowns();
+  }
+
+  toggleDropdown(name: string, event: Event): void {
+    event.stopPropagation();
+    this.activeDropdown = this.activeDropdown === name ? null : name;
+  }
+
+  closeDropdowns(): void {
+    this.activeDropdown = null;
+  }
+
+  toggleMobileMenu(): void {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
+
+  closeMobileMenu(): void {
+    this.isMobileMenuOpen = false;
   }
 
   /**
@@ -61,6 +81,8 @@ export class AppComponent {
         this.notificationService.stopPolling();
         this.inactivityService.arreter();
         this.isDrawerOpen = false;
+        this.isMobileMenuOpen = false;
+        this.activeDropdown = null;
         this.unitId = null;
       }
     });

@@ -383,7 +383,7 @@ export class UniteDetailComponent implements OnInit {
     });
   }
 
-  // --- SPRINT 12: DISTRIBUTION & DEMANDES ---
+  // --- Demandes de Matériel & Distribution ---
   demandes: DemandeMateriel[] = [];
   loadingDemandes: boolean = true;
   displayDemandeDialog: boolean = false;
@@ -616,7 +616,7 @@ export class UniteDetailComponent implements OnInit {
     });
   }
 
-  // --- SPRINT 13/14: DEMANDES D'AJOUT DE DOTATIONS (CLIENT/ADMIN) ---
+  // --- Demandes d'Ajustement des Dotations ---
   demandesDotation: DemandeDotation[] = [];
   loadingDemandesDotation: boolean = true;
   displayDemandeDotationDialog: boolean = false;
@@ -716,7 +716,7 @@ export class UniteDetailComponent implements OnInit {
     });
   }
 
-  // --- SPRINT 15: RÉFORME & DÉCLASSEMENT ---
+  // --- Suivi Réforme & Déclassement ---
   loadDossiersReforme(): void {
     if (!this.unite || !this.unite.id) return;
     this.loadingReforme = true;
@@ -779,7 +779,7 @@ export class UniteDetailComponent implements OnInit {
     this.documentService.ouvrir('pv-reforme/' + dossier.id);
   }
 
-  // --- SPRINT 15 2FA USER CONTROL ---
+  // --- Contrôle de Sécurité & Statut Utilisateur ---
   init2FaSetup(): void {
     if (!this.unite) return;
     this.authService.setup2Fa(this.unite.code).subscribe({

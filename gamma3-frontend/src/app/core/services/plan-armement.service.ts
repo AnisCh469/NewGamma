@@ -62,7 +62,7 @@ export class PlanArmementService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  // --- Demandes de Dotation (Sprint 13/14 Addition) ---
+  // --- Demandes de Dotation (Plan d'Armement) ---
   getDemandesDotation(): Observable<DemandeDotation[]> {
     return this.http.get<DemandeDotation[]>(this.demandesApiUrl);
   }

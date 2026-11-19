@@ -540,3 +540,23 @@ Ce journal répertorie les difficultés techniques rencontrées au cours du dév
      - `./gradlew test` validé à 100% (13 tests passés avec succès).
      - `ng build` complété avec 0 erreur bloquante.
      - Mise à jour du Guide Utilisateur (`docs/USER_GUIDE.md`).
+
+
+## Entrée : 2026-11-19
+* **Tâche :** Préparation à l'Audit de Sécurité Officiel & Modernisation Graphique Web Adaptative (Multi-Résolution & Niveaux de Zoom).
+* **Difficulté rencontrée :** Absence de gestionnaire centralisé d'exceptions (`@RestControllerAdvice`) exposant le backend au risque d'Information Disclosure (CWE-209 / OWASP A05) en cas d'erreurs SQL ou d'arguments non valides. Par ailleurs, la barre de navigation comportait 16 liens à plat, provoquant des chevauchements ou des disparitions de menus dès que le zoom navigateur dépassait 110% ou sur les résolutions d'écrans compacts (1366x768). Enfin, plusieurs résidus de maquettes et mentions temporaires de type "Sprint X" dépréciaient la crédibilité du produit.
+* **Cause technique racine :** L'application utilisait la page d'erreur par défaut de Spring Boot, et la topbar Angular manquait de regroupement logique en sous-menus déroulants et de menu coulissant (off-canvas drawer) pour les largeurs d'affichage réduites.
+* **Solution retenue :**
+  1. **Durcissement Sécuritaire (Hardening) :**
+     - Création de `GlobalExceptionHandler.java` interceptant `BadCredentialsException` (401), `AccessDeniedException` (403), `MethodArgumentNotValidException` (400), `DataIntegrityViolationException` (409) et `Exception` générique (500). Format JSON d'erreur assaini ne divulguant aucune trace SQL ni nom de classe interne.
+     - Configuration des en-têtes de sécurité dans `SecurityConfig.java` : `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN` (prévisualisation sécurisée des PDF), et `Referrer-Policy: strict-origin-when-cross-origin`.
+  2. **Nettoyage Intégral du Code Source :**
+     - Suppression de 100% des mentions "Sprint" dans les templates et fichiers TypeScript (`fournisseur-detail.component.html`, `unite-detail.component.html`, `plan-armement.service.ts`, `console-arbitrage.component.ts`, `unite-detail.component.ts`).
+     - Suppression de l'overlay de simulation flouté dans la fiche fournisseur et raccordement aux vrais indicateurs d'homologation Marine.
+     - Remplacement du commentaire TODO dans `DistributionService.java`.
+  3. **Ergonomie Graphique & Responsive (Multi-Navigateurs & Zoom 80%-150%) :**
+     - Refonte de la topbar (`app.component.html` et `app.component.ts`) avec regroupement des 16 liens en menus déroulants thématiques (*Logistique*, *Planification*, *Administration*).
+     - Ajout d'un menu hamburger coulissant responsive (`aside` avec backdrop flouté) garantissant un accès complet et fluide quel que soit le niveau de zoom (125%, 150%) ou la résolution d'écran.
+  4. **Validation Qualité :**
+     - Tests unitaires et d'intégration backend validés à 100% (`BUILD SUCCESSFUL`, 13/13 tests passés).
+     - Build Angular complété avec succès (`Application bundle generation complete`, 0 erreur bloquante).

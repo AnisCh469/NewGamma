@@ -379,7 +379,7 @@ export class ConsoleArbitrageComponent implements OnInit {
     return this.printLignes.reduce((sum, l) => sum + this.getLigneTotal(l), 0);
   }
 
-  // --- SPRINT 13 ADVANCED DECISION METRICS ---
+  // --- Métriques Avancées d'Aide à la Décision ---
   getItemStockInSelectedMagasin(l: any): number {
     if (!this.selectedMagasin || !l.stocksParMagasin) return 0;
     const stock = l.stocksParMagasin.find((s: any) => s.magasinId === this.selectedMagasin!.id);

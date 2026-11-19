@@ -8,24 +8,114 @@
         <span class="text-xl font-bold tracking-wider">GAMMA 3</span>
       </div>
 
-      <!-- Liens de navigation (si authentifié) -->
-      <nav *ngIf="authService.isAuthenticated() && authService.currentUser() as currentUser" class="hidden md:flex space-x-4 ml-6">
-        <a routerLink="/catalogue" routerLinkActive="text-gamma-accent font-bold" [routerLinkActiveOptions]="{exact: false}" class="text-slate-300 hover:text-white transition">Catalogue</a>
-        <a *ngIf="currentUser.role === 'UNIT_USER' && currentUser.fonctionUnite !== 'COMMANDANT'" routerLink="/demander-dotation" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Demande d'Équipement</a>
-        <a *ngIf="currentUser.role === 'UNIT_USER' && currentUser.fonctionUnite === 'COMMANDANT'" routerLink="/valider-demandes" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Valider les Demandes</a>
-        <a *ngIf="currentUser.role === 'UNIT_USER' && unitId" [routerLink]="['/unites', unitId]" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Mon Plan & Suivi</a>
-        <a *ngIf="currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/fournisseurs" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Fournisseurs</a>
-        <a *ngIf="authService.hasSectionAccess(['SRE'], true)" routerLink="/receptions" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Réceptions</a>
-        <a *ngIf="currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/unites" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Unités Clients</a>
-        <a *ngIf="currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/distribution" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Arbitrage</a>
-        <a *ngIf="authService.hasSectionAccess(['SRR'], true)" routerLink="/reformes" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Réforme</a>
-        <a *ngIf="currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'ADMIN' || currentUser.role === 'DA_MANAGER'" routerLink="/analytics" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Analyses</a>
-        <a *ngIf="authService.hasSectionAccess(['SEP'], false)" routerLink="/administration/previsions" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Prévisions</a>
-        <a *ngIf="authService.hasSectionAccess(['SC'], false)" routerLink="/administration/collationnement" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Collationnement</a>
-        <a *ngIf="currentUser.role === 'SUPER_ADMIN'" routerLink="/administration/utilisateurs" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Utilisateurs</a>
-        <a *ngIf="currentUser.role === 'SUPER_ADMIN'" routerLink="/administration/audit-migration" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Audit Gamma2</a>
-        <a *ngIf="currentUser.role === 'SUPER_ADMIN'" routerLink="/administration/journal-audit" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Journal d'Audit</a>
-        <a *ngIf="currentUser.role === 'SUPER_ADMIN'" routerLink="/administration/sauvegardes" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white transition">Sauvegardes</a>
+      <!-- Bouton Menu Hamburger (affiché sur petits écrans ou fort niveau de zoom) -->
+      <button *ngIf="authService.isAuthenticated()" (click)="toggleMobileMenu()"
+              class="xl:hidden p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition flex items-center justify-center focus:outline-none"
+              title="Menu de navigation">
+        <i class="pi pi-bars text-lg"></i>
+      </button>
+
+      <!-- Navigation Desktop Groupée & Résiliente au Zoom -->
+      <nav *ngIf="authService.isAuthenticated() && authService.currentUser() as currentUser" class="hidden xl:flex items-center space-x-2 ml-4 text-sm font-medium">
+        
+        <!-- Navigation UNIT_USER (Simple & Directe) -->
+        <ng-container *ngIf="currentUser.role === 'UNIT_USER'">
+          <a routerLink="/catalogue" routerLinkActive="text-gamma-accent font-bold" [routerLinkActiveOptions]="{exact: false}" class="text-slate-300 hover:text-white px-2.5 py-1.5 rounded transition">Catalogue</a>
+          <a *ngIf="currentUser.fonctionUnite !== 'COMMANDANT'" routerLink="/demander-dotation" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white px-2.5 py-1.5 rounded transition">Demande d'Équipement</a>
+          <a *ngIf="currentUser.fonctionUnite === 'COMMANDANT'" routerLink="/valider-demandes" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white px-2.5 py-1.5 rounded transition">Valider les Demandes</a>
+          <a *ngIf="unitId" [routerLink]="['/unites', unitId]" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white px-2.5 py-1.5 rounded transition">Mon Plan & Suivi</a>
+        </ng-container>
+
+        <!-- Navigation Opérationnelle & DA (Groupée par Domaines) -->
+        <ng-container *ngIf="currentUser.role !== 'UNIT_USER'">
+          <!-- Catalogue Principal -->
+          <a routerLink="/catalogue" routerLinkActive="text-gamma-accent font-bold" [routerLinkActiveOptions]="{exact: false}" class="text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-800 transition">
+            <i class="pi pi-box mr-1"></i>Catalogue
+          </a>
+
+          <!-- Menu Déroulant : Opérations Logistiques -->
+          <div class="relative">
+            <button (click)="toggleDropdown('logistique', $event)"
+                    class="text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-800 transition flex items-center gap-1.5 focus:outline-none"
+                    [ngClass]="{'bg-slate-800 text-white font-bold': activeDropdown === 'logistique'}">
+              <i class="pi pi-truck text-xs text-gamma-accent"></i>
+              <span>Logistique</span>
+              <i class="pi pi-chevron-down text-[10px] opacity-70"></i>
+            </button>
+            <div *ngIf="activeDropdown === 'logistique'"
+                 class="absolute left-0 mt-2 w-56 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl py-2 z-50 text-slate-200 backdrop-blur-md bg-opacity-95 divide-y divide-slate-800">
+              <div class="py-1">
+                <a routerLink="/fournisseurs" (click)="closeDropdowns()" class="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-xs transition">
+                  <i class="pi pi-building text-slate-400"></i>Fournisseurs & Marchés
+                </a>
+                <a routerLink="/unites" (click)="closeDropdowns()" class="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-xs transition">
+                  <i class="pi pi-compass text-slate-400"></i>Unités Clients & Dotations
+                </a>
+              </div>
+              <div class="py-1">
+                <a *ngIf="authService.hasSectionAccess(['SRE'], true)" routerLink="/receptions" (click)="closeDropdowns()" class="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-xs transition">
+                  <i class="pi pi-inbox text-slate-400"></i>Réceptions & Entrées (SRE)
+                </a>
+                <a routerLink="/distribution" (click)="closeDropdowns()" class="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-xs transition">
+                  <i class="pi pi-send text-slate-400"></i>Arbitrage & Sorties (SGS)
+                </a>
+                <a *ngIf="authService.hasSectionAccess(['SRR'], true)" routerLink="/reformes" (click)="closeDropdowns()" class="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-xs transition">
+                  <i class="pi pi-trash text-slate-400"></i>Réformes & Rebuts (SRR)
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Menu Déroulant : Contrôle & Planification -->
+          <div class="relative">
+            <button (click)="toggleDropdown('controle', $event)"
+                    class="text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-800 transition flex items-center gap-1.5 focus:outline-none"
+                    [ngClass]="{'bg-slate-800 text-white font-bold': activeDropdown === 'controle'}">
+              <i class="pi pi-chart-line text-xs text-gamma-accent"></i>
+              <span>Planification</span>
+              <i class="pi pi-chevron-down text-[10px] opacity-70"></i>
+            </button>
+            <div *ngIf="activeDropdown === 'controle'"
+                 class="absolute left-0 mt-2 w-56 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl py-2 z-50 text-slate-200 backdrop-blur-md bg-opacity-95">
+              <a routerLink="/analytics" (click)="closeDropdowns()" class="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-xs transition">
+                <i class="pi pi-chart-bar text-slate-400"></i>Tableau de Bord & Analyses
+              </a>
+              <a *ngIf="authService.hasSectionAccess(['SEP'], false)" routerLink="/administration/previsions" (click)="closeDropdowns()" class="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-xs transition">
+                <i class="pi pi-calendar text-slate-400"></i>Prévisions d'Achat P01 (SEP)
+              </a>
+              <a *ngIf="authService.hasSectionAccess(['SC'], false)" routerLink="/administration/collationnement" (click)="closeDropdowns()" class="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-xs transition">
+                <i class="pi pi-check-circle text-slate-400"></i>Collationnement Annuel P07 (SC)
+              </a>
+            </div>
+          </div>
+
+          <!-- Menu Déroulant : Administration Système (SUPER_ADMIN) -->
+          <div *ngIf="currentUser.role === 'SUPER_ADMIN'" class="relative">
+            <button (click)="toggleDropdown('admin', $event)"
+                    class="text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-800 transition flex items-center gap-1.5 focus:outline-none"
+                    [ngClass]="{'bg-slate-800 text-white font-bold': activeDropdown === 'admin'}">
+              <i class="pi pi-cog text-xs text-red-400"></i>
+              <span>Administration</span>
+              <i class="pi pi-chevron-down text-[10px] opacity-70"></i>
+            </button>
+            <div *ngIf="activeDropdown === 'admin'"
+                 class="absolute left-0 mt-2 w-56 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl py-2 z-50 text-slate-200 backdrop-blur-md bg-opacity-95">
+              <a routerLink="/administration/utilisateurs" (click)="closeDropdowns()" class="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-xs transition">
+                <i class="pi pi-users text-slate-400"></i>Gestion des Utilisateurs
+              </a>
+              <a routerLink="/administration/journal-audit" (click)="closeDropdowns()" class="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-xs transition">
+                <i class="pi pi-shield text-slate-400"></i>Journal d'Audit Système
+              </a>
+              <a routerLink="/administration/sauvegardes" (click)="closeDropdowns()" class="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-xs transition">
+                <i class="pi pi-database text-slate-400"></i>Sauvegardes de Données
+              </a>
+              <a routerLink="/administration/audit-migration" (click)="closeDropdowns()" class="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-xs transition">
+                <i class="pi pi-history text-slate-400"></i>Audit Migration Gamma2
+              </a>
+            </div>
+          </div>
+        </ng-container>
+
       </nav>
     </div>
     
@@ -173,6 +263,110 @@
       </ng-container>
     </div>
   </header>
+
+  <!-- Tiroir Mobile & Responsive (Multi-Résolution & Fort Zoom Navigateur) -->
+  <ng-container *ngIf="isMobileMenuOpen && authService.currentUser() as currentUser">
+    <!-- Backdrop sombre -->
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity"
+         (click)="closeMobileMenu()"></div>
+
+    <!-- Panneau latéral coulissant -->
+    <aside class="fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-slate-900 border-r border-slate-700 shadow-2xl z-50 overflow-y-auto p-5 text-slate-100 flex flex-col animate-fadeIn">
+      <!-- En-tête du tiroir -->
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <i class="pi pi-shield text-gamma-accent text-xl"></i>
+          <span class="font-bold text-lg tracking-wider text-white">GAMMA 3</span>
+        </div>
+        <button (click)="closeMobileMenu()" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition">
+          <i class="pi pi-times text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Navigation Mobile par Sections -->
+      <nav class="flex-grow py-4 space-y-4 text-sm">
+        
+        <!-- Section Unité Utilisatrice -->
+        <div *ngIf="currentUser.role === 'UNIT_USER'" class="space-y-1">
+          <div class="text-[10px] font-black uppercase text-slate-400 tracking-wider px-3 mb-2">Espace Unité Navale</div>
+          <a routerLink="/catalogue" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition text-slate-200">
+            <i class="pi pi-box text-gamma-accent"></i>Catalogue Général
+          </a>
+          <a *ngIf="currentUser.fonctionUnite !== 'COMMANDANT'" routerLink="/demander-dotation" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition text-slate-200">
+            <i class="pi pi-shopping-cart text-gamma-accent"></i>Demande d'Équipement
+          </a>
+          <a *ngIf="currentUser.fonctionUnite === 'COMMANDANT'" routerLink="/valider-demandes" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition text-slate-200">
+            <i class="pi pi-check-square text-gamma-accent"></i>Valider les Demandes
+          </a>
+          <a *ngIf="unitId" [routerLink]="['/unites', unitId]" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition text-slate-200">
+            <i class="pi pi-compass text-gamma-accent"></i>Mon Plan d'Armement
+          </a>
+        </div>
+
+        <!-- Section Logistique & Opérations -->
+        <div *ngIf="currentUser.role !== 'UNIT_USER'" class="space-y-1">
+          <div class="text-[10px] font-black uppercase text-slate-400 tracking-wider px-3 mb-2">Opérations Logistiques</div>
+          <a routerLink="/catalogue" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800 transition text-slate-200">
+            <i class="pi pi-box text-gamma-accent"></i>Catalogue Général
+          </a>
+          <a routerLink="/fournisseurs" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800 transition text-slate-200">
+            <i class="pi pi-building text-slate-400"></i>Fournisseurs & Marchés
+          </a>
+          <a routerLink="/unites" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800 transition text-slate-200">
+            <i class="pi pi-compass text-slate-400"></i>Unités Clients & Dotations
+          </a>
+          <a *ngIf="authService.hasSectionAccess(['SRE'], true)" routerLink="/receptions" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800 transition text-slate-200">
+            <i class="pi pi-inbox text-slate-400"></i>Réceptions & BPR (SRE)
+          </a>
+          <a routerLink="/distribution" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800 transition text-slate-200">
+            <i class="pi pi-send text-slate-400"></i>Arbitrage & Sorties (SGS)
+          </a>
+          <a *ngIf="authService.hasSectionAccess(['SRR'], true)" routerLink="/reformes" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800 transition text-slate-200">
+            <i class="pi pi-trash text-slate-400"></i>Réformes & Rebuts (SRR)
+          </a>
+        </div>
+
+        <!-- Section Contrôle & Planification -->
+        <div *ngIf="currentUser.role !== 'UNIT_USER'" class="space-y-1 pt-2 border-t border-slate-800">
+          <div class="text-[10px] font-black uppercase text-slate-400 tracking-wider px-3 mb-2">Planification & Contrôle</div>
+          <a routerLink="/analytics" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800 transition text-slate-200">
+            <i class="pi pi-chart-bar text-slate-400"></i>Tableau de Bord & Analyses
+          </a>
+          <a *ngIf="authService.hasSectionAccess(['SEP'], false)" routerLink="/administration/previsions" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800 transition text-slate-200">
+            <i class="pi pi-calendar text-slate-400"></i>Prévisions d'Achat P01 (SEP)
+          </a>
+          <a *ngIf="authService.hasSectionAccess(['SC'], false)" routerLink="/administration/collationnement" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800 transition text-slate-200">
+            <i class="pi pi-check-circle text-slate-400"></i>Collationnement Annuel P07 (SC)
+          </a>
+        </div>
+
+        <!-- Section Administration Système -->
+        <div *ngIf="currentUser.role === 'SUPER_ADMIN'" class="space-y-1 pt-2 border-t border-slate-800">
+          <div class="text-[10px] font-black uppercase text-red-400 tracking-wider px-3 mb-2">Administration Système</div>
+          <a routerLink="/administration/utilisateurs" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800 transition text-slate-200">
+            <i class="pi pi-users text-slate-400"></i>Comptes Utilisateurs
+          </a>
+          <a routerLink="/administration/journal-audit" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800 transition text-slate-200">
+            <i class="pi pi-shield text-slate-400"></i>Journal d'Audit Système
+          </a>
+          <a routerLink="/administration/sauvegardes" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800 transition text-slate-200">
+            <i class="pi pi-database text-slate-400"></i>Sauvegardes Base
+          </a>
+          <a routerLink="/administration/audit-migration" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800 transition text-slate-200">
+            <i class="pi pi-history text-slate-400"></i>Audit Base Gamma2
+          </a>
+        </div>
+      </nav>
+
+      <!-- Pied du tiroir -->
+      <div class="pt-4 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
+        <span>GAMMA 3.0 &bull; Marine Nationale</span>
+        <button (click)="authService.logout(); closeMobileMenu()" class="text-red-400 hover:text-red-300 font-bold flex items-center gap-1">
+          <i class="pi pi-sign-out"></i>Quitter
+        </button>
+      </div>
+    </aside>
+  </ng-container>
 
   <!-- Main Content Area -->
   <main class="flex-grow">

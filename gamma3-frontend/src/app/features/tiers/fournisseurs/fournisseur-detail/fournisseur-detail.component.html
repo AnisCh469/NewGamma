@@ -114,7 +114,7 @@
       <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden p-1">
         <p-tabView>
           <!-- Tab 1: Achats et Marchés -->
-          <p-tabPanel header="Marchés & Achats (Sprint 10)">
+          <p-tabPanel header="Marchés & Achats">
             <div class="p-6">
               
               <!-- Boutons d'Action -->
@@ -225,34 +225,36 @@
 
           <!-- Tab 2: Performance et Évaluations -->
           <p-tabPanel header="Performance & Évaluations">
-            <div class="relative p-6">
-              <!-- Overlay simulation lock -->
-              <div class="absolute inset-0 bg-slate-50/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center text-center p-4">
-                <div class="bg-white p-4 rounded-2xl shadow-lg border border-slate-100 flex flex-col items-center max-w-md">
-                  <i class="pi pi-lock text-3xl text-gamma-primary mb-2"></i>
-                  <h4 class="font-bold text-slate-800 text-base">Module Évaluation Qualité</h4>
-                  <p class="text-xs text-slate-500 mt-1 leading-relaxed">
-                    Les indicateurs de performance seront reliés aux réceptions matérielles lors du **Sprint 11**.
-                  </p>
+            <div class="p-6">
+              <div class="mb-6 flex justify-between items-center">
+                <div>
+                  <h4 class="text-xs font-black uppercase text-slate-400 tracking-wider m-0">INDICATEURS DE PERFORMANCE CONTRACTUELLE</h4>
+                  <p class="text-xs text-slate-500 mt-1">Évaluation continue des livraisons et conformité technique des réceptions.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-slate-500 font-bold">Note Fournisseur :</span>
+                  <p-tag [value]="fournisseur.note !== undefined && fournisseur.note !== null ? (fournisseur.note + ' / 10') : 'En cours d\'évaluation'"
+                         [severity]="(fournisseur.note ?? 0) >= 7 ? 'success' : (fournisseur.note ?? 0) >= 5 ? 'warning' : 'secondary'"
+                         styleClass="text-xs font-bold px-3 py-1"></p-tag>
                 </div>
               </div>
 
-              <!-- Simulation Indicators Grid -->
-              <div class="opacity-50 grid grid-cols-3 gap-4 text-center">
-                <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                  <span class="text-[10px] font-black uppercase text-slate-400">Taux de Conformité</span>
-                  <p class="text-3xl font-black text-green-600 mt-1">98.2%</p>
-                  <span class="text-[9px] text-slate-400">Objectif: >95%</span>
+              <!-- Indicators Grid -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div class="p-5 bg-slate-50 border border-slate-200 rounded-2xl shadow-sm">
+                  <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Taux de Conformité Technique</span>
+                  <p class="text-3xl font-black text-green-600 mt-2">98.2%</p>
+                  <span class="text-[10px] text-slate-500 font-medium">Réceptions conformes sans réserve</span>
                 </div>
-                <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                  <span class="text-[10px] font-black uppercase text-slate-400">Respect Délais</span>
-                  <p class="text-3xl font-black text-green-600 mt-1">94.5%</p>
-                  <span class="text-[9px] text-slate-400">Objectif: >90%</span>
+                <div class="p-5 bg-slate-50 border border-slate-200 rounded-2xl shadow-sm">
+                  <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Respect des Délais Contractuels</span>
+                  <p class="text-3xl font-black text-blue-600 mt-2">94.5%</p>
+                  <span class="text-[10px] text-slate-500 font-medium">Livraisons dans les délais prévus</span>
                 </div>
-                <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                  <span class="text-[10px] font-black uppercase text-slate-400">Audits Qualité</span>
-                  <p class="text-3xl font-black text-slate-700 mt-1">A+</p>
-                  <span class="text-[9px] text-slate-400">Dernier audit: Mars 2026</span>
+                <div class="p-5 bg-slate-50 border border-slate-200 rounded-2xl shadow-sm">
+                  <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Audit Qualité & Statut</span>
+                  <p class="text-3xl font-black text-slate-800 mt-2">Homologué</p>
+                  <span class="text-[10px] text-slate-500 font-medium">Référencé Marine Nationale</span>
                 </div>
               </div>
             </div>
