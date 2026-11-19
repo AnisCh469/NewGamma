@@ -34,6 +34,8 @@ import { TooltipModule } from 'primeng/tooltip';
 import { DropdownModule } from 'primeng/dropdown';
 import { FileUploadModule } from 'primeng/fileupload';
 import { MessageService } from 'primeng/api';
+import { QRCodeModule } from 'angularx-qrcode';
+import * as JsBarcode from 'jsbarcode';
 import { ItemService, Item } from './item.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { CartService } from '../../core/services/cart.service';
@@ -56,7 +58,8 @@ import { Magasin } from '../../core/models/stock.model';
     BadgeModule,
     TooltipModule,
     DropdownModule,
-    FileUploadModule
+    FileUploadModule,
+    QRCodeModule
   ],
   providers: [MessageService],
   templateUrl: './catalogue.component.html',
@@ -158,6 +161,66 @@ export class CatalogueComponent implements OnInit {
   // Cart/Panier dialog
   displayCartDialog: boolean = false;
   isSubmittingCart: boolean = false;
+
+  // ─── Modal Scan Rapide (QR Code & Code-barres compact) ────────────────────
+  displayScanDialog: boolean = false;
+  selectedScanItem: Item | null = null;
+
+  openQuickScan(item: Item, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.selectedScanItem = item;
+    this.displayScanDialog = true;
+    setTimeout(() => {
+      try {
+        const renderBarcode = (JsBarcode as any).default || JsBarcode;
+        const el = document.querySelector('.scan-barcode-svg');
+        if (el && item.nomenclature) {
+          renderBarcode(el, item.nomenclature, {
+            format: 'CODE128',
+            lineColor: '#0f172a',
+            width: 2,
+            height: 48,
+            displayValue: true,
+            fontSize: 13,
+            fontOptions: 'bold',
+            font: 'monospace',
+            margin: 6
+          });
+        }
+      } catch (e) {
+        console.error('Erreur rendu code-barres modal scan:', e);
+      }
+    }, 120);
+  }
+
+  copyNomenclature(nom: string, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    if (!nom) return;
+    navigator.clipboard.writeText(nom);
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Copié !',
+      detail: `Nomenclature « ${nom} » copiée dans le presse-papier.`,
+      life: 2500
+    });
+  }
+
+  printQuickLabel(): void {
+    window.print();
+  }
+
+  viewItem(item: Item, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    if (item && item.id) {
+      this.router.navigate(['/catalogue', item.id]);
+    }
+  }
 
   // ─── Dialog de création d'article (Admin / DA Manager) ────────────────────
   // RÔLE : État du formulaire modal "Nouvel Article" (bouton visible pour tout

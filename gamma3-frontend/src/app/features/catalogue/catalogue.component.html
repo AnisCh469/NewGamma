@@ -270,29 +270,41 @@
           
           <!-- Colonne Actions -->
           <td class="py-1 px-4 text-center" (click)="$event.stopPropagation()">
-            <!-- Admin -->
+            <!-- Admin / Backoffice / Gestionnaires -->
             <ng-container *ngIf="!isClient()">
-              <p-button icon="pi pi-pencil" styleClass="p-button-rounded p-button-text p-button-info p-button-sm mr-1"></p-button>
-              <p-button icon="pi pi-eye" styleClass="p-button-rounded p-button-text p-button-secondary p-button-sm"></p-button>
+              <button pButton icon="pi pi-qrcode" 
+                      class="p-button-rounded p-button-text p-button-info p-button-sm mr-1"
+                      title="Visualisation compacte QR Code & Code-barres pour scan rapide"
+                      (click)="openQuickScan(item, $event)"></button>
+              <button pButton icon="pi pi-eye" 
+                      class="p-button-rounded p-button-text p-button-secondary p-button-sm"
+                      title="Consulter la fiche article complète"
+                      (click)="viewItem(item, $event)"></button>
             </ng-container>
 
-            <!-- Client : bouton + pour ajouter au panier -->
+            <!-- Client : Scan rapide QR Code + Ajout Panier -->
             <ng-container *ngIf="isClient()">
-              <ng-container *ngIf="getPlanForItem(item.id) as plan; else notInPlan">
-                <button
-                  pButton
-                  [icon]="isInCart(item.id) ? 'pi pi-check' : 'pi pi-plus'"
-                  [class]="isInCart(item.id) ? 'p-button-rounded p-button-success p-button-sm font-bold' : 'p-button-rounded p-button-outlined p-button-primary p-button-sm font-bold'"
-                  [disabled]="getRemainingForPlan(plan) <= 0"
-                  [title]="getRemainingForPlan(plan) <= 0 ? 'Dotation complète — aucun écart à combler' : ('Ajouter à ma demande (quota restant : ' + getRemainingForPlan(plan) + ' u)')"
-                  (click)="addToCart(item, $event)"
-                  style="min-width:32px;min-height:32px"
-                ></button>
-              </ng-container>
-              <ng-template #notInPlan>
-                <button pButton icon="pi pi-ban" class="p-button-rounded p-button-text p-button-secondary p-button-sm"
-                        title="Hors dotation — Demandez un ajout depuis votre fiche unité" disabled></button>
-              </ng-template>
+              <div class="flex items-center justify-center gap-1">
+                <button pButton icon="pi pi-qrcode"
+                        class="p-button-rounded p-button-text p-button-info p-button-sm"
+                        title="Scan rapide QR Code & Code-barres"
+                        (click)="openQuickScan(item, $event)"></button>
+                <ng-container *ngIf="getPlanForItem(item.id) as plan; else notInPlan">
+                  <button
+                    pButton
+                    [icon]="isInCart(item.id) ? 'pi pi-check' : 'pi pi-plus'"
+                    [class]="isInCart(item.id) ? 'p-button-rounded p-button-success p-button-sm font-bold' : 'p-button-rounded p-button-outlined p-button-primary p-button-sm font-bold'"
+                    [disabled]="getRemainingForPlan(plan) <= 0"
+                    [title]="getRemainingForPlan(plan) <= 0 ? 'Dotation complète — aucun écart à combler' : ('Ajouter à ma demande (quota restant : ' + getRemainingForPlan(plan) + ' u)')"
+                    (click)="addToCart(item, $event)"
+                    style="min-width:32px;min-height:32px"
+                  ></button>
+                </ng-container>
+                <ng-template #notInPlan>
+                  <button pButton icon="pi pi-ban" class="p-button-rounded p-button-text p-button-secondary p-button-sm"
+                          title="Hors dotation — Demandez un ajout depuis votre fiche unité" disabled></button>
+                </ng-template>
+              </div>
             </ng-container>
           </td>
         </tr>
@@ -579,3 +591,94 @@
       (click)="saveNewItem()"></button>
   </ng-template>
 </p-dialog>
+
+<!-- Modal Compact : Visualisation Rapide QR Code & Code-barres pour Douchette / Magasin -->
+<p-dialog [(visible)]="displayScanDialog" 
+          [modal]="true" 
+          [style]="{width: '440px', maxWidth: '95vw'}" 
+          [draggable]="false" 
+          [resizable]="false" 
+          [header]="'Scan Logistique Rapide'"
+          styleClass="p-fluid">
+  <div *ngIf="selectedScanItem" class="flex flex-col items-center text-center p-1">
+    
+    <!-- En-tête de l'article -->
+    <div class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 mb-3">
+      <div class="flex items-center justify-between mb-1.5">
+        <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Nomenclature Officielle</span>
+        <span *ngIf="selectedScanItem.typeConsommabilite === 'NON_CONSOMMABLE'"
+              class="px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded-full text-[9px] font-bold">
+          Non Consommable
+        </span>
+        <span *ngIf="selectedScanItem.typeConsommabilite !== 'NON_CONSOMMABLE'"
+              class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-[9px] font-bold">
+          Consommable
+        </span>
+      </div>
+      <div class="flex items-center justify-center gap-2">
+        <span class="font-mono text-base font-extrabold text-blue-700 tracking-wider select-all">
+          {{ selectedScanItem.nomenclature }}
+        </span>
+        <button pButton icon="pi pi-copy" 
+                class="p-button-rounded p-button-text p-button-sm p-button-secondary"
+                title="Copier la nomenclature"
+                (click)="copyNomenclature(selectedScanItem.nomenclature, $event)"></button>
+      </div>
+      <p class="text-xs font-semibold text-slate-700 mt-1 line-clamp-2">
+        {{ selectedScanItem.designation }}
+      </p>
+    </div>
+
+    <!-- Zone QR Code & Code-barres compacte optimisée lecteur optique -->
+    <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-inner w-full flex flex-col items-center">
+      <div class="p-2 bg-white rounded-lg shadow-sm border border-slate-100 mb-2">
+        <qrcode [qrdata]="selectedScanItem.nomenclature" [width]="130" [errorCorrectionLevel]="'M'"></qrcode>
+      </div>
+      <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Code-barres 1D (Code 128)</p>
+      <div class="w-full flex justify-center overflow-hidden">
+        <svg class="scan-barcode-svg"></svg>
+      </div>
+    </div>
+
+    <!-- Données rapides stock & prix -->
+    <div class="w-full grid grid-cols-2 gap-2 mt-3 text-left">
+      <div class="p-2 bg-slate-50 border border-slate-100 rounded-lg">
+        <p class="text-[10px] text-slate-400 uppercase font-semibold">Stock Total</p>
+        <p class="text-sm font-bold text-slate-800">{{ selectedScanItem.quantiteTotale || 0 }} unités</p>
+      </div>
+      <div class="p-2 bg-slate-50 border border-slate-100 rounded-lg" *ngIf="!isClient()">
+        <p class="text-[10px] text-slate-400 uppercase font-semibold">Prix Unitaire</p>
+        <p class="text-sm font-bold text-emerald-700">{{ selectedScanItem.prixUnitaire | currency:'TND':'symbol':'1.3-3' }}</p>
+      </div>
+    </div>
+
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="flex items-center justify-between w-full pt-2">
+      <button pButton label="Fermer" icon="pi pi-times" class="p-button-text p-button-secondary p-button-sm"
+              (click)="displayScanDialog = false"></button>
+      <div class="flex gap-2">
+        <button pButton label="Imprimer" icon="pi pi-print" class="p-button-outlined p-button-info p-button-sm"
+                (click)="printQuickLabel()"></button>
+        <button pButton label="Fiche Complète" icon="pi pi-external-link" class="p-button-primary p-button-sm"
+                (click)="viewItem(selectedScanItem!)"></button>
+      </div>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Layout impression étiquette rapide (masqué à l'écran, visible à l'impression) -->
+<div *ngIf="selectedScanItem" class="print-quick-label hidden">
+  <div class="p-6 text-center">
+    <h2 class="text-2xl font-black text-black mb-2">{{ selectedScanItem.designation }}</h2>
+    <div class="flex justify-center mb-4">
+      <qrcode [qrdata]="selectedScanItem.nomenclature" [width]="160" [errorCorrectionLevel]="'M'"></qrcode>
+    </div>
+    <div class="flex justify-center mb-2">
+      <svg class="scan-barcode-svg"></svg>
+    </div>
+    <p class="font-mono text-base font-bold text-black">{{ selectedScanItem.nomenclature }}</p>
+    <p class="text-xs text-gray-500 mt-2">Marine Nationale Tunisienne — Système Gamma 3</p>
+  </div>
+</div>
