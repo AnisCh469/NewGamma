@@ -1,14 +1,21 @@
 package tn.defense.gamma3.tiers.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import tn.defense.gamma3.audit.domain.TypeActionAudit;
+import tn.defense.gamma3.audit.service.JournalAuditService;
+import tn.defense.gamma3.auth.domain.User;
+import tn.defense.gamma3.notification.service.BackofficeNotificationService;
 import tn.defense.gamma3.tiers.domain.Fournisseur;
+import tn.defense.gamma3.tiers.domain.StatutFournisseur;
 import tn.defense.gamma3.tiers.repository.FournisseurRepository;
 
 import java.nio.file.Files;
@@ -18,12 +25,22 @@ import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * RÔLE : Gestion et consultation du référentiel des Fournisseurs de la Marine.
+ *
+ * RÈGLE DE SÉCURITÉ STRICTE (2026-11-19) :
+ * Seul le SUPER_ADMIN peut créer, modifier les informations ou suspendre un fournisseur.
+ * L'administrateur logistique (SGS / ADMIN / DA_MANAGER) ne dispose que d'un droit de consultation (lecture seule).
+ * Toute modification est consignée dans le Journal d'Audit et fait l'objet d'une alerte/email aux responsables backoffice.
+ */
 @RestController
 @RequestMapping("/api/v1/fournisseurs")
 @RequiredArgsConstructor
 public class FournisseurController {
 
     private final FournisseurRepository fournisseurRepository;
+    private final JournalAuditService journalAuditService;
+    private final BackofficeNotificationService backofficeNotificationService;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'DA_MANAGER')")
@@ -40,18 +57,30 @@ public class FournisseurController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'DA_MANAGER')")
-    public Fournisseur createFournisseur(@RequestBody Fournisseur fournisseur) {
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public Fournisseur createFournisseur(@RequestBody Fournisseur fournisseur, Authentication authentication, HttpServletRequest httpRequest) {
+        User u = (User) authentication.getPrincipal();
         validerNote(fournisseur.getNote());
-        return fournisseurRepository.save(fournisseur);
+        Fournisseur saved = fournisseurRepository.save(fournisseur);
+
+        String details = "Fournisseur créé: " + saved.getCode() + " - " + saved.getNom() + " (Statut: " + saved.getStatut() + ")";
+        journalAuditService.enregistrer(u.getMatricule(), u.getFullName(), TypeActionAudit.FOURNISSEUR_CREE, details, httpRequest.getRemoteAddr());
+        backofficeNotificationService.notifierModificationBackoffice("Création Fournisseur", details + " par " + u.getFullName(), saved.getId().toString());
+
+        return saved;
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'DA_MANAGER')")
-    public ResponseEntity<Fournisseur> updateFournisseur(@PathVariable Long id, @RequestBody Fournisseur fournisseurDetails) {
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<Fournisseur> updateFournisseur(@PathVariable Long id, @RequestBody Fournisseur fournisseurDetails, Authentication authentication, HttpServletRequest httpRequest) {
+        User u = (User) authentication.getPrincipal();
         validerNote(fournisseurDetails.getNote());
         return fournisseurRepository.findById(id)
                 .map(fournisseur -> {
+                    String oldNom = fournisseur.getNom();
+                    Integer oldNote = fournisseur.getNote();
+                    StatutFournisseur oldStatut = fournisseur.getStatut();
+
                     fournisseur.setCode(fournisseurDetails.getCode());
                     fournisseur.setNom(fournisseurDetails.getNom());
                     fournisseur.setMatriculeFiscal(fournisseurDetails.getMatriculeFiscal());
@@ -65,7 +94,14 @@ public class FournisseurController {
                     if (fournisseurDetails.getStatut() != null) {
                         fournisseur.setStatut(fournisseurDetails.getStatut());
                     }
-                    return ResponseEntity.ok(fournisseurRepository.save(fournisseur));
+                    Fournisseur saved = fournisseurRepository.save(fournisseur);
+
+                    String details = "Fournisseur modifié (" + saved.getCode() + ") : " + oldNom + " -> " + saved.getNom()
+                            + ", Note: " + oldNote + " -> " + saved.getNote() + ", Statut: " + oldStatut + " -> " + saved.getStatut();
+                    journalAuditService.enregistrer(u.getMatricule(), u.getFullName(), TypeActionAudit.FOURNISSEUR_MODIFIE, details, httpRequest.getRemoteAddr());
+                    backofficeNotificationService.notifierModificationBackoffice("Modification Fournisseur", details + " par " + u.getFullName(), saved.getId().toString());
+
+                    return ResponseEntity.ok(saved);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -77,8 +113,9 @@ public class FournisseurController {
     }
 
     @PostMapping("/{id}/upload-logo")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'DA_MANAGER')")
-    public ResponseEntity<Fournisseur> uploadLogo(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<Fournisseur> uploadLogo(@PathVariable Long id, @RequestParam("file") MultipartFile file, Authentication authentication, HttpServletRequest httpRequest) {
+        User u = (User) authentication.getPrincipal();
         try {
             Fournisseur fournisseur = fournisseurRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Fournisseur not found"));
@@ -97,6 +134,11 @@ public class FournisseurController {
             fournisseur.setLogoUrl(fileUrl);
 
             Fournisseur updatedFournisseur = fournisseurRepository.save(fournisseur);
+
+            String details = "Logo mis à jour pour fournisseur: " + fournisseur.getCode() + " (" + fileName + ")";
+            journalAuditService.enregistrer(u.getMatricule(), u.getFullName(), TypeActionAudit.FOURNISSEUR_MODIFIE, details, httpRequest.getRemoteAddr());
+            backofficeNotificationService.notifierModificationBackoffice("Mise à jour Logo Fournisseur", details + " par " + u.getFullName(), id.toString());
+
             return ResponseEntity.ok(updatedFournisseur);
         } catch (Exception e) {
             return ResponseEntity.status(500).build();
@@ -134,16 +176,26 @@ public class FournisseurController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'DA_MANAGER')")
-    public ResponseEntity<Fournisseur> deleteFournisseur(@PathVariable Long id) {
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<Fournisseur> deleteFournisseur(@PathVariable Long id, Authentication authentication, HttpServletRequest httpRequest) {
+        User u = (User) authentication.getPrincipal();
         return fournisseurRepository.findById(id)
                 .map(fournisseur -> {
                     // RÈGLE MÉTIER & TRAÇABILITÉ MILITAIRE :
                     // La suppression définitive physique d'un fournisseur est interdite afin de préserver
                     // l'historique réglementaire des marchés, commandes et réceptions (BPR).
                     // L'opération bascule le statut en SUSPENDU (désactivation logique).
-                    fournisseur.setStatut(tn.defense.gamma3.tiers.domain.StatutFournisseur.SUSPENDU);
+                    StatutFournisseur nouveauStatut = (fournisseur.getStatut() == StatutFournisseur.SUSPENDU) 
+                            ? StatutFournisseur.HOMOLOGUE 
+                            : StatutFournisseur.SUSPENDU;
+                    fournisseur.setStatut(nouveauStatut);
                     Fournisseur saved = fournisseurRepository.save(fournisseur);
+
+                    TypeActionAudit action = (nouveauStatut == StatutFournisseur.SUSPENDU) ? TypeActionAudit.FOURNISSEUR_SUSPENDU : TypeActionAudit.FOURNISSEUR_REACTIVE;
+                    String details = "Fournisseur " + fournisseur.getCode() + " (" + fournisseur.getNom() + ") basculé en statut " + nouveauStatut;
+                    journalAuditService.enregistrer(u.getMatricule(), u.getFullName(), action, details, httpRequest.getRemoteAddr());
+                    backofficeNotificationService.notifierModificationBackoffice("Changement Statut Fournisseur", details + " par " + u.getFullName(), id.toString());
+
                     return ResponseEntity.ok(saved);
                 })
                 .orElse(ResponseEntity.notFound().build());

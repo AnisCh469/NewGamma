@@ -63,6 +63,10 @@ export class FournisseurDetailComponent implements OnInit {
   private documentService = inject(DocumentService);
   public authService = inject(AuthService);
 
+  isSuperAdmin(): boolean {
+    return this.authService.isSuperAdmin();
+  }
+
   fournisseur: Fournisseur | null = null;
   loading: boolean = true;
   error: string | null = null;

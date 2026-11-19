@@ -8,10 +8,10 @@
       <h1 class="text-xl font-black text-gray-800 m-0">FICHE UNITÉ / CLIENT : {{ unite?.code }}</h1>
     </div>
     <div class="flex gap-2">
-      <p-button *ngIf="!isClient()" icon="pi pi-pencil" label="Modifier" styleClass="p-button-outlined p-button-sm" (onClick)="editUnite()"></p-button>
+      <p-button *ngIf="isSuperAdmin()" icon="pi pi-pencil" label="Modifier" styleClass="p-button-outlined p-button-sm" (onClick)="editUnite()"></p-button>
       <p-button icon="pi pi-print" label="Imprimer" styleClass="p-button-outlined p-button-secondary p-button-sm" (onClick)="printPage()"></p-button>
       <p-button icon="pi pi-tags" label="Étiquette" styleClass="p-button-primary p-button-sm" (onClick)="printLabel()"></p-button>
-      <p-button *ngIf="!isClient()" icon="pi pi-trash" label="Supprimer" styleClass="p-button-danger p-button-sm" (onClick)="deleteUnite()"></p-button>
+      <p-button *ngIf="isSuperAdmin()" icon="pi pi-trash" label="Supprimer" styleClass="p-button-danger p-button-sm" (onClick)="deleteUnite()"></p-button>
     </div>
   </div>
 
@@ -44,7 +44,7 @@
           <span class="text-slate-400 text-[9px] mt-1">Cliquez sur charger pour importer les armoiries ou l'emblème de l'unité</span>
         </div>
         
-        <p-fileUpload *ngIf="!isClient()" mode="basic" chooseLabel="Charger un Insigne" accept="image/*" maxFileSize="5000000" (onSelect)="onLogoUpload($event)" [auto]="true" styleClass="p-button-text p-button-sm w-full"></p-fileUpload>
+        <p-fileUpload *ngIf="isSuperAdmin()" mode="basic" chooseLabel="Charger un Insigne" accept="image/*" maxFileSize="5000000" (onSelect)="onLogoUpload($event)" [auto]="true" styleClass="p-button-text p-button-sm w-full"></p-fileUpload>
       </div>
 
       <!-- Traçabilité QR & Barcode -->
@@ -236,7 +236,7 @@
                     <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
                     <input pInputText type="text" (input)="onPlansSearch($event)" placeholder="Rechercher un article..." class="w-full text-xs pl-8 pr-3 py-1.5 rounded-lg border-gray-200 focus:border-gamma-primary" />
                   </div>
-                  <p-button *ngIf="!isClient()" icon="pi pi-plus" label="Ajouter Dotation" styleClass="p-button-outlined p-button-sm shrink-0 font-bold" (onClick)="openNewPlanDialog()"></p-button>
+                  <p-button *ngIf="isSuperAdmin()" icon="pi pi-plus" label="Ajouter Dotation" styleClass="p-button-outlined p-button-sm shrink-0 font-bold" (onClick)="openNewPlanDialog()"></p-button>
                   <p-button *ngIf="isGestionnaire()" icon="pi pi-plus-circle" label="Demander Dotation" styleClass="p-button-outlined p-button-sm shrink-0 font-bold" (onClick)="openDemandeDotationDialog()"></p-button>
                   <!-- Le panier de demande de matériel est dans la page Catalogue -->
                   <p-button *ngIf="isGestionnaire()" icon="pi pi-shopping-cart" label="Demander du Matériel" styleClass="p-button-success p-button-sm shrink-0 font-bold" routerLink="/catalogue" title="Aller au catalogue pour composer votre demande de matériel"></p-button>
@@ -279,10 +279,14 @@
                         </span>
                       </td>
                       <td class="text-center py-1.5 px-3">
-                        <!-- Admin dotation edit/delete actions -->
-                        <div class="flex justify-center items-center gap-1" *ngIf="!isClient()">
+                        <!-- Super Admin dotation edit/delete actions -->
+                        <div class="flex justify-center items-center gap-1" *ngIf="isSuperAdmin()">
                           <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info p-button-sm" (click)="editPlan(p)"></button>
                           <button pButton icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger p-button-sm" (click)="deletePlan(p)"></button>
+                        </div>
+                        <!-- Lecture seule pour SGS / Magasinier -->
+                        <div class="flex justify-center items-center text-slate-400 text-xs italic" *ngIf="!isSuperAdmin() && !isClient()">
+                          <span>Lecture seule</span>
                         </div>
                         <!-- Client material request addToCart action -->
                         <div class="flex justify-center items-center" *ngIf="isClient()">

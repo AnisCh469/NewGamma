@@ -49,7 +49,7 @@
       </div>
       <!-- ══ fin barre de recherche ══ -->
 
-      <p-button *ngIf="isAdminOrDa()" label="Nouvelle Unité" icon="pi pi-plus" (onClick)="openNew()" styleClass="p-button-primary"></p-button>
+      <p-button *ngIf="isSuperAdmin()" label="Nouvelle Unité" icon="pi pi-plus" (onClick)="openNew()" styleClass="p-button-primary"></p-button>
     </div>
   </div>
 
@@ -65,7 +65,7 @@
           <th pSortableColumn="nom" class="font-semibold text-slate-700 py-1 px-4 text-xs">Nom Complet <p-sortIcon field="nom"></p-sortIcon></th>
           <th pSortableColumn="baseNavale" class="font-semibold text-slate-700 py-1 px-4 text-xs">Base Navale <p-sortIcon field="baseNavale"></p-sortIcon></th>
           <th pSortableColumn="planCount" class="font-semibold text-slate-700 py-1 px-4 text-xs">Plan d'Armement <p-sortIcon field="planCount"></p-sortIcon></th>
-          <th *ngIf="isAdminOrDa()" class="font-semibold text-slate-700 py-1 px-4 text-xs text-center">Actions</th>
+          <th *ngIf="isSuperAdmin()" class="font-semibold text-slate-700 py-1 px-4 text-xs text-center">Actions</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-unite>
@@ -84,7 +84,7 @@
               {{ unite.planCount || 0 | number }} articles
             </span>
           </td>
-          <td *ngIf="isAdminOrDa()" class="text-center py-1 px-4">
+          <td *ngIf="isSuperAdmin()" class="text-center py-1 px-4">
             <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info p-button-sm mr-1 w-7 h-7 p-0" (click)="editUnite(unite)"></button>
             <button pButton icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger p-button-sm w-7 h-7 p-0" (click)="deleteUnite(unite)"></button>
           </td>
@@ -92,7 +92,7 @@
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td [attr.colspan]="isAdminOrDa() ? 5 : 4" class="text-center p-8 text-slate-500">
+          <td [attr.colspan]="isSuperAdmin() ? 5 : 4" class="text-center p-8 text-slate-500">
             <i class="pi pi-sitemap text-4xl mb-3 text-slate-300 block"></i>
             Aucune unité trouvée.
           </td>

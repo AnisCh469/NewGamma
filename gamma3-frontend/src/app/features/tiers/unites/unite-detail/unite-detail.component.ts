@@ -97,6 +97,10 @@ export class UniteDetailComponent implements OnInit {
     return this.authService.currentUser()?.role === 'UNIT_USER';
   }
 
+  isSuperAdmin(): boolean {
+    return this.authService.isSuperAdmin();
+  }
+
   /** Seul le Gestionnaire d'une unité compose des demandes (voir FonctionUnite) — le
    *  Commandant ne fait que les valider, depuis l'écran "Valider les Demandes". */
   isGestionnaire(): boolean {

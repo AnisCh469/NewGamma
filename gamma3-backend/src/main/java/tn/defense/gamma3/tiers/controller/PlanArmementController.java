@@ -13,6 +13,7 @@ import tn.defense.gamma3.tiers.domain.PlanArmement;
 import tn.defense.gamma3.tiers.repository.PlanArmementRepository;
 import tn.defense.gamma3.tiers.repository.UniteUtilisatriceRepository;
 import tn.defense.gamma3.catalogue.repository.ItemRepository;
+import tn.defense.gamma3.notification.service.BackofficeNotificationService;
 
 import java.util.List;
 
@@ -20,22 +21,10 @@ import java.util.List;
  * RÔLE : consultation et gestion des lignes du Plan d'Armement (dotation de chaque unité en
  * matériel, par article et quantités type/réelle/virtuelle).
  *
- * CORRECTIF SÉCURITÉ CRITIQUE (2026-09-11, découvert lors de l'audit de conformité au CCF —
- * voir docs/AUDIT_CONFORMITE_CCF_2026-09-11.md §2.1) : ce contrôleur n'avait auparavant AUCUN
- * contrôle de rôle sur {@code POST}/{@code PUT}/{@code DELETE} — tout compte authentifié, y
- * compris un simple {@code UNIT_USER}, pouvait créer, modifier ou SUPPRIMER n'importe quelle
- * ligne de Plan d'Armement de n'importe quelle unité. Le CCF (Procédure P07 Bis, RG91-RG93)
- * prévoit un vrai circuit de validation (demande visée par le chef de corps, commission de
- * traitement) — cette correction n'implémente pas ce circuit complet (jugé hors périmètre
- * immédiat, voir la proposition à venir pour les Procédures P01/P07), mais restaure au minimum
- * le contrôle d'accès attendu par le principe Zero-Trust du projet : seuls les rôles qui
- * gèrent déjà la logistique d'une unité (SUPER_ADMIN, ADMIN, DA_MANAGER — cohérent avec
- * {@code ReceptionController.exigerRoleDA} et les autres contrôleurs de ce périmètre) peuvent
- * écrire. La lecture reste ouverte à tout authentifié : un {@code UNIT_USER} doit pouvoir
- * consulter le plan de sa propre unité (écran "Mon Plan &amp; Suivi", demande de dotation).
- *
- * Chaque écriture est désormais journalisée dans le Journal d'Audit (traçabilité — demande
- * explicite de l'utilisateur lors de la gouvernance des rôles, 2026-09-11).
+ * RÈGLE DE SÉCURITÉ STRICTE (2026-11-19) :
+ * Seul le SUPER_ADMIN peut créer, modifier les valeurs de dotation ou supprimer une dotation.
+ * L'administrateur logistique (SGS / ADMIN / DA_MANAGER) ne dispose que d'un droit de consultation (lecture seule).
+ * Toute modification est consignée dans le Journal d'Audit et fait l'objet d'une alerte/email aux responsables backoffice.
  */
 @RestController
 @RequestMapping("/api/v1/plans-armement")
@@ -46,6 +35,7 @@ public class PlanArmementController {
     private final UniteUtilisatriceRepository uniteRepository;
     private final ItemRepository itemRepository;
     private final JournalAuditService journalAuditService;
+    private final BackofficeNotificationService backofficeNotificationService;
 
     @GetMapping
     public List<PlanArmement> getAllPlans() {
@@ -71,8 +61,8 @@ public class PlanArmementController {
 
     @PostMapping
     public ResponseEntity<?> createPlan(@RequestBody PlanArmement plan, Authentication authentication, HttpServletRequest httpRequest) {
-        User u = exigerRoleLogistique(authentication);
-        if (u == null) return ResponseEntity.status(403).body("La gestion du Plan d'Armement est réservée à la Division de l'Approvisionnement.");
+        User u = exigerSuperAdmin(authentication);
+        if (u == null) return ResponseEntity.status(403).body("Seul le Super Administrateur est habilité à ajouter une dotation au Plan d'Armement.");
 
         if (plan.getUnite() == null || plan.getUnite().getId() == null ||
             plan.getItem() == null || plan.getItem().getId() == null) {
@@ -84,10 +74,15 @@ public class PlanArmementController {
                             plan.setUnite(unite);
                             plan.setItem(item);
                             PlanArmement saved = planArmementRepository.save(plan);
+                            String details = "Article " + item.getNomenclature() + " ajouté au plan de l'unité " + unite.getCode()
+                                    + " (dotation type: " + saved.getQuantiteType() + ").";
                             journalAuditService.enregistrer(u.getMatricule(), u.getFullName(), TypeActionAudit.PLAN_ARMEMENT_CREE,
-                                    "Article " + item.getNomenclature() + " ajouté au plan de l'unité " + unite.getCode()
-                                            + " (dotation " + saved.getQuantiteType() + ").",
-                                    httpRequest.getRemoteAddr());
+                                    details, httpRequest.getRemoteAddr());
+                            backofficeNotificationService.notifierModificationBackoffice(
+                                    "Nouvelle Dotation Réglementaire",
+                                    details + " Effectué par " + u.getFullName(),
+                                    saved.getId().toString()
+                            );
                             return saved;
                         })
                 )
@@ -97,20 +92,27 @@ public class PlanArmementController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updatePlan(@PathVariable Long id, @RequestBody PlanArmement planDetails, Authentication authentication, HttpServletRequest httpRequest) {
-        User u = exigerRoleLogistique(authentication);
-        if (u == null) return ResponseEntity.status(403).body("La gestion du Plan d'Armement est réservée à la Division de l'Approvisionnement.");
+        User u = exigerSuperAdmin(authentication);
+        if (u == null) return ResponseEntity.status(403).body("Seul le Super Administrateur est habilité à modifier une dotation du Plan d'Armement.");
 
         return planArmementRepository.findById(id)
                 .map(plan -> {
+                    java.math.BigDecimal oldType = plan.getQuantiteType();
+                    java.math.BigDecimal oldReel = plan.getQuantiteReelle();
                     plan.setQuantiteType(planDetails.getQuantiteType());
                     plan.setQuantiteReelle(planDetails.getQuantiteReelle());
                     plan.setQuantiteVirtuelle(planDetails.getQuantiteVirtuelle());
                     PlanArmement saved = planArmementRepository.save(plan);
+                    String details = "Article " + plan.getItem().getNomenclature() + " (unité " + plan.getUnite().getCode()
+                            + ") : dotation type " + oldType + "->" + saved.getQuantiteType() + ", réelle " + oldReel + "->" + saved.getQuantiteReelle()
+                            + ", virtuelle=" + saved.getQuantiteVirtuelle() + ".";
                     journalAuditService.enregistrer(u.getMatricule(), u.getFullName(), TypeActionAudit.PLAN_ARMEMENT_MODIFIE,
-                            "Article " + plan.getItem().getNomenclature() + " (unité " + plan.getUnite().getCode()
-                                    + ") : dotation type=" + saved.getQuantiteType() + ", réelle=" + saved.getQuantiteReelle()
-                                    + ", virtuelle=" + saved.getQuantiteVirtuelle() + ".",
-                            httpRequest.getRemoteAddr());
+                            details, httpRequest.getRemoteAddr());
+                    backofficeNotificationService.notifierModificationBackoffice(
+                            "Modification Valeurs Dotation",
+                            details + " Effectué par " + u.getFullName(),
+                            saved.getId().toString()
+                    );
                     return (ResponseEntity<?>) ResponseEntity.ok(saved);
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -118,8 +120,8 @@ public class PlanArmementController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deletePlan(@PathVariable Long id, Authentication authentication, HttpServletRequest httpRequest) {
-        User u = exigerRoleLogistique(authentication);
-        if (u == null) return ResponseEntity.status(403).body("La gestion du Plan d'Armement est réservée à la Division de l'Approvisionnement.");
+        User u = exigerSuperAdmin(authentication);
+        if (u == null) return ResponseEntity.status(403).body("Seul le Super Administrateur est habilité à supprimer une dotation du Plan d'Armement.");
 
         return planArmementRepository.findById(id)
                 .map(plan -> {
@@ -127,17 +129,21 @@ public class PlanArmementController {
                     planArmementRepository.delete(plan);
                     journalAuditService.enregistrer(u.getMatricule(), u.getFullName(), TypeActionAudit.PLAN_ARMEMENT_SUPPRIME,
                             details, httpRequest.getRemoteAddr());
+                    backofficeNotificationService.notifierModificationBackoffice(
+                            "Suppression Dotation Réglementaire",
+                            details + " Effectué par " + u.getFullName(),
+                            id.toString()
+                    );
                     return (ResponseEntity<?>) ResponseEntity.ok().build();
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    /** @return l'utilisateur authentifié s'il a un rôle de gestion logistique (SUPER_ADMIN,
-     *  ADMIN ou DA_MANAGER), sinon {@code null}. */
-    private static User exigerRoleLogistique(Authentication authentication) {
+    /** @return l'utilisateur authentifié s'il est SUPER_ADMIN, sinon {@code null}. */
+    private static User exigerSuperAdmin(Authentication authentication) {
         User u = (authentication != null && authentication.getPrincipal() instanceof User user) ? user : null;
         if (u == null) return null;
-        if (u.getRole() != Role.SUPER_ADMIN && u.getRole() != Role.ADMIN && u.getRole() != Role.DA_MANAGER) return null;
+        if (u.getRole() != Role.SUPER_ADMIN) return null;
         return u;
     }
 }

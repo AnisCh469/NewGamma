@@ -26,6 +26,16 @@ public enum TypeActionAudit {
     PLAN_ARMEMENT_CREE,
     PLAN_ARMEMENT_MODIFIE,
     PLAN_ARMEMENT_SUPPRIME,
+    /** Unité Utilisatrice (Client) créée/modifiée/supprimée (Super Admin). */
+    UNITE_CREEE,
+    UNITE_MODIFIEE,
+    UNITE_SUPPRIMEE,
+    /** Fournisseur créé/modifié/suspendu/réactivé (Super Admin). */
+    FOURNISSEUR_CREE,
+    FOURNISSEUR_MODIFIE,
+    FOURNISSEUR_SUSPENDU,
+    FOURNISSEUR_REACTIVE,
+    FOURNISSEUR_SUPPRIME,
     /** Un ADMIN/SUPER_ADMIN a autorisé une sortie physique alors que le stock résultant
      *  passait sous le seuil de sécurité de l'article (CCF RG16/RG17/RG68/RG102 — équivalent
      *  numérique de "l'ordre de l'EMAM/BL" requis pour distribuer au-delà de ce seuil). Voir

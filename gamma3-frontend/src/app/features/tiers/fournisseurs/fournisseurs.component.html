@@ -49,7 +49,7 @@
       </div>
       <!-- ══ fin barre de recherche ══ -->
 
-      <p-button *ngIf="isAdminOrDa()" label="Nouveau Fournisseur" icon="pi pi-plus" (onClick)="openNew()"
+      <p-button *ngIf="isSuperAdmin()" label="Nouveau Fournisseur" icon="pi pi-plus" (onClick)="openNew()"
         styleClass="p-button-primary"></p-button>
     </div>
   </div>
@@ -70,7 +70,7 @@
           <th class="font-semibold text-slate-700 py-1 px-4 text-xs">Contact</th>
           <th class="font-semibold text-slate-700 py-1 px-4 text-xs">Téléphone</th>
           <th class="font-semibold text-slate-700 py-1 px-4 text-xs">Note (/10)</th>
-          <th *ngIf="isAdminOrDa()" class="font-semibold text-slate-700 py-1 px-4 text-xs text-center">Actions</th>
+          <th *ngIf="isSuperAdmin()" class="font-semibold text-slate-700 py-1 px-4 text-xs text-center">Actions</th>
         </tr>
       </ng-template>
       <ng-template pTemplate="body" let-fournisseur>
@@ -90,7 +90,7 @@
             <span *ngIf="fournisseur.note" class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">{{fournisseur.note}}/10</span>
             <span *ngIf="!fournisseur.note" class="text-slate-400 text-xs">—</span>
           </td>
-          <td *ngIf="isAdminOrDa()" class="text-center py-1 px-4 whitespace-nowrap">
+          <td *ngIf="isSuperAdmin()" class="text-center py-1 px-4 whitespace-nowrap">
             <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info p-button-sm mr-1 w-7 h-7 p-0"
               (click)="editFournisseur(fournisseur)" title="Modifier les informations"></button>
             <!-- Remplacement de la suppression par la suspension/activation pour préserver l'historique -->
@@ -107,7 +107,7 @@
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td [attr.colspan]="isAdminOrDa() ? 8 : 7" class="text-center p-8 text-slate-500">
+          <td [attr.colspan]="isSuperAdmin() ? 8 : 7" class="text-center p-8 text-slate-500">
             <i class="pi pi-inbox text-4xl mb-3 text-slate-300 block"></i>
             Aucun fournisseur trouvé.
           </td>

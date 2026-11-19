@@ -136,6 +136,14 @@ export class AuthService {
     return !!this.getToken();
   }
 
+  isSuperAdmin(): boolean {
+    return this.currentUser()?.role === 'SUPER_ADMIN';
+  }
+
+  isClient(): boolean {
+    return this.currentUser()?.role === 'UNIT_USER';
+  }
+
   /**
    * RÔLE : Vérifie si l'utilisateur actuellement connecté est habilité à accéder
    * à une ressource ou action rattachée à une (ou plusieurs) section(s) DA.

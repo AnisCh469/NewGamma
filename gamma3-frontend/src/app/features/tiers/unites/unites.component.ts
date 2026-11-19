@@ -42,6 +42,10 @@ export class UnitesComponent implements OnInit {
     return role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'DA_MANAGER';
   }
 
+  isSuperAdmin(): boolean {
+    return this.authService.isSuperAdmin();
+  }
+
   ngOnInit(): void {
     if (this.authService.currentUser()?.role === 'UNIT_USER') {
       const userUnitId = this.authService.currentUser()?.uniteId;
