@@ -220,13 +220,14 @@ public class DistributionService {
 
         // Mapping géographique : base navale → soute assignée
         // Règle de routage géographique Marine Nationale : base navale assignée à sa soute régionale de rattachement.
+        // Nord Principale à Bizerte (SGS = 1), Centre à Kélibia (SM1 = 2), Sud à Sfax (SM2 = 3).
         Long magasinId;
         if (baseNavale.contains("bizerte") || baseNavale.contains("nord") || baseNavale.contains("sgs")) {
-            magasinId = SGS_ID;       // Nord → SGS
-        } else if (baseNavale.contains("centre") || baseNavale.contains("sfax") || baseNavale.contains("sousse")) {
-            magasinId = 2L;           // Centre → SM1
-        } else if (baseNavale.contains("sud") || baseNavale.contains("gabes") || baseNavale.contains("djerba") || baseNavale.contains("zarzis")) {
-            magasinId = 3L;           // Sud → SM2
+            magasinId = SGS_ID;       // Nord → SGS (Bizerte)
+        } else if (baseNavale.contains("centre") || baseNavale.contains("kelibia") || baseNavale.contains("kélibia") || baseNavale.contains("sousse") || baseNavale.contains("monastir")) {
+            magasinId = 2L;           // Centre → SM1 (Kélibia)
+        } else if (baseNavale.contains("sud") || baseNavale.contains("sfax") || baseNavale.contains("gabes") || baseNavale.contains("djerba") || baseNavale.contains("zarzis")) {
+            magasinId = 3L;           // Sud → SM2 (Sfax)
         } else {
             magasinId = SGS_ID;       // Inconnu → SGS par défaut (magasin principal)
         }

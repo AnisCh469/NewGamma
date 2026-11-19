@@ -119,6 +119,17 @@ export class UniteDetailComponent implements OnInit {
   plans: PlanArmement[] = [];
   loadingPlans: boolean = true;
 
+  /**
+   * RÈGLE MÉTIER OFFICIELLE (CCF) :
+   * La réforme concerne STRICTEMENT le matériel non consommable (équipements durables).
+   * Les consommables (huiles, carburants, filtres...) sont consommés et ne sont jamais soumis à commission de réforme.
+   */
+  get nonConsommablePlansForReforme(): PlanArmement[] {
+    return this.plans.filter(p => 
+      p.item.typeConsommabilite === 'NON_CONSOMMABLE' && p.quantiteReelle > 0
+    );
+  }
+
   displayPlanDialog: boolean = false;
   selectedPlan: PlanArmement = {
     unite: { code: '', nom: '' },

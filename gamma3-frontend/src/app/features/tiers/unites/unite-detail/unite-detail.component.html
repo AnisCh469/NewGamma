@@ -813,16 +813,21 @@
 </p-dialog>
 
 <!-- Modal de création de dossier de Réforme (Client) -->
-<p-dialog header="Déclarer Matériel H.S. (Proposition à la Réforme)" [(visible)]="displayReformeDialog" [modal]="true" [style]="{width: '500px'}" styleClass="p-fluid">
-  <div class="flex flex-col gap-4 mt-2">
+<p-dialog header="Déclarer Matériel H.S. (Proposition à la Réforme)" [(visible)]="displayReformeDialog" [modal]="true" [style]="{width: '520px'}" styleClass="p-fluid">
+  <div class="flex flex-col gap-3 mt-1">
+    <div class="p-2.5 bg-amber-50 border border-amber-200 rounded-lg text-amber-900 text-xs flex items-center gap-2">
+      <i class="pi pi-shield text-amber-600 text-base"></i>
+      <span><strong>Règle CCF :</strong> La réforme s'applique strictement aux <em>matériels non consommables</em> (équipements durables à bord). Les consommables sont exclus.</span>
+    </div>
+
     <div class="field">
-      <label class="font-bold text-gray-700 block mb-1 text-xs">Sélectionner un article en dotation réelle à réformer *</label>
-      <p-dropdown [options]="plans" [(ngModel)]="selectedPlanForReforme" optionLabel="item.designation" placeholder="Choisir un article à réformer" appendTo="body">
+      <label class="font-bold text-gray-700 block mb-1 text-xs">Sélectionner un équipement non consommable à bord *</label>
+      <p-dropdown [options]="nonConsommablePlansForReforme" [(ngModel)]="selectedPlanForReforme" optionLabel="item.designation" placeholder="Choisir un matériel non consommable à réformer" appendTo="body" emptyMessage="Aucun matériel non consommable disponible à bord">
         <ng-template let-p pTemplate="item">
           <div class="flex flex-col text-xs">
             <span class="font-black text-slate-800">{{ p.item.designation }}</span>
             <span class="font-mono text-gamma-primary font-bold mt-0.5">{{ p.item.nomenclature }}</span>
-            <span class="text-slate-400 font-semibold mt-1">Quantité Réelle à Bord : {{ p.quantiteReelle }}</span>
+            <span class="text-slate-400 font-semibold mt-1">En service à bord : {{ p.quantiteReelle }} u</span>
           </div>
         </ng-template>
       </p-dropdown>

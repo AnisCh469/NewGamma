@@ -75,6 +75,9 @@ public class ReformeService {
 
         for (var ligne : lignes) {
             var item = itemRepository.findById(ligne.getItem().getId()).orElseThrow();
+            if (item.getTypeConsommabilite() == tn.defense.gamma3.catalogue.domain.TypeConsommabilite.CONSOMMABLE) {
+                throw new IllegalArgumentException("La procédure de réforme est strictement réservée au matériel non consommable (équipements et armement). L'article « " + item.getDesignation() + " » est un consommable.");
+            }
             ligne.setDossierReforme(savedDossier);
             ligne.setItem(item);
             ligneRepository.save(ligne);

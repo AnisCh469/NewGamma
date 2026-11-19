@@ -58,7 +58,11 @@ public class ReformeController {
                 && (u.getUnite() == null || !u.getUnite().getId().equals(uniteId))) {
             return ResponseEntity.status(403).body("Vous ne pouvez soumettre un dossier de réforme que pour votre unité.");
         }
-        return ResponseEntity.ok(reformeService.creerDossier(uniteId, motif, lignes));
+        try {
+            return ResponseEntity.ok(reformeService.creerDossier(uniteId, motif, lignes));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     /**
@@ -83,7 +87,11 @@ public class ReformeController {
             return ResponseEntity.status(403).body("Seule la Division de l'Approvisionnement (Section Réforme et Remise) statue sur une commission de réforme.");
         }
         LocalDate date = dateCommission != null ? LocalDate.parse(dateCommission) : LocalDate.now();
-        return ResponseEntity.ok(reformeService.traiterDossierCommission(id, decision, membres, observations, date, u.getMatricule()));
+        try {
+            return ResponseEntity.ok(reformeService.traiterDossierCommission(id, decision, membres, observations, date, u.getMatricule()));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     private static User currentUser(Authentication authentication) {
