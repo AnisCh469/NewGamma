@@ -1,15 +1,23 @@
 <p-toast></p-toast>
 <div class="web-container p-4 max-w-[1800px] mx-auto animation-fadein">
-  <!-- En-tête Compact -->
-  <div class="flex items-center justify-between mb-2 no-print border-b pb-2 shrink-0">
-    <div class="flex items-center gap-3">
-      <p-button icon="pi pi-arrow-left" label="Retour" styleClass="p-button-text p-button-secondary p-button-sm" routerLink="/catalogue"></p-button>
-      <h1 class="text-xl font-black text-gray-800 m-0">FICHE ARTICLE : {{ item?.nomenclature }}</h1>
+  <!-- En-tête Compact & Descriptif -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 no-print border-b border-slate-200 pb-3 gap-3">
+    <div class="flex items-center gap-3 flex-wrap">
+      <p-button icon="pi pi-arrow-left" label="Retour" styleClass="p-button-outlined p-button-secondary p-button-sm whitespace-nowrap" routerLink="/catalogue"></p-button>
+      <div class="flex items-center gap-2 flex-wrap">
+        <h1 class="text-xl sm:text-2xl font-black text-gray-900 m-0 whitespace-nowrap">
+          FICHE ARTICLE : <span class="text-blue-600 font-mono">{{ item?.nomenclature }}</span>
+        </h1>
+        <span class="text-slate-300 hidden sm:inline">|</span>
+        <span class="text-base sm:text-xl font-extrabold text-slate-800 uppercase tracking-tight">
+          {{ item?.designation }}
+        </span>
+      </div>
     </div>
-    <div class="flex gap-2">
-      <p-button icon="pi pi-history" label="Historique" styleClass="p-button-outlined p-button-secondary p-button-sm" (onClick)="openHistorique()"></p-button>
-      <p-button icon="pi pi-print" label="Imprimer" styleClass="p-button-outlined p-button-secondary p-button-sm" (onClick)="printPage()"></p-button>
-      <p-button icon="pi pi-tags" label="Étiquette" styleClass="p-button-primary p-button-sm" (onClick)="printLabel()"></p-button>
+    <div class="flex gap-2 shrink-0">
+      <p-button icon="pi pi-history" label="Historique" styleClass="p-button-outlined p-button-secondary p-button-sm whitespace-nowrap" (onClick)="openHistorique()"></p-button>
+      <p-button icon="pi pi-print" label="Imprimer" styleClass="p-button-outlined p-button-secondary p-button-sm whitespace-nowrap" (onClick)="printPage()"></p-button>
+      <p-button icon="pi pi-tags" label="Étiquette" styleClass="p-button-primary p-button-sm whitespace-nowrap" (onClick)="printLabel()"></p-button>
     </div>
   </div>
 
@@ -21,7 +29,7 @@
   <div *ngIf="!loading && item" class="main-content-grid grid grid-cols-12 gap-4">
     
     <!-- Colonne de Gauche (4/12) -->
-    <div class="col-span-12 lg:col-span-4 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
+    <div class="col-span-12 lg:col-span-4 flex flex-col gap-4">
       
       <!-- Bloc Photo -->
       <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden p-3 flex flex-col items-center">
@@ -48,7 +56,7 @@
     </div>
 
     <!-- Colonne de Droite (8/12) -->
-    <div class="col-span-12 lg:col-span-8 flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar">
+    <div class="col-span-12 lg:col-span-8 flex flex-col gap-4">
       
       <!-- Identité -->
       <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -84,33 +92,70 @@
           <h3 class="text-sm font-black uppercase tracking-[0.2em] text-primary">Gestion des Stocks</h3>
           <p-button *ngIf="!isClient()" label="Mouvement" icon="pi pi-arrows-h" styleClass="p-button-success p-button-sm" (onClick)="openMouvementModal()"></p-button>
         </div>
+
+        <!-- Alarme Gestionnaire : Stock sous le seuil minimum (Rupture / Urgence réappro) -->
+        <div *ngIf="isStockMinAlert()" class="mb-4 p-3 bg-red-950/80 border border-red-500/80 rounded-xl flex items-center justify-between text-red-200">
+          <div class="flex items-center gap-3">
+            <i class="pi pi-exclamation-triangle text-xl text-red-400"></i>
+            <div>
+              <span class="font-black text-xs uppercase tracking-wider text-red-300">ALARME GESTIONNAIRE : STOCK SOUS LE SEUIL MINIMUM (RUPTURE)</span>
+              <p class="text-xs text-red-300/80 m-0">Stock physique disponible ({{ stockTotal }}) ≤ Seuil de sécurité minimum ({{ item.stockMinimum || item.stockSecurite }} u). Réapprovisionnement P01 recommandé.</p>
+            </div>
+          </div>
+          <span class="px-2.5 py-1 bg-red-600 text-white font-black text-xs rounded-lg uppercase shrink-0">Alerte Min</span>
+        </div>
+
+        <!-- Alarme Gestionnaire : Surstock (Dépassement du seuil maximum autorisé) -->
+        <div *ngIf="isStockMaxAlert()" class="mb-4 p-3 bg-amber-950/80 border border-amber-500/80 rounded-xl flex items-center justify-between text-amber-200">
+          <div class="flex items-center gap-3">
+            <i class="pi pi-info-circle text-xl text-amber-400"></i>
+            <div>
+              <span class="font-black text-xs uppercase tracking-wider text-amber-300">ALARME GESTIONNAIRE : SEUIL MAXIMUM ATTEINT (SURSTOCK)</span>
+              <p class="text-xs text-amber-300/80 m-0">Stock physique disponible ({{ stockTotal }}) ≥ Seuil maximum autorisé ({{ item.stockMaximum }} u). Suspendre les nouvelles entrées.</p>
+            </div>
+          </div>
+          <span class="px-2.5 py-1 bg-amber-600 text-white font-black text-xs rounded-lg uppercase shrink-0">Alerte Max</span>
+        </div>
         
-        <div class="grid grid-cols-3 gap-4 mb-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div class="bg-white/5 p-4 rounded-xl border border-white/10 flex justify-between items-center">
             <div>
-              <p class="text-[10px] font-black uppercase opacity-50 mb-1">Stock Physique (Disponible)</p>
-              <p class="text-4xl font-black text-green-400">
+              <p class="text-[10px] font-black uppercase opacity-50 mb-1">Stock Physique</p>
+              <p class="text-3xl font-black text-green-400">
                 {{ stockTotal | number:'1.0-0' }}
-                <span class="text-2xl text-gray-300 font-normal" *ngIf="getReservedTotal() > 0">
+                <span class="text-xl text-gray-300 font-normal" *ngIf="getReservedTotal() > 0">
                   ({{ stockTotal - getReservedTotal() }})
                 </span>
               </p>
             </div>
-            <i class="pi pi-box text-3xl opacity-20"></i>
+            <i class="pi pi-box text-2xl opacity-20"></i>
           </div>
           <div class="bg-white/5 p-4 rounded-xl border border-white/10 flex justify-between items-center">
             <div>
               <p class="text-[10px] font-black uppercase opacity-50 mb-1">Stock Réservé</p>
-              <p class="text-4xl font-black text-orange-400">{{ getReservedTotal() | number:'1.0-0' }}</p>
+              <p class="text-3xl font-black text-orange-400">{{ getReservedTotal() | number:'1.0-0' }}</p>
             </div>
-            <i class="pi pi-bookmark text-3xl opacity-20"></i>
+            <i class="pi pi-bookmark text-2xl opacity-20"></i>
           </div>
-          <div class="bg-white/5 p-4 rounded-xl border border-white/10 flex justify-between items-center">
+          <div class="bg-white/5 p-4 rounded-xl border border-white/10 flex justify-between items-center"
+               [ngClass]="{'border-red-500/60 bg-red-950/30': isStockMinAlert()}">
             <div>
-              <p class="text-[10px] font-black uppercase opacity-50 mb-1">Seuil Alerte</p>
-              <p class="text-4xl font-black text-gray-400">{{ item.stockSecurite }}</p>
+              <p class="text-[10px] font-black uppercase opacity-50 mb-1">Seuil Min / Alerte</p>
+              <p class="text-3xl font-black" [ngClass]="isStockMinAlert() ? 'text-red-400' : 'text-gray-300'">
+                {{ item.stockMinimum || item.stockSecurite || 0 }}
+              </p>
             </div>
-            <i class="pi pi-shield text-3xl opacity-20"></i>
+            <i class="pi pi-shield text-2xl opacity-20" [ngClass]="{'text-red-400 opacity-60': isStockMinAlert()}"></i>
+          </div>
+          <div class="bg-white/5 p-4 rounded-xl border border-white/10 flex justify-between items-center"
+               [ngClass]="{'border-amber-500/60 bg-amber-950/30': isStockMaxAlert()}">
+            <div>
+              <p class="text-[10px] font-black uppercase opacity-50 mb-1">Seuil Max</p>
+              <p class="text-3xl font-black" [ngClass]="isStockMaxAlert() ? 'text-amber-400' : 'text-gray-300'">
+                {{ item.stockMaximum ? item.stockMaximum : '—' }}
+              </p>
+            </div>
+            <i class="pi pi-sliders-h text-2xl opacity-20" [ngClass]="{'text-amber-400 opacity-60': isStockMaxAlert()}"></i>
           </div>
         </div>
 
@@ -323,12 +368,24 @@
   </div>
 </div>
 
-<p-dialog header="Enregistrer un Mouvement" [(visible)]="displayMouvementModal" [modal]="true" [style]="{width: '500px'}" styleClass="p-fluid">
+<p-dialog header="Enregistrer un Mouvement de Stock" [(visible)]="displayMouvementModal" [modal]="true" [style]="{width: '520px'}" styleClass="p-fluid">
   <div class="flex flex-col gap-4 mt-2">
-    <div class="field"><label class="font-bold text-gray-700 block mb-2">Type de mouvement</label><p-dropdown [options]="[{label:'Entrée (+)', value:'ENTREE'}, {label:'Sortie (-)', value:'SORTIE'}, {label:'Inventaire (=)', value:'INVENTAIRE'}]" [(ngModel)]="mouvementDto.typeMouvement" appendTo="body"></p-dropdown></div>
-    <div class="field"><label class="font-bold text-gray-700 block mb-2">Quantité</label><input type="number" pInputText [(ngModel)]="mouvementDto.quantite" class="w-full p-2 border border-gray-300 rounded" min="1"></div>
-    <div class="field"><label class="font-bold text-gray-700 block mb-2">Magasin (ID)</label><input type="number" pInputText [(ngModel)]="mouvementDto.magasinId" class="w-full p-2 border border-gray-300 rounded"></div>
-    <div class="field"><label class="font-bold text-gray-700 block mb-2">Référence Document (BE / BS)</label><input type="text" pInputText [(ngModel)]="mouvementDto.referenceBon" class="w-full p-2 border border-gray-300 rounded"></div>
+    <div class="field">
+      <label class="font-bold text-gray-700 block mb-2">Type de mouvement</label>
+      <p-dropdown [options]="[{label:'Entrée (+)', value:'ENTREE'}, {label:'Sortie (-)', value:'SORTIE'}, {label:'Inventaire (=)', value:'INVENTAIRE'}]" [(ngModel)]="mouvementDto.typeMouvement" appendTo="body"></p-dropdown>
+    </div>
+    <div class="field">
+      <label class="font-bold text-gray-700 block mb-2">Quantité</label>
+      <p-inputNumber [(ngModel)]="mouvementDto.quantite" [min]="1" [showButtons]="true" placeholder="Quantité" styleClass="w-full"></p-inputNumber>
+    </div>
+    <div class="field">
+      <label class="font-bold text-gray-700 block mb-2">Soute / Magasin concerné</label>
+      <p-dropdown [options]="magasinOptions" [(ngModel)]="mouvementDto.magasinId" optionLabel="label" optionValue="value" placeholder="Sélectionnez la soute" appendTo="body"></p-dropdown>
+    </div>
+    <div class="field">
+      <label class="font-bold text-gray-700 block mb-2">Référence Document (BE / BS)</label>
+      <input type="text" pInputText [(ngModel)]="mouvementDto.referenceBon" class="w-full p-2 border border-gray-300 rounded" placeholder="ex: BE-2026-001">
+    </div>
     <div class="grid grid-cols-2 gap-3">
       <div class="field">
         <label class="font-bold text-gray-700 block mb-2">Rayon <span class="font-normal text-gray-400">(ex: Rayon B-3)</span></label>

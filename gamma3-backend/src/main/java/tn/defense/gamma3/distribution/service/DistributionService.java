@@ -631,11 +631,13 @@ public class DistributionService {
                     });
 
             // ÉTAPE 2 : Décrémenter le stock de la soute source (déjà approvisionnée si transfert validé)
-            // NOTE : Contrairement à l'ancienne implémentation, il n'y a plus de synchronisation automatique ici.
-            //        Le transfert depuis SGS a été validé EXPLICITEMENT par l'ADMIN via validerTransfertInterMagasin.
+            Long sortieMagasinId = bs.getMagasinId() != null
+                    ? bs.getMagasinId()
+                    : (demande.getMagasinDesigne() != null ? demande.getMagasinDesigne().getId() : SGS_ID);
+
             stockService.effectuerMouvement(MouvementDto.builder()
                     .itemId(ligne.getItem().getId())
-                    .magasinId(bs.getMagasinId())
+                    .magasinId(sortieMagasinId)
                     .quantite(accordee)
                     .typeMouvement(TypeMouvement.SORTIE)
                     .referenceBon(bs.getNumeroBs())

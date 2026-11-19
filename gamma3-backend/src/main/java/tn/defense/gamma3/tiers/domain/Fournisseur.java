@@ -34,6 +34,8 @@ public class Fournisseur {
 
     private String fax;
 
+    @jakarta.validation.constraints.Min(value = 0, message = "La note doit être supérieure ou égale à 0")
+    @jakarta.validation.constraints.Max(value = 10, message = "La note ne peut pas dépasser 10")
     private Integer note; // Note sur 10
 
     private String logoUrl;

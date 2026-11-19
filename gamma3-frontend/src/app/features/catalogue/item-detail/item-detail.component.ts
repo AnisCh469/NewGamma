@@ -340,12 +340,33 @@ export class ItemDetailComponent implements OnInit {
     this.documentService.ouvrir('etiquette/article/' + encodeURIComponent(this.item.nomenclature));
   }
 
+  // Soutes disponibles pour les mouvements de stock
+  readonly magasinOptions = [
+    { label: '🔵 Nord (Bizerte - SGS)', value: 1 },
+    { label: '🟢 Centre (SM1)', value: 2 },
+    { label: '🟡 Sud (Sfax)', value: 3 }
+  ];
+
+  isStockMinAlert(): boolean {
+    if (!this.item) return false;
+    const minThreshold = (this.item.stockMinimum !== null && this.item.stockMinimum !== undefined)
+      ? Number(this.item.stockMinimum)
+      : (this.item.stockSecurite ? Number(this.item.stockSecurite) : 0);
+    return minThreshold > 0 && this.stockTotal <= minThreshold;
+  }
+
+  isStockMaxAlert(): boolean {
+    if (!this.item || !this.item.stockMaximum) return false;
+    return this.stockTotal >= Number(this.item.stockMaximum);
+  }
+
   loadStock() {
     if (this.item) {
       this.stockService.getStockByItemId(this.item.id).subscribe({
         next: (res) => {
           this.stocks = res;
-          this.stockTotal = this.stocks.reduce((acc, curr) => acc + curr.quantite, 0);
+          // Conversion numérique explicite pour éviter toute concaténation textuelle
+          this.stockTotal = this.stocks.reduce((acc, curr) => acc + Number(curr.quantite || 0), 0);
         },
         error: () => console.error('Erreur chargement stock')
       });
@@ -369,7 +390,7 @@ export class ItemDetailComponent implements OnInit {
   }
 
   getReservedTotal(): number {
-    return this.reservations.reduce((acc, curr) => acc + curr.quantite, 0);
+    return this.reservations.reduce((acc, curr) => acc + Number(curr.quantite || 0), 0);
   }
 
   openMouvementModal() {
@@ -386,20 +407,26 @@ export class ItemDetailComponent implements OnInit {
     this.displayMouvementModal = true;
   }
 
-
   effectuerMouvement() {
-    if (this.mouvementDto.quantite! <= 0) {
+    const qte = Number(this.mouvementDto.quantite);
+    if (!qte || qte <= 0) {
       this.messageService.add({severity:'error', summary:'Erreur', detail:'La quantité doit être supérieure à 0'});
       return;
     }
+    if (!this.mouvementDto.magasinId) {
+      this.messageService.add({severity:'error', summary:'Erreur', detail:'Veuillez sélectionner une soute / magasin valide'});
+      return;
+    }
+    this.mouvementDto.quantite = qte;
     this.stockService.effectuerMouvement(this.mouvementDto as MouvementDto).subscribe({
       next: () => {
-        this.messageService.add({severity:'success', summary:'Succès', detail:'Mouvement enregistré'});
+        this.messageService.add({severity:'success', summary:'Succès', detail:'Mouvement de stock enregistré avec succès'});
         this.displayMouvementModal = false;
         this.loadStock();
       },
-      error: () => {
-        this.messageService.add({severity:'error', summary:'Erreur', detail:'Impossible d\'enregistrer le mouvement'});
+      error: (err) => {
+        const detailMsg = err.error?.message || err.message || 'Impossible d\'enregistrer le mouvement';
+        this.messageService.add({severity:'error', summary:'Échec Mouvement', detail: detailMsg});
       }
     });
   }

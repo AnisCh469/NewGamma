@@ -89,12 +89,18 @@
             <span *ngIf="fournisseur.note" class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">{{fournisseur.note}}/10</span>
             <span *ngIf="!fournisseur.note" class="text-slate-400 text-xs">—</span>
           </td>
-          <td class="text-center py-1 px-4">
+          <td class="text-center py-1 px-4 whitespace-nowrap">
             <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text p-button-info p-button-sm mr-1 w-7 h-7 p-0"
-              (click)="editFournisseur(fournisseur)"></button>
-            <button pButton icon="pi pi-trash"
-              class="p-button-rounded p-button-text p-button-danger p-button-sm w-7 h-7 p-0"
-              (click)="deleteFournisseur(fournisseur)"></button>
+              (click)="editFournisseur(fournisseur)" title="Modifier les informations"></button>
+            <!-- Remplacement de la suppression par la suspension/activation pour préserver l'historique -->
+            <button *ngIf="fournisseur.statut !== 'SUSPENDU'" pButton icon="pi pi-ban"
+              class="p-button-rounded p-button-text p-button-warning p-button-sm w-7 h-7 p-0"
+              (click)="toggleSuspendreFournisseur(fournisseur)"
+              title="Suspendre / Désactiver (Suppression physique interdite par la réglementation)"></button>
+            <button *ngIf="fournisseur.statut === 'SUSPENDU'" pButton icon="pi pi-check-circle"
+              class="p-button-rounded p-button-text p-button-success p-button-sm w-7 h-7 p-0"
+              (click)="toggleSuspendreFournisseur(fournisseur)"
+              title="Réactiver le fournisseur"></button>
           </td>
         </tr>
       </ng-template>
@@ -152,7 +158,10 @@
     <div class="grid grid-cols-2 gap-4 mb-4">
       <div class="field">
         <label for="note" class="block font-medium mb-2">Note sur 10</label>
-        <input type="number" pInputText id="note" [(ngModel)]="selectedFournisseur.note" min="0" max="10" />
+        <p-inputNumber id="note" [(ngModel)]="selectedFournisseur.note" [min]="0" [max]="10" [step]="1" [showButtons]="true" placeholder="0 à 10" styleClass="w-full"></p-inputNumber>
+        <small *ngIf="selectedFournisseur.note !== undefined && selectedFournisseur.note !== null && (selectedFournisseur.note < 0 || selectedFournisseur.note > 10)" class="text-red-500 font-bold block mt-1">
+          La note doit obligatoirement être comprise entre 0 et 10.
+        </small>
       </div>
       <div class="field">
         <label for="statut" class="block font-medium mb-2">Statut d'Homologation</label>

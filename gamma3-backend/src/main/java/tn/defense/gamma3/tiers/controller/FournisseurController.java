@@ -37,11 +37,13 @@ public class FournisseurController {
 
     @PostMapping
     public Fournisseur createFournisseur(@RequestBody Fournisseur fournisseur) {
+        validerNote(fournisseur.getNote());
         return fournisseurRepository.save(fournisseur);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Fournisseur> updateFournisseur(@PathVariable Long id, @RequestBody Fournisseur fournisseurDetails) {
+        validerNote(fournisseurDetails.getNote());
         return fournisseurRepository.findById(id)
                 .map(fournisseur -> {
                     fournisseur.setCode(fournisseurDetails.getCode());
@@ -60,6 +62,12 @@ public class FournisseurController {
                     return ResponseEntity.ok(fournisseurRepository.save(fournisseur));
                 })
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    private void validerNote(Integer note) {
+        if (note != null && (note < 0 || note > 10)) {
+            throw new IllegalArgumentException("La note d'évaluation fournisseur doit être comprise entre 0 et 10.");
+        }
     }
 
     @PostMapping("/{id}/upload-logo")
@@ -112,11 +120,17 @@ public class FournisseurController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteFournisseur(@PathVariable Long id) {
-        if (fournisseurRepository.existsById(id)) {
-            fournisseurRepository.deleteById(id);
-            return ResponseEntity.ok().build();
-        }
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<Fournisseur> deleteFournisseur(@PathVariable Long id) {
+        return fournisseurRepository.findById(id)
+                .map(fournisseur -> {
+                    // RÈGLE MÉTIER & TRAÇABILITÉ MILITAIRE :
+                    // La suppression définitive physique d'un fournisseur est interdite afin de préserver
+                    // l'historique réglementaire des marchés, commandes et réceptions (BPR).
+                    // L'opération bascule le statut en SUSPENDU (désactivation logique).
+                    fournisseur.setStatut(tn.defense.gamma3.tiers.domain.StatutFournisseur.SUSPENDU);
+                    Fournisseur saved = fournisseurRepository.save(fournisseur);
+                    return ResponseEntity.ok(saved);
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 }

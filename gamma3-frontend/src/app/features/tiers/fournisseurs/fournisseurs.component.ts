@@ -9,13 +9,14 @@ import { InputTextModule } from 'primeng/inputtext';
 import { ToolbarModule } from 'primeng/toolbar';
 import { DropdownModule } from 'primeng/dropdown';
 import { TagModule } from 'primeng/tag';
+import { InputNumberModule } from 'primeng/inputnumber';
 
 import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-fournisseurs',
   standalone: true,
-  imports: [CommonModule, FormsModule, TableModule, ButtonModule, DialogModule, InputTextModule, ToolbarModule, DropdownModule, TagModule, RouterModule],
+  imports: [CommonModule, FormsModule, TableModule, ButtonModule, DialogModule, InputTextModule, InputNumberModule, ToolbarModule, DropdownModule, TagModule, RouterModule],
   templateUrl: './fournisseurs.component.html',
   styleUrl: './fournisseurs.component.css'
 })
@@ -65,6 +66,12 @@ export class FournisseursComponent implements OnInit {
   }
 
   saveFournisseur() {
+    // Validation stricte de la note (0 à 10)
+    if (this.selectedFournisseur.note !== undefined && this.selectedFournisseur.note !== null) {
+      if (this.selectedFournisseur.note < 0) this.selectedFournisseur.note = 0;
+      if (this.selectedFournisseur.note > 10) this.selectedFournisseur.note = 10;
+    }
+
     if (this.isEditMode && this.selectedFournisseur.id) {
       this.fournisseurService.updateFournisseur(this.selectedFournisseur.id, this.selectedFournisseur).subscribe(() => {
         this.loadFournisseurs();
@@ -78,11 +85,27 @@ export class FournisseursComponent implements OnInit {
     }
   }
 
-  deleteFournisseur(fournisseur: Fournisseur) {
-    if (confirm('Voulez-vous vraiment supprimer ce fournisseur ?') && fournisseur.id) {
-      this.fournisseurService.deleteFournisseur(fournisseur.id).subscribe(() => {
-        this.loadFournisseurs();
-      });
+  /**
+   * RÈGLE MÉTIER & TRAÇABILITÉ MILITAIRE :
+   * La suppression définitive d'un fournisseur est formellement interdite afin de conserver
+   * l'intégrité de l'historique des marchés, commandes et réceptions (BPR).
+   * L'action bascule entre l'état SUSPENDU et HOMOLOGUE/PROSPECT.
+   */
+  toggleSuspendreFournisseur(fournisseur: Fournisseur) {
+    if (!fournisseur.id) return;
+    if (fournisseur.statut !== 'SUSPENDU') {
+      if (confirm(`Confirmez-vous la suspension du fournisseur "${fournisseur.nom}" ? Il sera marqué inactif mais l'historique réglementaire sera intégralement conservé.`)) {
+        this.fournisseurService.deleteFournisseur(fournisseur.id).subscribe(() => {
+          this.loadFournisseurs();
+        });
+      }
+    } else {
+      if (confirm(`Voulez-vous réactiver le fournisseur "${fournisseur.nom}" ?`)) {
+        const updateData: Fournisseur = { ...fournisseur, statut: 'HOMOLOGUE' };
+        this.fournisseurService.updateFournisseur(fournisseur.id, updateData).subscribe(() => {
+          this.loadFournisseurs();
+        });
+      }
     }
   }
 

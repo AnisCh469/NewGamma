@@ -95,22 +95,25 @@ public class StockService {
                         .rayon(dto.getRayon())
                         .build());
 
+        BigDecimal qteActuelle = stock.getQuantite() != null ? stock.getQuantite() : BigDecimal.ZERO;
+        BigDecimal qteMouvement = dto.getQuantite() != null ? dto.getQuantite() : BigDecimal.ZERO;
+
         if (dto.getTypeMouvement() == TypeMouvement.ENTREE) {
-            stock.setQuantite(stock.getQuantite().add(dto.getQuantite()));
-            if (dto.getEmplacement() != null) {
+            stock.setQuantite(qteActuelle.add(qteMouvement));
+            if (dto.getEmplacement() != null && !dto.getEmplacement().isBlank()) {
                 stock.setEmplacement(dto.getEmplacement());
             }
-            if (dto.getRayon() != null) {
+            if (dto.getRayon() != null && !dto.getRayon().isBlank()) {
                 stock.setRayon(dto.getRayon());
             }
         } else if (dto.getTypeMouvement() == TypeMouvement.SORTIE) {
-            if (stock.getQuantite().compareTo(dto.getQuantite()) < 0) {
-                throw new IllegalStateException("Stock insuffisant dans ce magasin");
+            if (qteActuelle.compareTo(qteMouvement) < 0) {
+                throw new IllegalStateException("Stock insuffisant dans le magasin " + magasin.getNom() + " (Disponible: " + qteActuelle.stripTrailingZeros().toPlainString() + ", Demandé: " + qteMouvement.stripTrailingZeros().toPlainString() + ")");
             }
-            stock.setQuantite(stock.getQuantite().subtract(dto.getQuantite()));
+            stock.setQuantite(qteActuelle.subtract(qteMouvement));
         } else {
             // Pour l'inventaire, on remplace la quantité
-            stock.setQuantite(dto.getQuantite());
+            stock.setQuantite(qteMouvement);
         }
 
         stockRepository.save(stock);

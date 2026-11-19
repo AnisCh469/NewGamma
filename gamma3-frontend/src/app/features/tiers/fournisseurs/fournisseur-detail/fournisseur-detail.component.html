@@ -429,7 +429,10 @@
     </div>
     <div class="field">
       <label for="note" class="font-bold text-gray-700 block mb-1">Note de Performance (/10)</label>
-      <input type="number" pInputText id="note" [(ngModel)]="selectedFournisseur.note" min="0" max="10" />
+      <p-inputNumber id="note" [(ngModel)]="selectedFournisseur.note" [min]="0" [max]="10" [step]="1" [showButtons]="true" styleClass="w-full"></p-inputNumber>
+      <small *ngIf="selectedFournisseur.note !== undefined && selectedFournisseur.note !== null && (selectedFournisseur.note < 0 || selectedFournisseur.note > 10)" class="text-red-500 font-bold block mt-1">
+        La note doit obligatoirement être comprise entre 0 et 10.
+      </small>
     </div>
     <div class="field">
       <label for="adresse" class="font-bold text-gray-700 block mb-1">Adresse</label>

@@ -18,6 +18,7 @@ import { DialogModule } from 'primeng/dialog';
 import { TabViewModule } from 'primeng/tabview';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
+import { InputNumberModule } from 'primeng/inputnumber';
 import { DropdownModule } from 'primeng/dropdown';
 import { TableModule } from 'primeng/table';
 import * as JsBarcode from 'jsbarcode';
@@ -42,6 +43,7 @@ import { environment } from '../../../../../environments/environment';
     DialogModule, 
     TabViewModule,
     InputTextModule,
+    InputNumberModule,
     DropdownModule,
     TableModule,
     TooltipModule,
@@ -203,6 +205,11 @@ export class FournisseurDetailComponent implements OnInit {
   }
 
   saveFournisseur(): void {
+    if (this.selectedFournisseur.note !== undefined && this.selectedFournisseur.note !== null) {
+      if (this.selectedFournisseur.note < 0) this.selectedFournisseur.note = 0;
+      if (this.selectedFournisseur.note > 10) this.selectedFournisseur.note = 10;
+    }
+
     if (this.selectedFournisseur.id) {
       this.fournisseurService.updateFournisseur(this.selectedFournisseur.id, this.selectedFournisseur).subscribe({
         next: (updated) => {

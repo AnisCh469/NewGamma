@@ -584,3 +584,32 @@ Ce journal répertorie les difficultés techniques rencontrées au cours du dév
   4. **Validation :**
      - Compilation Angular (`npm run build`) : succès sans avertissement bloquant.
      - Tests automatisés backend (`./gradlew test`) : 13/13 tests réussis.
+
+---
+
+## Entrée : 2026-11-19 (3)
+* **Tâche :** Traitement des retours de validation du responsable d'application (Front-Office DDM vs Back-Office DA, Alarmes Seuil Min/Max, et 4 défaillances constatées).
+* **Difficulté rencontrée :**
+  1. *Note fournisseur :* Possibilité de saisir des notes arbitraires dépassant la borne autorisée (ex: 12/10 constaté en base et dans l'UI) en l'absence de validation d'intervalle.
+  2. *Fiche Article :* La désignation textuelle de l'article n'était pas affichée dans le bandeau supérieur de la fiche article (`FICHE ARTICLE : 0100AL000001` uniquement), et le style CSS `height: 100vh; overflow: hidden` créait des défilements internes masquant la carte d'identité.
+  3. *Suppression des Fournisseurs :* Présence d'un bouton de suppression physique (`deleteById`) risquant de violer les contraintes de clés étrangères et de détruire l'historique réglementaire des marchés et réceptions.
+  4. *Mouvements de stock & Calculs :* L'interface exigeait la saisie manuelle de l'identifiant numérique du magasin (`Magasin (ID)`). En cas d'erreur de saisie ou de stock insuffisant, l'exception était interceptée de manière opaque sans message d'erreur explicite. Par ailleurs, les calculs de somme cumulée dans le composant risquaient une concaténation textuelle si les quantités étaient reçues au format chaîne.
+* **Cause technique racine :** Absence d'annotations Bean Validation `@Min(0) @Max(10)` sur l'entité `Fournisseur`, manque d'injection de la désignation dans l'en-tête de `item-detail.component.html`, absence de soft-delete sur les tiers, saisie manuelle libre d'ID relationnels en lieu et place d'un sélecteur déroulant de soutes, et absence de conversion numérique `Number()` dans les accumulateurs Angular.
+* **Solution retenue :**
+  1. **Validation & Bornage des Notes Fournisseurs :**
+     - Backend : Annotations `@Min(0)` et `@Max(10)` sur `Fournisseur.java` et validation explicite dans `FournisseurController.java`. Réajustement immédiat en base des notes résiduelles > 10 (ex: DRC, F001 ramenés à 10).
+     - Frontend : Remplacement des champs d'entrée par `p-inputNumber` avec bornes `[min]="0" [max]="10" [step]="1"` dans `fournisseurs.component` et `fournisseur-detail.component`.
+  2. **Affichage Complet & Lisibilité de la Fiche Article :**
+     - Intégration de la désignation en lettres capitales et en grand format dans le bandeau supérieur : `FICHE ARTICLE : 0100AL000001 | [DÉSIGNATION]`.
+     - Suppression de `height: 100vh; overflow: hidden` dans `item-detail.component.css` pour un défilement vertical naturel et une visibilité garantie de toutes les cartes.
+  3. **Protection Réglementaire & Traçabilité des Fournisseurs (Interdiction de Suppression) :**
+     - Remplacement du bouton poubelle par un commutateur de statut réglementaire (Suspendre / Réactiver).
+     - Backend : `deleteFournisseur` transformé en désactivation logique (Soft Deactivation : bascule à `statut = SUSPENDU`), interdisant toute destruction d'historique de marché ou de commande.
+  4. **Sécurisation des Mouvements de Stock & Alarmes Gestionnaire :**
+     - Remplacement de l'input numérique libre par un sélecteur ergonomique de soutes (`Nord - Bizerte SGS`, `Centre SM1`, `Sud Sfax`).
+     - Sécurisation arithmétique `Number(curr.quantite || 0)` et gestion défensive des valeurs nulles dans `StockService.java`.
+     - Intégration des **Alarmes Visuelles Gestionnaire** : Alarme Rupture / Seuil Min (`🚨`) et Alarme Surstock / Seuil Max (`⚠️`).
+     - Rapatriement des messages d'erreur détaillés du backend en cas de stock insuffisant.
+  5. **Validation :**
+     - Frontend : `ng build` complété avec 0 erreur.
+     - Backend : `./gradlew test` validé à 100% (13/13 tests passés avec succès).
