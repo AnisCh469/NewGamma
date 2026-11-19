@@ -166,10 +166,26 @@ export class UniteDetailComponent implements OnInit {
     });
   }
 
+  goBack(): void {
+    if (this.isClient()) {
+      this.router.navigate(['/catalogue']);
+    } else {
+      this.router.navigate(['/unites']);
+    }
+  }
+
   loadUnite(): void {
     const idStr = this.route.snapshot.paramMap.get('id');
     if (idStr) {
       const id = parseInt(idStr, 10);
+      if (this.isClient()) {
+        const clientUnitId = this.authService.currentUser()?.uniteId;
+        if (clientUnitId && id !== clientUnitId) {
+          // Protection Zero-Trust Anti-IDOR : redirection immédiate vers sa propre unité
+          this.router.navigate(['/unites', clientUnitId]);
+          return;
+        }
+      }
       this.uniteService.getUnite(id).subscribe({
         next: (data) => {
           this.unite = data;

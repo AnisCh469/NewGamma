@@ -4,7 +4,7 @@
   <!-- En-tête Compact -->
   <div class="flex items-center justify-between mb-2 no-print border-b pb-2 shrink-0">
     <div class="flex items-center gap-3">
-      <p-button icon="pi pi-arrow-left" label="Retour" styleClass="p-button-text p-button-secondary p-button-sm" routerLink="/unites"></p-button>
+      <p-button icon="pi pi-arrow-left" label="Retour" styleClass="p-button-text p-button-secondary p-button-sm" (onClick)="goBack()"></p-button>
       <h1 class="text-xl font-black text-gray-800 m-0">FICHE UNITÉ / CLIENT : {{ unite?.code }}</h1>
     </div>
     <div class="flex gap-2">

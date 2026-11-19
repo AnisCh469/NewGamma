@@ -7,7 +7,8 @@ import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
+import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
   selector: 'app-unites',
@@ -30,9 +31,27 @@ export class UnitesComponent implements OnInit {
     this.searchTerm = '';
     dt.filterGlobal('', 'contains');
   }
-  constructor(private uniteService: UniteService) {}
+  constructor(
+    private uniteService: UniteService,
+    public authService: AuthService,
+    private router: Router
+  ) {}
+
+  isAdminOrDa(): boolean {
+    const role = this.authService.currentUser()?.role;
+    return role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'DA_MANAGER';
+  }
 
   ngOnInit(): void {
+    if (this.authService.currentUser()?.role === 'UNIT_USER') {
+      const userUnitId = this.authService.currentUser()?.uniteId;
+      if (userUnitId) {
+        this.router.navigate(['/unites', userUnitId]);
+      } else {
+        this.router.navigate(['/catalogue']);
+      }
+      return;
+    }
     this.loadUnites();
   }
 

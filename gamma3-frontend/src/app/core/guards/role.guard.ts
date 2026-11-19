@@ -39,6 +39,18 @@ export const roleGuard: CanActivateFn = (route, _state) => {
     return router.createUrlTree(['/catalogue']);
   }
 
+  // ─── Contrôle Anti-IDOR spécifique Unité pour UNIT_USER ─────────────────────
+  // Si un client UNIT_USER tente d'accéder à /unites/:id, il ne peut accéder
+  // QU'À SA PROPRE UNITÉ (user.uniteId). Tout accès à une autre unité est bloqué.
+  if (user.role === 'UNIT_USER' && route.paramMap.has('id')) {
+    const idParam = route.paramMap.get('id');
+    const requestedId = idParam ? parseInt(idParam, 10) : null;
+    if (requestedId && user.uniteId && requestedId !== user.uniteId) {
+      // Tentative d'accès IDOR à une autre unité cliente -> Redirection vers sa propre unité
+      return router.createUrlTree(['/unites', user.uniteId]);
+    }
+  }
+
   const fonctionsAutorisees: string[] | undefined = route.data?.['fonctionsUnite'];
   if (
     fonctionsAutorisees &&

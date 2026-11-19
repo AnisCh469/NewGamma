@@ -51,27 +51,31 @@ export const routes: Routes = [
   { 
     path: 'fournisseurs', 
     loadComponent: () => import('./features/tiers/fournisseurs/fournisseurs.component').then(m => m.FournisseursComponent),
-    canActivate: [authGuard]
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['SUPER_ADMIN', 'ADMIN', 'DA_MANAGER'] }
   },
   { 
     path: 'fournisseurs/:id', 
     loadComponent: () => import('./features/tiers/fournisseurs/fournisseur-detail/fournisseur-detail.component').then(m => m.FournisseurDetailComponent),
-    canActivate: [authGuard]
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['SUPER_ADMIN', 'ADMIN', 'DA_MANAGER'] }
   },
   { 
     path: 'unites', 
     loadComponent: () => import('./features/tiers/unites/unites.component').then(m => m.UnitesComponent),
-    canActivate: [authGuard]
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['SUPER_ADMIN', 'ADMIN', 'DA_MANAGER'] }
   },
   { 
     path: 'unites/:id', 
     loadComponent: () => import('./features/tiers/unites/unite-detail/unite-detail.component').then(m => m.UniteDetailComponent),
-    canActivate: [authGuard]
+    canActivate: [authGuard, roleGuard]
   },
   {
     path: 'analytics',
     loadComponent: () => import('./features/analytics/dashboard-analytics/dashboard-analytics.component').then(m => m.DashboardAnalyticsComponent),
-    canActivate: [authGuard]
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['SUPER_ADMIN', 'ADMIN', 'DA_MANAGER'] }
   },
   {
     path: 'reformes',

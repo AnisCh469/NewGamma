@@ -3,7 +3,10 @@ package tn.defense.gamma3.tiers.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -33,39 +36,50 @@ public class UniteUtilisatriceController {
     private final PlanArmementRepository planArmementRepository;
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'DA_MANAGER')")
     public List<UniteUtilisatrice> getAllUnites() {
         List<UniteUtilisatrice> unites = uniteRepository.findAll(Sort.by(Sort.Order.asc("code").nullsLast()));
         List<Object[]> counts = planArmementRepository.countPlansGroupByUniteId();
-        System.out.println("DEBUG: counts size = " + counts.size());
         java.util.Map<Long, Long> countMap = new java.util.HashMap<>();
         for (Object[] row : counts) {
             if (row[0] != null && row[1] != null) {
-                System.out.println("DEBUG: row[0] type = " + row[0].getClass().getName() + ", value = " + row[0] + ", row[1] type = " + row[1].getClass().getName() + ", value = " + row[1]);
                 countMap.put((Long) row[0], (Long) row[1]);
             }
         }
         for (UniteUtilisatrice unite : unites) {
             unite.setPlanCount(countMap.getOrDefault(unite.getId(), 0L));
-            System.out.println("DEBUG: Unite " + unite.getCode() + " id = " + unite.getId() + " count = " + unite.getPlanCount());
         }
         return unites;
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UniteUtilisatrice> getUniteById(@PathVariable Long id) {
+    public ResponseEntity<UniteUtilisatrice> getUniteById(@PathVariable Long id, Authentication authentication) {
+        User user = (authentication != null && authentication.getPrincipal() instanceof User u) ? u : null;
+        if (user != null && user.getRole() == Role.UNIT_USER) {
+            if (user.getUnite() == null || !user.getUnite().getId().equals(id)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+        }
         return uniteRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/code/{code}")
-    public ResponseEntity<UniteUtilisatrice> getUniteByCode(@PathVariable String code) {
+    public ResponseEntity<UniteUtilisatrice> getUniteByCode(@PathVariable String code, Authentication authentication) {
+        User user = (authentication != null && authentication.getPrincipal() instanceof User u) ? u : null;
+        if (user != null && user.getRole() == Role.UNIT_USER) {
+            if (user.getUnite() == null || !code.equalsIgnoreCase(user.getUnite().getCode())) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+        }
         return uniteRepository.findByCode(code)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'DA_MANAGER')")
     public UniteUtilisatrice createUnite(@RequestBody UniteUtilisatrice unite) {
         UniteUtilisatrice saved = uniteRepository.save(unite);
         createOrUpdateUserForUnite(saved);
@@ -73,6 +87,7 @@ public class UniteUtilisatriceController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'DA_MANAGER')")
     public ResponseEntity<UniteUtilisatrice> updateUnite(@PathVariable Long id, @RequestBody UniteUtilisatrice uniteDetails) {
         return uniteRepository.findById(id)
                 .map(unite -> {
@@ -95,6 +110,7 @@ public class UniteUtilisatriceController {
     }
 
     @PostMapping("/{id}/upload-logo")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'DA_MANAGER')")
     public ResponseEntity<UniteUtilisatrice> uploadLogo(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
         try {
             UniteUtilisatrice unite = uniteRepository.findById(id)
@@ -155,6 +171,7 @@ public class UniteUtilisatriceController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public ResponseEntity<Void> deleteUnite(@PathVariable Long id) {
         return uniteRepository.findById(id)
                 .map(unite -> {

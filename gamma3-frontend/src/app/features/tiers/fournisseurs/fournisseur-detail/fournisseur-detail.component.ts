@@ -23,6 +23,7 @@ import { DropdownModule } from 'primeng/dropdown';
 import { TableModule } from 'primeng/table';
 import * as JsBarcode from 'jsbarcode';
 import { MarcheService, Marche, CommandeFournisseur } from '../../../../core/services/marche.service';
+import { AuthService } from '../../../../core/auth/auth.service';
 
 import { environment } from '../../../../../environments/environment';
 @Component({
@@ -60,6 +61,7 @@ export class FournisseurDetailComponent implements OnInit {
   private messageService = inject(MessageService);
   private marcheService = inject(MarcheService);
   private documentService = inject(DocumentService);
+  public authService = inject(AuthService);
 
   fournisseur: Fournisseur | null = null;
   loading: boolean = true;
@@ -106,6 +108,11 @@ export class FournisseurDetailComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    if (this.authService.currentUser()?.role === 'UNIT_USER') {
+      this.router.navigate(['/catalogue']);
+      return;
+    }
+
     this.loadFournisseur();
 
     // Cleanup print classes after print dialog closes

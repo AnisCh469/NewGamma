@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -25,11 +26,13 @@ public class FournisseurController {
     private final FournisseurRepository fournisseurRepository;
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'DA_MANAGER')")
     public List<Fournisseur> getAllFournisseurs() {
         return fournisseurRepository.findAll(Sort.by(Sort.Order.asc("code").nullsLast()));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'DA_MANAGER')")
     public ResponseEntity<Fournisseur> getFournisseurById(@PathVariable Long id) {
         return fournisseurRepository.findById(id)
                 .map(ResponseEntity::ok)
@@ -37,12 +40,14 @@ public class FournisseurController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'DA_MANAGER')")
     public Fournisseur createFournisseur(@RequestBody Fournisseur fournisseur) {
         validerNote(fournisseur.getNote());
         return fournisseurRepository.save(fournisseur);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'DA_MANAGER')")
     public ResponseEntity<Fournisseur> updateFournisseur(@PathVariable Long id, @RequestBody Fournisseur fournisseurDetails) {
         validerNote(fournisseurDetails.getNote());
         return fournisseurRepository.findById(id)
@@ -72,6 +77,7 @@ public class FournisseurController {
     }
 
     @PostMapping("/{id}/upload-logo")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'DA_MANAGER')")
     public ResponseEntity<Fournisseur> uploadLogo(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
         try {
             Fournisseur fournisseur = fournisseurRepository.findById(id)
@@ -128,6 +134,7 @@ public class FournisseurController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'DA_MANAGER')")
     public ResponseEntity<Fournisseur> deleteFournisseur(@PathVariable Long id) {
         return fournisseurRepository.findById(id)
                 .map(fournisseur -> {

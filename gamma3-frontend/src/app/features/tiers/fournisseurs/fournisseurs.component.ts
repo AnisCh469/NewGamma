@@ -11,7 +11,8 @@ import { DropdownModule } from 'primeng/dropdown';
 import { TagModule } from 'primeng/tag';
 import { InputNumberModule } from 'primeng/inputnumber';
 
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
+import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
   selector: 'app-fournisseurs',
@@ -41,9 +42,22 @@ export class FournisseursComponent implements OnInit {
     { label: 'Suspendu', value: 'SUSPENDU' }
   ];
 
-  constructor(private fournisseurService: FournisseurService) {}
+  constructor(
+    private fournisseurService: FournisseurService,
+    public authService: AuthService,
+    private router: Router
+  ) {}
+
+  isAdminOrDa(): boolean {
+    const role = this.authService.currentUser()?.role;
+    return role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'DA_MANAGER';
+  }
 
   ngOnInit(): void {
+    if (this.authService.currentUser()?.role === 'UNIT_USER') {
+      this.router.navigate(['/catalogue']);
+      return;
+    }
     this.loadFournisseurs();
   }
 
