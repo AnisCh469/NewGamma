@@ -227,10 +227,11 @@ public class DataSeeder implements CommandLineRunner {
         }
 
         if (magasinRepository.count() == 0) {
-            magasinRepository.save(Magasin.builder().code("SGS").nom("Service de Gestion des Stocks").localisation("Bâtiment Central").build());
-            magasinRepository.save(Magasin.builder().code("SM1").nom("Magasin DA Centre").localisation("Zone Nord").build());
-            magasinRepository.save(Magasin.builder().code("SM2").nom("Magasin DA Sud").localisation("Zone Sud").build());
-            magasinRepository.save(Magasin.builder().code("M_MEC").nom("Magasin Mécanique").localisation("Atelier B").build());
+            magasinRepository.save(Magasin.builder().code("SGS").nom("Soute Nord (Bizerte - Principale)").localisation("Bizerte").build());
+            magasinRepository.save(Magasin.builder().code("SM1").nom("Soute Centre (Kélibia)").localisation("Kélibia").build());
+            magasinRepository.save(Magasin.builder().code("SM2").nom("Soute Sud (Sfax)").localisation("Sfax").build());
+            magasinRepository.save(Magasin.builder().code("M_MEC").nom("Magasin Mécanique (Autre)").localisation("Atelier B").build());
+            magasinRepository.save(Magasin.builder().code("SRR").nom("Service Réforme et Remise (Autre)").localisation("Zone Réforme").build());
             System.out.println("✅ Magasins par défaut créés.");
         }
 

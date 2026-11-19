@@ -102,10 +102,58 @@ export class CatalogueComponent implements OnInit {
 
   // Map matricule -> magasin ID par convention de nommage
   private readonly MAGASIN_MAP: Record<string, number> = {
-    'magasin_centre': 2,  // SM1 — Centre
-    'magasin_sud': 3      // SM2 — Sud
+    'magasin_centre': 2,  // SM1 — Centre (Kélibia)
+    'magasin_sud': 3      // SM2 — Sud (Sfax)
     // L'admin (SGS) voit tout par défaut (null)
   };
+
+  /**
+   * Retourne uniquement les 3 soutes opérationnelles actives de la Marine :
+   * - SGS : Nord (Principale à Bizerte)
+   * - SM1 : Centre (à Kélibia)
+   * - SM2 : Sud (à Sfax)
+   * Les autres magasins non opérationnels sont filtrés / désactivés.
+   */
+  get activeSoutes(): Magasin[] {
+    return this.magasins.filter(m => ['SGS', 'SM1', 'SM2'].includes(m.code));
+  }
+
+  /**
+   * Retourne le libellé court pour le bouton de filtre.
+   * Ne renvoie JAMAIS 'Sud' pour un magasin autre que SM2.
+   */
+  getSouteLabel(m: Magasin): string {
+    switch (m.code) {
+      case 'SGS': return 'Nord';
+      case 'SM1': return 'Centre';
+      case 'SM2': return 'Sud';
+      default: return 'Autre';
+    }
+  }
+
+  /**
+   * Retourne le libellé géographique complet officiel pour le survol/tooltip.
+   */
+  getSouteTooltip(m: Magasin): string {
+    switch (m.code) {
+      case 'SGS': return 'Soute Nord (Bizerte - Principale)';
+      case 'SM1': return 'Soute Centre (Kélibia)';
+      case 'SM2': return 'Soute Sud (Sfax)';
+      default: return 'Autre magasin (désactivé)';
+    }
+  }
+
+  /**
+   * Couleur de la pastille de chaque soute.
+   */
+  getSouteColor(m: Magasin): string {
+    switch (m.code) {
+      case 'SGS': return '#3b82f6';
+      case 'SM1': return '#10b981';
+      case 'SM2': return '#f59e0b';
+      default: return '#94a3b8';
+    }
+  }
 
   // Cart/Panier dialog
   displayCartDialog: boolean = false;

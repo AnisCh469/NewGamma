@@ -179,8 +179,8 @@
                   </span>
                   <div>
                     <!-- Libellé de la région et code de la soute -->
-                    <span [class]="stock.magasinCode === 'SGS' ? 'text-blue-400' : stock.magasinCode === 'SM1' ? 'text-emerald-400' : stock.magasinCode === 'SM2' ? 'text-amber-400' : 'text-primary'">
-                      {{ stock.magasinCode === 'SGS' ? '🔵 NORD (Bizerte)' : stock.magasinCode === 'SM1' ? '🟢 CENTRE' : stock.magasinCode === 'SM2' ? '🟡 SUD' : stock.magasinCode }}
+                    <span [class]="stock.magasinCode === 'SGS' ? 'text-blue-400' : stock.magasinCode === 'SM1' ? 'text-emerald-400' : stock.magasinCode === 'SM2' ? 'text-amber-400' : 'text-slate-400'">
+                      {{ stock.magasinCode === 'SGS' ? '🔵 NORD (Bizerte - Principale)' : stock.magasinCode === 'SM1' ? '🟢 CENTRE (Kélibia)' : stock.magasinCode === 'SM2' ? '🟡 SUD (Sfax)' : '⚪ AUTRE (' + stock.magasinCode + ')' }}
                     </span>
                     <span class="block text-[10px] text-gray-400 font-normal">{{ stock.magasinNom }}</span>
                   </div>

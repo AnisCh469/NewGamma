@@ -119,7 +119,7 @@
           </button>
         </div>
 
-        <!-- Sélecteur de Soute -->
+        <!-- Sélecteur de Soute (Uniquement les 3 soutes actives opérationnelles de la Marine : Nord, Centre, Sud) -->
         <div *ngIf="!isClient() && magasins.length > 0" class="flex items-center gap-1.5 border-l border-slate-200 pl-3 shrink-0">
           <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1 whitespace-nowrap shrink-0 flex items-center gap-1">
             <i class="pi pi-warehouse"></i>SOUTE
@@ -127,26 +127,29 @@
           <button (click)="onMagasinChange(null)"
             [class]="selectedMagasinId === null ? 'bg-slate-800 text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'"
             class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 whitespace-nowrap shrink-0 flex items-center gap-1"
-            id="filter-magasin-tous">
+            id="filter-magasin-tous"
+            title="Toutes les soutes opérationnelles">
             <i class="pi pi-globe text-[10px]"></i>Toutes
           </button>
-          <ng-container *ngFor="let m of magasins">
-            <button *ngIf="m.code !== 'M_MEC'"
+          <ng-container *ngFor="let m of activeSoutes">
+            <button
               (click)="onMagasinChange(m.id)"
               [class]="selectedMagasinId === m.id
                 ? (m.code === 'SGS' ? 'bg-blue-600 text-white shadow-md'
                   : m.code === 'SM1' ? 'bg-emerald-600 text-white shadow-md'
-                  : 'bg-amber-500 text-white shadow-md')
+                  : m.code === 'SM2' ? 'bg-amber-500 text-white shadow-md'
+                  : 'bg-slate-700 text-white shadow-md')
                 : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'"
-              class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 flex items-center gap-1 whitespace-nowrap shrink-0"
-              [id]="'filter-magasin-' + m.code">
+              class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 flex items-center gap-1.5 whitespace-nowrap shrink-0"
+              [id]="'filter-magasin-' + m.code"
+              [title]="getSouteTooltip(m)">
               <span [class]="selectedMagasinId !== m.id
-                ? (m.code === 'SGS' ? 'text-blue-500' : m.code === 'SM1' ? 'text-emerald-600' : 'text-amber-500')
+                ? (m.code === 'SGS' ? 'text-blue-500' : m.code === 'SM1' ? 'text-emerald-600' : m.code === 'SM2' ? 'text-amber-500' : 'text-slate-400')
                 : ''"
                 class="inline-block w-2 h-2 rounded-full shrink-0"
-                [style.background-color]="selectedMagasinId !== m.id ? (m.code === 'SGS' ? '#3b82f6' : m.code === 'SM1' ? '#10b981' : '#f59e0b') : 'currentColor'"
+                [style.background-color]="selectedMagasinId !== m.id ? getSouteColor(m) : 'currentColor'"
               ></span>
-              {{ m.code === 'SGS' ? 'Nord' : m.code === 'SM1' ? 'Centre' : 'Sud' }}
+              {{ getSouteLabel(m) }}
             </button>
           </ng-container>
         </div>

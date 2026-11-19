@@ -340,11 +340,11 @@ export class ItemDetailComponent implements OnInit {
     this.documentService.ouvrir('etiquette/article/' + encodeURIComponent(this.item.nomenclature));
   }
 
-  // Soutes disponibles pour les mouvements de stock
+  // Soutes disponibles pour les mouvements de stock (Nord Bizerte, Centre Kélibia, Sud Sfax)
   readonly magasinOptions = [
-    { label: '🔵 Nord (Bizerte - SGS)', value: 1 },
-    { label: '🟢 Centre (SM1)', value: 2 },
-    { label: '🟡 Sud (Sfax)', value: 3 }
+    { label: '🔵 Nord (Bizerte - Principale - SGS)', value: 1 },
+    { label: '🟢 Centre (Kélibia - SM1)', value: 2 },
+    { label: '🟡 Sud (Sfax - SM2)', value: 3 }
   ];
 
   isStockMinAlert(): boolean {
