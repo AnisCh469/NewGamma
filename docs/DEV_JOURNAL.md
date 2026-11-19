@@ -578,7 +578,9 @@ Ce journal répertorie les difficultés techniques rencontrées au cours du dév
   2. **Immunisation Anti-Coupure (CSS & Tailwind) :**
      - Injection de `whitespace-nowrap shrink-0` sur l'ensemble des boutons de filtrage et d'action.
      - Règle globale dans `styles.css` : `.p-button, .p-button .p-button-label { white-space: nowrap !important; }` prévenant tout wrapping parasite dans les boutons PrimeNG.
-  3. **Homogénéisation Multi-Écrans :** Application des mêmes principes de résilience au zoom sur `console-arbitrage`, `reception-list`, `reforme-console`, `fournisseurs` et `unites`.
+  3. **Homogénéisation Multi-Écrans & Épuration UI :** 
+     - Application des mêmes principes de résilience au zoom sur `console-arbitrage`, `reception-list`, `reforme-console`, `fournisseurs` et `unites`.
+     - Suppression du badge de sélection de langue inutile (`Français`) dans `app.component.html`, l'application étant exclusivement opérée en français. Dégagement supplémentaire pour les profils et notifications.
   4. **Validation :**
      - Compilation Angular (`npm run build`) : succès sans avertissement bloquant.
      - Tests automatisés backend (`./gradlew test`) : 13/13 tests réussis.
