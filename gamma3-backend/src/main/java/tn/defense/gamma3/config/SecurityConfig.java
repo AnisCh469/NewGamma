@@ -67,6 +67,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/auth/login", "/api/v1/auth/verify-2fa").permitAll()
                 .requestMatchers("/api/v1/items/photos/**").permitAll()
                 .requestMatchers("/api/v1/items/documents/**").permitAll()
+                .requestMatchers("/api/v1/fournisseurs/logos/**").permitAll()
+                .requestMatchers("/api/v1/unites/logos/**").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
                 .requestMatchers("/api/v1/error/**", "/error").permitAll()
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll() // Si on a Swagger

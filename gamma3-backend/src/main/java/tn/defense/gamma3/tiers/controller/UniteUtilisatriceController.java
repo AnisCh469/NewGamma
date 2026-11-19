@@ -126,8 +126,15 @@ public class UniteUtilisatriceController {
 
     @GetMapping("/logos/{fileName:.+}")
     public ResponseEntity<org.springframework.core.io.Resource> getLogo(@PathVariable String fileName) {
+        if (fileName == null || fileName.contains("..")) {
+            return ResponseEntity.badRequest().build();
+        }
         try {
-            Path filePath = Paths.get("uploads").resolve("logos").resolve(fileName);
+            Path baseDir = Paths.get("uploads", "logos").toAbsolutePath().normalize();
+            Path filePath = baseDir.resolve(fileName).normalize();
+            if (!filePath.startsWith(baseDir)) {
+                return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+            }
             org.springframework.core.io.Resource resource = new org.springframework.core.io.UrlResource(filePath.toUri());
             
             if (resource.exists() || resource.isReadable()) {
@@ -137,7 +144,7 @@ public class UniteUtilisatriceController {
                 } catch (Exception e) {}
                 
                 return ResponseEntity.ok()
-                        .header(HttpHeaders.CONTENT_TYPE, contentType)
+                        .header(HttpHeaders.CONTENT_TYPE, contentType != null ? contentType : "application/octet-stream")
                         .body(resource);
             } else {
                 return ResponseEntity.notFound().build();

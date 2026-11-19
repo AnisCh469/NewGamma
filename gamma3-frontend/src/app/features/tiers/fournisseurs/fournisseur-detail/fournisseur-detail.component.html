@@ -35,7 +35,7 @@
         <h3 class="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] w-full mb-3">Logo / Armoiries</h3>
         
         <div *ngIf="fournisseur.logoUrl" class="w-full aspect-square max-w-[260px] rounded-lg border border-gray-100 overflow-hidden shadow-inner mb-4 flex items-center justify-center bg-slate-50">
-          <img [src]="getFullUrl(fournisseur.logoUrl)" alt="Logo Fournisseur" class="max-w-full max-h-full object-contain p-2" onerror="this.src='assets/placeholder-logo.png'">
+          <img [src]="getFullUrl(fournisseur.logoUrl)" alt="Logo Fournisseur" class="max-w-full max-h-full object-contain p-2" onerror="this.src='assets/placeholder-item.png'">
         </div>
         
         <div *ngIf="!fournisseur.logoUrl" class="w-full aspect-square max-w-[260px] rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center bg-gray-50 mb-4 p-4 text-center">
