@@ -67,9 +67,21 @@
       <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div class="p-6 bg-gradient-to-br from-slate-50 to-white border-b border-gray-100 flex justify-between items-start">
           <div>
-            <div class="flex items-center gap-2 mb-2">
-               <span class="bg-gamma-primary text-white px-2 py-1 rounded text-xs font-black tracking-widest uppercase">CODE TIERS: {{ fournisseur.code }}</span>
-               <p-tag [value]="fournisseur.statut || 'PROSPECT'" [severity]="getStatutSeverity(fournisseur.statut)" styleClass="text-[10px] px-2 font-bold"></p-tag>
+            <div class="flex flex-wrap items-center gap-2.5 mb-2.5">
+               <span class="inline-flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-black tracking-wider uppercase shadow-sm">
+                 <i class="pi pi-id-card text-[11px]"></i>
+                 <span>CODE TIERS: {{ fournisseur.code }}</span>
+               </span>
+               <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-black uppercase shadow-sm"
+                 [ngClass]="{
+                   'bg-emerald-100 text-emerald-800 border border-emerald-200': fournisseur.statut === 'HOMOLOGUE',
+                   'bg-amber-100 text-amber-800 border border-amber-200': fournisseur.statut === 'EN_EVALUATION',
+                   'bg-blue-100 text-blue-800 border border-blue-200': fournisseur.statut === 'PROSPECT' || !fournisseur.statut,
+                   'bg-rose-100 text-rose-800 border border-rose-200': fournisseur.statut === 'SUSPENDU'
+                 }">
+                 <i [class]="fournisseur.statut === 'HOMOLOGUE' ? 'pi pi-check-circle' : fournisseur.statut === 'SUSPENDU' ? 'pi pi-ban' : 'pi pi-clock'" class="text-[11px]"></i>
+                 <span>{{ fournisseur.statut || 'PROSPECT' }}</span>
+               </span>
             </div>
             <h2 class="text-3xl font-black text-gray-900 leading-tight mb-2 tracking-tighter">{{ fournisseur.nom }}</h2>
             <div class="flex gap-4 text-xs font-bold text-gray-400 uppercase tracking-widest">
@@ -110,9 +122,48 @@
         </div>
       </div>
 
-      <!-- Onglets d'intégration future (Marchés / Performance / Documents) -->
-      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden p-1">
-        <p-tabView>
+      <!-- Onglets transformés en boutons modernes adaptés aux dimensions de la page -->
+      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden p-4">
+        
+        <!-- Navigation par Boutons (Pills) Responsive -->
+        <div class="flex flex-wrap items-center gap-2 p-1.5 bg-slate-100/80 rounded-xl border border-slate-200/80 mb-4">
+          <button type="button"
+            (click)="activeTabIndex = 0"
+            [class]="activeTabIndex === 0
+              ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-500/20'
+              : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold border border-slate-200/60'"
+            class="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap">
+            <i class="pi pi-shopping-cart text-xs" [class.text-white]="activeTabIndex === 0" [class.text-blue-600]="activeTabIndex !== 0"></i>
+            <span>Marchés & Achats</span>
+            <span *ngIf="marches.length + commandes.length > 0"
+              [class]="activeTabIndex === 0 ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-700'"
+              class="px-1.5 py-0.5 rounded-full text-[10px] font-black">
+              {{ marches.length + commandes.length }}
+            </span>
+          </button>
+
+          <button type="button"
+            (click)="activeTabIndex = 1"
+            [class]="activeTabIndex === 1
+              ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-500/20'
+              : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold border border-slate-200/60'"
+            class="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap">
+            <i class="pi pi-chart-line text-xs" [class.text-white]="activeTabIndex === 1" [class.text-emerald-600]="activeTabIndex !== 1"></i>
+            <span>Performance & Évaluations</span>
+          </button>
+
+          <button type="button"
+            (click)="activeTabIndex = 2"
+            [class]="activeTabIndex === 2
+              ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-500/20'
+              : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold border border-slate-200/60'"
+            class="flex-1 sm:flex-initial px-4 py-2 rounded-lg text-xs transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap">
+            <i class="pi pi-file text-xs" [class.text-white]="activeTabIndex === 2" [class.text-amber-600]="activeTabIndex !== 2"></i>
+            <span>Documents Administratifs</span>
+          </button>
+        </div>
+
+        <p-tabView [(activeIndex)]="activeTabIndex" styleClass="custom-btn-tabview">
           <!-- Tab 1: Achats et Marchés -->
           <p-tabPanel header="Marchés & Achats">
             <div class="p-6">

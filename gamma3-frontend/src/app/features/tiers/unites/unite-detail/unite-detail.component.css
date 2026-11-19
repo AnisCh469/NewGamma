@@ -18,7 +18,15 @@
   .p-panel .p-panel-content {
     padding: clamp(0.5rem, 1.5vh, 1.5rem) !important;
   }
-  /* Style custom pour les onglets */
+  /* Style custom pour les onglets en forme de boutons */
+  .custom-btn-tabview .p-tabview-nav-container {
+    display: none !important;
+  }
+  .custom-btn-tabview .p-tabview-panels {
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+  }
   .p-tabview .p-tabview-panels {
     padding: 1.5rem 0 0 0 !important;
   }

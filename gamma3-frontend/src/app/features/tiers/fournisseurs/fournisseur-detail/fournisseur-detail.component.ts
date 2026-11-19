@@ -65,6 +65,7 @@ export class FournisseurDetailComponent implements OnInit {
   loading: boolean = true;
   error: string | null = null;
   today: Date = new Date();
+  activeTabIndex: number = 0;
 
   displayDialog: boolean = false;
   selectedFournisseur: Fournisseur = { code: '', nom: '' };

@@ -113,9 +113,15 @@
       <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div class="p-6 bg-gradient-to-br from-slate-50 to-white border-b border-gray-100 flex justify-between items-start">
           <div>
-            <div class="flex items-center gap-2 mb-2">
-               <span class="bg-gamma-primary text-white px-2 py-1 rounded text-xs font-black tracking-widest uppercase">SIGLE UNITÉ: {{ unite.code }}</span>
-               <span class="bg-slate-100 text-slate-700 px-2 py-1 rounded text-[10px] font-bold">BASE NAVALE : {{ unite.baseNavale || '—' }}</span>
+            <div class="flex flex-wrap items-center gap-2.5 mb-2.5">
+               <span class="inline-flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-black tracking-wider uppercase shadow-sm">
+                 <i class="pi pi-shield text-[11px]"></i>
+                 <span>SIGLE UNITÉ: {{ unite.code }}</span>
+               </span>
+               <span class="inline-flex items-center gap-1.5 bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1 rounded-lg text-xs font-extrabold uppercase shadow-sm">
+                 <i class="pi pi-compass text-[11px] text-slate-500"></i>
+                 <span>BASE NAVALE : {{ unite.baseNavale || '—' }}</span>
+               </span>
             </div>
             <h2 class="text-3xl font-black text-gray-900 leading-tight mb-2 tracking-tighter">{{ unite.nom }}</h2>
             <p class="text-xs font-bold text-gray-400 uppercase tracking-widest m-0">
@@ -140,9 +146,78 @@
         </div>
       </div>
 
-      <!-- Onglets d'intégration future (Demandes de matériels / Distribution annuelle / Documents) -->
-      <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden p-1">
-        <p-tabView [(activeIndex)]="activeTabIndex">
+      <!-- Onglets transformés en boutons modernes adaptés aux dimensions de la page -->
+      <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden p-4">
+        
+        <!-- Navigation par Boutons (Pills) Responsive -->
+        <div class="flex flex-wrap items-center gap-2 p-1.5 bg-slate-100/80 rounded-xl border border-slate-200/80 mb-4">
+          <button type="button"
+            (click)="activeTabIndex = 0"
+            [class]="activeTabIndex === 0
+              ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-500/20'
+              : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold border border-slate-200/60'"
+            class="flex-1 sm:flex-initial px-3.5 py-2 rounded-lg text-xs transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap">
+            <i class="pi pi-shield text-xs" [class.text-white]="activeTabIndex === 0" [class.text-blue-600]="activeTabIndex !== 0"></i>
+            <span>Plan d'Armement (Dotations)</span>
+            <span *ngIf="plans.length > 0"
+              [class]="activeTabIndex === 0 ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-700'"
+              class="px-1.5 py-0.5 rounded-full text-[10px] font-black">
+              {{ plans.length }}
+            </span>
+          </button>
+
+          <button type="button"
+            (click)="activeTabIndex = 1"
+            [class]="activeTabIndex === 1
+              ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-500/20'
+              : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold border border-slate-200/60'"
+            class="flex-1 sm:flex-initial px-3.5 py-2 rounded-lg text-xs transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap">
+            <i class="pi pi-send text-xs" [class.text-white]="activeTabIndex === 1" [class.text-emerald-600]="activeTabIndex !== 1"></i>
+            <span>Demandes de Matériels</span>
+            <span *ngIf="demandes.length > 0"
+              [class]="activeTabIndex === 1 ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-700'"
+              class="px-1.5 py-0.5 rounded-full text-[10px] font-black">
+              {{ demandes.length }}
+            </span>
+          </button>
+
+          <button type="button"
+            (click)="activeTabIndex = 2"
+            [class]="activeTabIndex === 2
+              ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-500/20'
+              : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold border border-slate-200/60'"
+            class="flex-1 sm:flex-initial px-3.5 py-2 rounded-lg text-xs transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap">
+            <i class="pi pi-chart-bar text-xs" [class.text-white]="activeTabIndex === 2" [class.text-purple-600]="activeTabIndex !== 2"></i>
+            <span>États des Dotations & Consommation</span>
+          </button>
+
+          <button type="button"
+            (click)="activeTabIndex = 3"
+            [class]="activeTabIndex === 3
+              ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-500/20'
+              : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold border border-slate-200/60'"
+            class="flex-1 sm:flex-initial px-3.5 py-2 rounded-lg text-xs transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap">
+            <i class="pi pi-file-pdf text-xs" [class.text-white]="activeTabIndex === 3" [class.text-amber-600]="activeTabIndex !== 3"></i>
+            <span>Documents & Notes de Service</span>
+          </button>
+
+          <button type="button"
+            (click)="activeTabIndex = 4"
+            [class]="activeTabIndex === 4
+              ? 'bg-blue-600 text-white font-bold shadow-md shadow-blue-500/20'
+              : 'bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold border border-slate-200/60'"
+            class="flex-1 sm:flex-initial px-3.5 py-2 rounded-lg text-xs transition-all duration-200 flex items-center justify-center gap-2 whitespace-nowrap">
+            <i class="pi pi-wrench text-xs" [class.text-white]="activeTabIndex === 4" [class.text-rose-600]="activeTabIndex !== 4"></i>
+            <span>Réforme & Matériel H.S.</span>
+            <span *ngIf="dossiersReforme.length > 0"
+              [class]="activeTabIndex === 4 ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-700'"
+              class="px-1.5 py-0.5 rounded-full text-[10px] font-black">
+              {{ dossiersReforme.length }}
+            </span>
+          </button>
+        </div>
+
+        <p-tabView [(activeIndex)]="activeTabIndex" styleClass="custom-btn-tabview">
           <!-- Tab: Plan d'Armement (Dotations) -->
           <p-tabPanel header="Plan d'Armement (Dotations)">
             <div class="p-4">
