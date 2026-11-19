@@ -62,9 +62,26 @@
       <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div class="p-6 bg-gradient-to-br from-slate-50 to-white border-b border-gray-100 flex justify-between items-start">
           <div>
-            <div class="flex items-center gap-2 mb-2">
-               <span class="bg-primary text-white px-2 py-1 rounded text-xs font-black tracking-widest uppercase">NNO: {{ item.nomenclature }}</span>
-               <p-tag [value]="item.stockSecurite > 0 ? 'ACTIF' : 'NOUVEAU'" [severity]="getStockSeverity(item.stockSecurite)" styleClass="text-[10px] px-2 font-bold"></p-tag>
+            <div class="flex flex-wrap items-center gap-2.5 mb-2.5">
+               <span class="inline-flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-black tracking-wider uppercase shadow-sm">
+                 <i class="pi pi-hashtag text-[11px]"></i>
+                 <span>NNO: {{ item.nomenclature }}</span>
+               </span>
+
+               <!-- Statut de l'article : Toujours Vert pour ACTIF -->
+               <span class="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1 rounded-lg text-xs font-extrabold uppercase shadow-sm">
+                 <i class="pi pi-check-circle text-[11px] text-emerald-600"></i>
+                 <span>{{ item.etatArticle || 'ACTIF' }}</span>
+               </span>
+
+               <!-- Consommabilité : Consommable ou Non Consommable -->
+               <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-extrabold uppercase shadow-sm"
+                     [ngClass]="item.typeConsommabilite === 'NON_CONSOMMABLE'
+                       ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                       : 'bg-teal-100 text-teal-800 border border-teal-200'">
+                 <i [class]="item.typeConsommabilite === 'NON_CONSOMMABLE' ? 'pi pi-cog' : 'pi pi-box'" class="text-[11px]"></i>
+                 <span>{{ item.typeConsommabilite === 'NON_CONSOMMABLE' ? 'Non Consommable' : 'Consommable' }}</span>
+               </span>
             </div>
             <h2 class="text-3xl font-black text-gray-900 leading-tight mb-2 tracking-tighter">{{ item.designation }}</h2>
             <div class="flex gap-4 text-xs font-bold text-gray-400 uppercase tracking-widest">
@@ -94,7 +111,7 @@
         </div>
 
         <!-- Alarme Gestionnaire : Stock sous le seuil minimum (Rupture / Urgence réappro) -->
-        <div *ngIf="isStockMinAlert()" class="mb-4 p-3 bg-red-950/80 border border-red-500/80 rounded-xl flex items-center justify-between text-red-200">
+        <div *ngIf="!isClient() && isStockMinAlert()" class="mb-4 p-3 bg-red-950/80 border border-red-500/80 rounded-xl flex items-center justify-between text-red-200">
           <div class="flex items-center gap-3">
             <i class="pi pi-exclamation-triangle text-xl text-red-400"></i>
             <div>
@@ -106,7 +123,7 @@
         </div>
 
         <!-- Alarme Gestionnaire : Surstock (Dépassement du seuil maximum autorisé) -->
-        <div *ngIf="isStockMaxAlert()" class="mb-4 p-3 bg-amber-950/80 border border-amber-500/80 rounded-xl flex items-center justify-between text-amber-200">
+        <div *ngIf="!isClient() && isStockMaxAlert()" class="mb-4 p-3 bg-amber-950/80 border border-amber-500/80 rounded-xl flex items-center justify-between text-amber-200">
           <div class="flex items-center gap-3">
             <i class="pi pi-info-circle text-xl text-amber-400"></i>
             <div>
@@ -117,27 +134,30 @@
           <span class="px-2.5 py-1 bg-amber-600 text-white font-black text-xs rounded-lg uppercase shrink-0">Alerte Max</span>
         </div>
         
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div class="grid gap-4 mb-4" [ngClass]="isClient() ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-2 md:grid-cols-4'">
           <div class="bg-white/5 p-4 rounded-xl border border-white/10 flex justify-between items-center">
             <div>
-              <p class="text-[10px] font-black uppercase opacity-50 mb-1">Stock Physique</p>
+              <p class="text-[10px] font-black uppercase opacity-50 mb-1">{{ isClient() ? 'Stock Disponible à la Demande' : 'Stock Physique' }}</p>
               <p class="text-3xl font-black text-green-400">
-                {{ stockTotal | number:'1.0-0' }}
-                <span class="text-xl text-gray-300 font-normal" *ngIf="getReservedTotal() > 0">
-                  ({{ stockTotal - getReservedTotal() }})
+                <span *ngIf="isClient()">{{ (stockTotal - getReservedTotal()) > 0 ? (stockTotal - getReservedTotal()) : 0 }}</span>
+                <span *ngIf="!isClient()">
+                  {{ stockTotal | number:'1.0-0' }}
+                  <span class="text-xl text-gray-300 font-normal" *ngIf="getReservedTotal() > 0">
+                    ({{ stockTotal - getReservedTotal() }})
+                  </span>
                 </span>
               </p>
             </div>
             <i class="pi pi-box text-2xl opacity-20"></i>
           </div>
-          <div class="bg-white/5 p-4 rounded-xl border border-white/10 flex justify-between items-center">
+          <div *ngIf="!isClient()" class="bg-white/5 p-4 rounded-xl border border-white/10 flex justify-between items-center">
             <div>
               <p class="text-[10px] font-black uppercase opacity-50 mb-1">Stock Réservé</p>
               <p class="text-3xl font-black text-orange-400">{{ getReservedTotal() | number:'1.0-0' }}</p>
             </div>
             <i class="pi pi-bookmark text-2xl opacity-20"></i>
           </div>
-          <div class="bg-white/5 p-4 rounded-xl border border-white/10 flex justify-between items-center"
+          <div *ngIf="!isClient()" class="bg-white/5 p-4 rounded-xl border border-white/10 flex justify-between items-center"
                [ngClass]="{'border-red-500/60 bg-red-950/30': isStockMinAlert()}">
             <div>
               <p class="text-[10px] font-black uppercase opacity-50 mb-1">Seuil Min / Alerte</p>
@@ -147,7 +167,7 @@
             </div>
             <i class="pi pi-shield text-2xl opacity-20" [ngClass]="{'text-red-400 opacity-60': isStockMinAlert()}"></i>
           </div>
-          <div class="bg-white/5 p-4 rounded-xl border border-white/10 flex justify-between items-center"
+          <div *ngIf="!isClient()" class="bg-white/5 p-4 rounded-xl border border-white/10 flex justify-between items-center"
                [ngClass]="{'border-amber-500/60 bg-amber-950/30': isStockMaxAlert()}">
             <div>
               <p class="text-[10px] font-black uppercase opacity-50 mb-1">Seuil Max</p>
@@ -207,8 +227,8 @@
         </p-table>
       </div>
 
-      <!-- Réservations (Transit) -->
-      <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+      <!-- Réservations (Transit) — Uniquement pour les gestionnaires et DA (les unités clientes ne voient pas les détails de transit des autres) -->
+      <div *ngIf="!isClient()" class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-sm font-black uppercase tracking-[0.2em] text-gray-800">Réservations Actives (Transit)</h3>
         </div>
@@ -312,8 +332,19 @@
           <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">État</span><span class="font-bold text-gray-800">{{ item.etatArticle || '—' }}</span></div>
           <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">NSN</span><span class="font-bold text-gray-800">{{ item.nsn || '—' }}</span></div>
           <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">OEM</span><span class="font-bold text-gray-800">{{ item.oem || '—' }}</span></div>
-          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">Blocage approvisionnement</span>
-            <p-tag [value]="item.blocageApprovisionnement ? 'Bloqué' : 'Autorisé'" [severity]="item.blocageApprovisionnement ? 'danger' : 'success'" styleClass="text-[10px]"></p-tag>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">Consommabilité</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase"
+              [ngClass]="item.typeConsommabilite === 'NON_CONSOMMABLE' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-teal-100 text-teal-800 border border-teal-200'">
+              <i [class]="item.typeConsommabilite === 'NON_CONSOMMABLE' ? 'pi pi-cog' : 'pi pi-box'" class="text-[9px]"></i>
+              {{ item.typeConsommabilite === 'NON_CONSOMMABLE' ? 'Non Consommable' : 'Consommable' }}
+            </span>
+          </div>
+          <div><span class="block text-gray-400 font-bold uppercase text-[9px] mb-0.5">Statut Approvisionnement</span>
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase"
+              [ngClass]="item.blocageApprovisionnement ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'">
+              <i [class]="item.blocageApprovisionnement ? 'pi pi-ban text-red-600' : 'pi pi-check text-emerald-600'" class="text-[9px]"></i>
+              {{ item.blocageApprovisionnement ? 'Bloqué (Suspendu)' : 'Actif (Non bloqué)' }}
+            </span>
           </div>
         </div>
       </div>
