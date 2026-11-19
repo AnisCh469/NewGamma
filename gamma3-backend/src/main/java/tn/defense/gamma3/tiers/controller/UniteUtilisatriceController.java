@@ -1,6 +1,7 @@
 package tn.defense.gamma3.tiers.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -33,7 +34,7 @@ public class UniteUtilisatriceController {
 
     @GetMapping
     public List<UniteUtilisatrice> getAllUnites() {
-        List<UniteUtilisatrice> unites = uniteRepository.findAll();
+        List<UniteUtilisatrice> unites = uniteRepository.findAll(Sort.by(Sort.Order.asc("code").nullsLast()));
         List<Object[]> counts = planArmementRepository.countPlansGroupByUniteId();
         System.out.println("DEBUG: counts size = " + counts.size());
         java.util.Map<Long, Long> countMap = new java.util.HashMap<>();

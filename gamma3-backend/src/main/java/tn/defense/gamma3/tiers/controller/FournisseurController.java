@@ -1,6 +1,7 @@
 package tn.defense.gamma3.tiers.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -25,7 +26,7 @@ public class FournisseurController {
 
     @GetMapping
     public List<Fournisseur> getAllFournisseurs() {
-        return fournisseurRepository.findAll();
+        return fournisseurRepository.findAll(Sort.by(Sort.Order.asc("code").nullsLast()));
     }
 
     @GetMapping("/{id}")

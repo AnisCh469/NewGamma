@@ -38,7 +38,7 @@ export class UnitesComponent implements OnInit {
 
   loadUnites() {
     this.uniteService.getUnites().subscribe(data => {
-      this.unites = data;
+      this.unites = (data || []).sort((a, b) => (a.code || '').localeCompare(b.code || '', undefined, { numeric: true, sensitivity: 'base' }));
     });
   }
 

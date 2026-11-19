@@ -49,7 +49,7 @@ export class FournisseursComponent implements OnInit {
 
   loadFournisseurs() {
     this.fournisseurService.getFournisseurs().subscribe(data => {
-      this.fournisseurs = data;
+      this.fournisseurs = (data || []).sort((a, b) => (a.code || '').localeCompare(b.code || '', undefined, { numeric: true, sensitivity: 'base' }));
     });
   }
 
