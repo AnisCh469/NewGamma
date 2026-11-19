@@ -2,142 +2,158 @@
 <div class="min-h-screen bg-slate-50 p-4 sm:p-8">
   
   <!-- En-tête de page -->
-  <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-    <div>
-      <h1 class="text-2xl sm:text-3xl font-extrabold text-gamma-dark tracking-tight">Référentiel des Articles</h1>
-      <p class="text-slate-500 mt-1 text-sm">
-        Catalogue officiel de la Marine (Gamma 3) 
-        <span *ngIf="itemService.totalElements() > 0" class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">
-          {{ itemService.totalElements() | number }} articles
-        </span>
-      </p>
-    </div>
-    <div class="flex items-center gap-3 w-full sm:w-auto">
-
-      <!-- Barre de recherche générale -->
-      <div class="relative group flex-1 sm:flex-none">
-        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <i class="pi pi-search text-slate-400 group-focus-within:text-blue-500 transition-colors duration-200"
-             style="font-size: 0.8rem"></i>
-        </div>
-        <input
-          type="text"
-          [(ngModel)]="searchTerm"
-          (ngModelChange)="onSearch()"
-          placeholder="Désignation · Unité · Danger..."
-          class="w-full sm:w-72 pl-9 pr-9 py-2 text-sm
-                 bg-slate-50 border border-slate-200 rounded-xl
-                 focus:outline-none focus:ring-2 focus:ring-blue-400/40 focus:border-blue-400
-                 focus:bg-white placeholder:text-slate-400 text-slate-700
-                 transition-all duration-200"
-          id="search-input"
-        />
-        <button *ngIf="searchTerm" (click)="clearSearch()"
-          class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
-          title="Effacer" type="button">
-          <i class="pi pi-times" style="font-size: 0.75rem"></i>
-        </button>
-        <div *ngIf="!searchTerm" class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
-          <span class="hidden sm:flex items-center gap-0.5 text-slate-300 text-xs">
-            <kbd class="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-400" style="font-size:10px">Ctrl</kbd>
-            <kbd class="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-400" style="font-size:10px">K</kbd>
+  <div class="mb-6 bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col gap-4">
+    
+    <!-- Ligne 1 : Titre principal, badges & Action d'ajout -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+      <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-gamma-dark tracking-tight whitespace-nowrap">
+          Référentiel des Articles
+        </h1>
+        <div class="flex items-center gap-2">
+          <span class="text-slate-300 hidden sm:inline">|</span>
+          <p class="text-slate-500 text-sm whitespace-nowrap">
+            Catalogue officiel de la Marine (Gamma 3)
+          </p>
+          <span *ngIf="itemService.totalElements() > 0" class="px-2.5 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold whitespace-nowrap shrink-0">
+            {{ itemService.totalElements() | number }} articles
           </span>
         </div>
       </div>
 
-      <!-- Recherche Spécifique par Nomenclature (12 caractères) -->
-      <div class="relative group flex-1 sm:flex-none">
-        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <i class="pi pi-hashtag text-slate-400 group-focus-within:text-emerald-500 transition-colors duration-200"
-             style="font-size: 0.8rem"></i>
-        </div>
-        <input
-          type="text"
-          [(ngModel)]="nomenclatureSearchTerm"
-          (ngModelChange)="onNomenclatureSearch()"
-          maxlength="12"
-          placeholder="Nomenclature (12 car.)"
-          class="w-full sm:w-56 pl-9 pr-16 py-2 text-sm
-                 bg-slate-50 border border-slate-200 rounded-xl
-                 focus:outline-none focus:ring-2 focus:ring-emerald-400/40 focus:border-emerald-400
-                 focus:bg-white placeholder:text-slate-400 text-slate-700 font-mono
-                 transition-all duration-200"
-          id="nomenclature-search-input"
-        />
-        <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center gap-1.5">
-          <!-- Indicateur visuel premium de validité (12 caractères requis) -->
-          <span *ngIf="nomenclatureSearchTerm" 
-                [class]="nomenclatureSearchTerm.length === 12 ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-amber-100 text-amber-700 border-amber-200'"
-                class="text-[9px] font-bold select-none px-1.5 py-0.5 rounded border leading-none transition-all">
-            {{ nomenclatureSearchTerm.length }}/12
-          </span>
-          <button *ngIf="nomenclatureSearchTerm" (click)="clearNomenclatureSearch()"
-            class="text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center"
+      <!-- Bouton Admin (toujours isolé sur la droite, 100% stable) -->
+      <div *ngIf="!isClient()" class="shrink-0">
+        <p-button label="Nouvel Article" icon="pi pi-plus" (onClick)="openNewItemDialog()" 
+                  styleClass="p-button-success shadow-md transition-transform hover:scale-105 whitespace-nowrap"></p-button>
+      </div>
+    </div>
+
+    <!-- Ligne 2 : Barre d'Outils (Recherches & Filtres) -->
+    <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
+
+      <!-- Recherches (Générale + Nomenclature) -->
+      <div class="flex items-center gap-2.5 flex-1 min-w-[280px]">
+        <!-- Barre de recherche générale -->
+        <div class="relative group flex-1 min-w-[180px] max-w-sm">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <i class="pi pi-search text-slate-400 group-focus-within:text-blue-500 transition-colors duration-200"
+               style="font-size: 0.8rem"></i>
+          </div>
+          <input
+            type="text"
+            [(ngModel)]="searchTerm"
+            (ngModelChange)="onSearch()"
+            placeholder="Désignation · Unité · Danger..."
+            class="w-full pl-9 pr-9 py-2 text-sm
+                   bg-slate-50 border border-slate-200 rounded-xl
+                   focus:outline-none focus:ring-2 focus:ring-blue-400/40 focus:border-blue-400
+                   focus:bg-white placeholder:text-slate-400 text-slate-700
+                   transition-all duration-200"
+            id="search-input"
+          />
+          <button *ngIf="searchTerm" (click)="clearSearch()"
+            class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
             title="Effacer" type="button">
             <i class="pi pi-times" style="font-size: 0.75rem"></i>
           </button>
+          <div *ngIf="!searchTerm" class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
+            <span class="hidden sm:flex items-center gap-0.5 text-slate-300 text-xs">
+              <kbd class="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-400" style="font-size:10px">Ctrl</kbd>
+              <kbd class="px-1 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-400" style="font-size:10px">K</kbd>
+            </span>
+          </div>
+        </div>
+
+        <!-- Recherche Spécifique par Nomenclature (12 caractères) -->
+        <div class="relative group w-48 sm:w-56 shrink-0">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <i class="pi pi-hashtag text-slate-400 group-focus-within:text-emerald-500 transition-colors duration-200"
+               style="font-size: 0.8rem"></i>
+          </div>
+          <input
+            type="text"
+            [(ngModel)]="nomenclatureSearchTerm"
+            (ngModelChange)="onNomenclatureSearch()"
+            maxlength="12"
+            placeholder="Nomenclature (12 car.)"
+            class="w-full pl-9 pr-14 py-2 text-sm
+                   bg-slate-50 border border-slate-200 rounded-xl
+                   focus:outline-none focus:ring-2 focus:ring-emerald-400/40 focus:border-emerald-400
+                   focus:bg-white placeholder:text-slate-400 text-slate-700 font-mono
+                   transition-all duration-200"
+            id="nomenclature-search-input"
+          />
+          <div class="absolute inset-y-0 right-0 pr-2 flex items-center gap-1">
+            <span *ngIf="nomenclatureSearchTerm" 
+                  [class]="nomenclatureSearchTerm.length === 12 ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-amber-100 text-amber-700 border-amber-200'"
+                  class="text-[9px] font-bold select-none px-1.5 py-0.5 rounded border leading-none transition-all">
+              {{ nomenclatureSearchTerm.length }}/12
+            </span>
+            <button *ngIf="nomenclatureSearchTerm" (click)="clearNomenclatureSearch()"
+              class="text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center"
+              title="Effacer" type="button">
+              <i class="pi pi-times" style="font-size: 0.75rem"></i>
+            </button>
+          </div>
         </div>
       </div>
 
-      <!-- Filtres rapides Consommabilité -->
-      <div class="flex items-center gap-1.5">
-        <button (click)="filterByType(null)"
-          [class]="filterType === null ? 'bg-slate-700 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'"
-          class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150">
-          Tous
-        </button>
-        <button (click)="filterByType('CONSOMMABLE')"
-          [class]="filterType === 'CONSOMMABLE' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-emerald-700 border border-emerald-200 hover:bg-emerald-50'"
-          class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150">
-          <i class="pi pi-droplet text-[10px] mr-1"></i>Consommable
-        </button>
-        <button (click)="filterByType('NON_CONSOMMABLE')"
-          [class]="filterType === 'NON_CONSOMMABLE' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50'"
-          class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150">
-          <i class="pi pi-cog text-[10px] mr-1"></i>Non Consommable
-        </button>
-      </div>
-
-      <!-- ═══ Sélecteur de Soute (DA Manager uniquement) ═══ -->
-      <!-- RÔLE : Permet à chaque gestionnaire de soute de filtrer le catalogue
-                  pour ne voir que les articles disponibles dans son propre magasin.
-           LOGIQUE : Les boutons changent selectedMagasinId, ce qui déclenche un rechargement
-                     du catalogue avec la quantité locale de la soute choisie. -->
-      <div *ngIf="!isClient() && magasins.length > 0" class="flex items-center gap-1.5 border-l border-slate-200 pl-3">
-        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">
-          <i class="pi pi-warehouse mr-1"></i>Soute
-        </span>
-        <button (click)="onMagasinChange(null)"
-          [class]="selectedMagasinId === null ? 'bg-slate-800 text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'"
-          class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150"
-          id="filter-magasin-tous">
-          <i class="pi pi-globe text-[10px] mr-1"></i>Toutes
-        </button>
-        <ng-container *ngFor="let m of magasins">
-          <button *ngIf="m.code !== 'M_MEC'"
-            (click)="onMagasinChange(m.id)"
-            [class]="selectedMagasinId === m.id
-              ? (m.code === 'SGS' ? 'bg-blue-600 text-white shadow-md'
-                : m.code === 'SM1' ? 'bg-emerald-600 text-white shadow-md'
-                : 'bg-amber-500 text-white shadow-md')
-              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'"
-            class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 flex items-center gap-1"
-            [id]="'filter-magasin-' + m.code">
-            <span [class]="selectedMagasinId !== m.id
-              ? (m.code === 'SGS' ? 'text-blue-500' : m.code === 'SM1' ? 'text-emerald-600' : 'text-amber-500')
-              : ''"
-              class="inline-block w-2 h-2 rounded-full"
-              [style.background-color]="selectedMagasinId !== m.id ? (m.code === 'SGS' ? '#3b82f6' : m.code === 'SM1' ? '#10b981' : '#f59e0b') : 'currentColor'"
-            ></span>
-            {{ m.code === 'SGS' ? 'Nord' : m.code === 'SM1' ? 'Centre' : 'Sud' }}
+      <!-- Filtres rapides Consommabilité & Sélecteur de Soute -->
+      <div class="flex items-center gap-3 flex-wrap shrink-0">
+        <!-- Filtres rapides Consommabilité -->
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button (click)="filterByType(null)"
+            [class]="filterType === null ? 'bg-slate-700 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 whitespace-nowrap shrink-0">
+            Tous
           </button>
-        </ng-container>
-      </div>
+          <button (click)="filterByType('CONSOMMABLE')"
+            [class]="filterType === 'CONSOMMABLE' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-emerald-700 border border-emerald-200 hover:bg-emerald-50'"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 whitespace-nowrap shrink-0 flex items-center gap-1">
+            <i class="pi pi-droplet text-[10px]"></i>Consommable
+          </button>
+          <button (click)="filterByType('NON_CONSOMMABLE')"
+            [class]="filterType === 'NON_CONSOMMABLE' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50'"
+            class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 whitespace-nowrap shrink-0 flex items-center gap-1">
+            <i class="pi pi-cog text-[10px]"></i>Non Consommable
+          </button>
+        </div>
 
-      <!-- Bouton Admin -->
-      <p-button *ngIf="!isClient()" label="Nouvel Article" icon="pi pi-plus" (onClick)="openNewItemDialog()" styleClass="p-button-success shadow-md transition-transform hover:scale-105 shrink-0"></p-button>
+        <!-- Sélecteur de Soute -->
+        <div *ngIf="!isClient() && magasins.length > 0" class="flex items-center gap-1.5 border-l border-slate-200 pl-3 shrink-0">
+          <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1 whitespace-nowrap shrink-0 flex items-center gap-1">
+            <i class="pi pi-warehouse"></i>SOUTE
+          </span>
+          <button (click)="onMagasinChange(null)"
+            [class]="selectedMagasinId === null ? 'bg-slate-800 text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'"
+            class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 whitespace-nowrap shrink-0 flex items-center gap-1"
+            id="filter-magasin-tous">
+            <i class="pi pi-globe text-[10px]"></i>Toutes
+          </button>
+          <ng-container *ngFor="let m of magasins">
+            <button *ngIf="m.code !== 'M_MEC'"
+              (click)="onMagasinChange(m.id)"
+              [class]="selectedMagasinId === m.id
+                ? (m.code === 'SGS' ? 'bg-blue-600 text-white shadow-md'
+                  : m.code === 'SM1' ? 'bg-emerald-600 text-white shadow-md'
+                  : 'bg-amber-500 text-white shadow-md')
+                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'"
+              class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 flex items-center gap-1 whitespace-nowrap shrink-0"
+              [id]="'filter-magasin-' + m.code">
+              <span [class]="selectedMagasinId !== m.id
+                ? (m.code === 'SGS' ? 'text-blue-500' : m.code === 'SM1' ? 'text-emerald-600' : 'text-amber-500')
+                : ''"
+                class="inline-block w-2 h-2 rounded-full shrink-0"
+                [style.background-color]="selectedMagasinId !== m.id ? (m.code === 'SGS' ? '#3b82f6' : m.code === 'SM1' ? '#10b981' : '#f59e0b') : 'currentColor'"
+              ></span>
+              {{ m.code === 'SGS' ? 'Nord' : m.code === 'SM1' ? 'Centre' : 'Sud' }}
+            </button>
+          </ng-container>
+        </div>
+      </div>
 
     </div>
+
   </div>
 
   <!-- Grille de données -->

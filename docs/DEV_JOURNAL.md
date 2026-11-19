@@ -560,3 +560,25 @@ Ce journal répertorie les difficultés techniques rencontrées au cours du dév
   4. **Validation Qualité :**
      - Tests unitaires et d'intégration backend validés à 100% (`BUILD SUCCESSFUL`, 13/13 tests passés).
      - Build Angular complété avec succès (`Application bundle generation complete`, 0 erreur bloquante).
+
+---
+
+## Entrée : 2026-11-19 (2)
+* **Tâche :** Correction de la réactivité graphique et préservation de l'esthétique des boutons & en-têtes sous différents niveaux de zoom (90%, 100%, 110%, 125%).
+* **Difficulté rencontrée :** Sous un niveau de zoom de 90%, la présentation était harmonieuse avec tous les contrôles alignés. En revanche, à 100%, 110% et 125% (niveau standard par défaut sous Windows 10/11 pour écrans portables Full HD), la mise en page du catalogue s'effondrait :
+  1. Le titre "Référentiel des Articles" se repliait verticalement sur trois lignes (`Référentiel` / `des` / `Articles`).
+  2. Le badge `63,286 articles` se coupait sur deux lignes (`63,286` puis `articles`).
+  3. Les boutons d'actions ("Consommable", "Non Consommable", "Nouvel Article") voyaient leur texte se tronquer ou se scinder verticalement (`Non` / `Consommable`, `Nouvel` / `Article`).
+  4. La rangée de boutons de soutes (Toutes, Nord, Centre, Sud) débordait de l'écran ou subissait un écrasement latéral inesthétique.
+* **Cause technique racine :** Le conteneur d'en-tête de `catalogue.component.html` tentait de forcer 13 contrôles indépendants (titre + sous-titre + badge + 2 barres de recherche + 3 boutons de consommabilité + 4 boutons de soute + bouton d'ajout) sur une seule et unique ligne `flex` sans autorisation de repli ordonné (`flex-wrap`), et sans contrainte `whitespace-nowrap` ni `shrink-0` sur les libellés de boutons et les titres. Les calculs de largeur intrinsèque de flexbox compulsaient alors le titre et les boutons au détriment de leur lisibilité.
+* **Solution retenue :**
+  1. **Architecture de l'En-tête en 2 Paliers Logiques :**
+     - **Palier 1 (Titre & Action Principale) :** `h1` avec `whitespace-nowrap font-extrabold text-gamma-dark` et son compteur `[63,286 articles]` à gauche, et le bouton d'ajout de nouvel article `+ Nouvel Article` ancré à droite. Le titre dispose de 100% du dégagement nécessaire et ne se replie plus jamais, même à 150% de zoom.
+     - **Palier 2 (Barre d'Outils Recherche & Filtres) :** Séparée par une fine bordure `border-t border-slate-100`. À gauche, les champs de recherche (recherche générale et nomenclature 12 car.) ; à droite, les blocs de filtrage par consommabilité et sélection de soute géographique (Toutes, Nord, Centre, Sud) qui conservent rigoureusement leur style compact apprécié à 90%.
+  2. **Immunisation Anti-Coupure (CSS & Tailwind) :**
+     - Injection de `whitespace-nowrap shrink-0` sur l'ensemble des boutons de filtrage et d'action.
+     - Règle globale dans `styles.css` : `.p-button, .p-button .p-button-label { white-space: nowrap !important; }` prévenant tout wrapping parasite dans les boutons PrimeNG.
+  3. **Homogénéisation Multi-Écrans :** Application des mêmes principes de résilience au zoom sur `console-arbitrage`, `reception-list`, `reforme-console`, `fournisseurs` et `unites`.
+  4. **Validation :**
+     - Compilation Angular (`npm run build`) : succès sans avertissement bloquant.
+     - Tests automatisés backend (`./gradlew test`) : 13/13 tests réussis.

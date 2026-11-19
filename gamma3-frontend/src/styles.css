@@ -25,3 +25,8 @@ body {
 .p-datatable .p-paginator {
     padding: 0.25rem;
 }
+
+/* Stabilisation UI & Résilience Zoom : Aucun retour à la ligne intempestif dans les boutons */
+.p-button, .p-button .p-button-label {
+    white-space: nowrap !important;
+}
