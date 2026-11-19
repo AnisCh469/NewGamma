@@ -29,4 +29,21 @@ public interface StockRepository extends JpaRepository<Stock, Long> {
      *  la plupart jamais mouvementés depuis la migration Gamma2). */
     @Query("SELECT s.item.id, SUM(s.quantite) FROM Stock s GROUP BY s.item.id")
     List<Object[]> getAllTotalQuantitiesByItem();
+
+    /** Valeur totale valorisée du stock pour le Dashboard (calcul direct côté base) */
+    @Query("SELECT COALESCE(SUM(s.quantite * s.item.prixUnitaire), 0) FROM Stock s")
+    BigDecimal calculateTotalStockValue();
+
+    /** Nombre d'articles sous le seuil d'alerte pour le Dashboard */
+    @Query("SELECT COUNT(s) FROM Stock s WHERE s.quantite < s.item.stockSecurite")
+    long countAlertStockItems();
+
+    /** Agrégation par magasin pour le Dashboard Analytics */
+    @Query("SELECT s.magasin.id, s.magasin.code, s.magasin.nom, COALESCE(SUM(s.quantite), 0), COALESCE(SUM(s.quantite * s.item.prixUnitaire), 0) " +
+           "FROM Stock s GROUP BY s.magasin.id, s.magasin.code, s.magasin.nom")
+    List<Object[]> getStockStatsByMagasin();
+
+    /** Chargement complet avec Item et Magasin pour l'export d'inventaire sans requêtes N+1 */
+    @Query("SELECT s FROM Stock s JOIN FETCH s.item JOIN FETCH s.magasin")
+    List<Stock> findAllWithItemAndMagasin();
 }

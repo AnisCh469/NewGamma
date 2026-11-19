@@ -39,7 +39,7 @@ public class PlanArmementController {
 
     @GetMapping
     public List<PlanArmement> getAllPlans() {
-        return planArmementRepository.findAll();
+        return planArmementRepository.findAllWithItemAndUnite();
     }
 
     @GetMapping("/{id}")

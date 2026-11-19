@@ -39,4 +39,7 @@ public interface DemandeMaterielRepository extends JpaRepository<DemandeMateriel
     // ─── Combinaison magasin + statut ─────────────────────────────────────────────
     @Query("SELECT d FROM DemandeMateriel d JOIN FETCH d.unite LEFT JOIN FETCH d.bonSortie WHERE d.magasinDesigne.id = :magasinId AND d.statut = :statut ORDER BY d.createdAt DESC")
     List<DemandeMateriel> findByMagasinDesigne_IdAndStatut(@Param("magasinId") Long magasinId, @Param("statut") StatutDemande statut);
+
+    /** Comptage ultra-rapide par statut pour les KPIs du tableau de bord */
+    long countByStatut(StatutDemande statut);
 }

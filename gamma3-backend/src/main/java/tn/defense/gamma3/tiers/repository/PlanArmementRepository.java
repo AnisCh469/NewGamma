@@ -26,5 +26,8 @@ public interface PlanArmementRepository extends JpaRepository<PlanArmement, Long
      *  article non consommable (armement/dotation). */
     @Query("SELECT p.item.id, SUM(p.quantiteReelle) FROM PlanArmement p GROUP BY p.item.id")
     List<Object[]> sommeQuantiteReelleParItem();
+
+    @Query("SELECT p FROM PlanArmement p JOIN FETCH p.item JOIN FETCH p.unite")
+    List<PlanArmement> findAllWithItemAndUnite();
 }
 

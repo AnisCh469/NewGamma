@@ -169,37 +169,47 @@ public class ItemController {
  
         // ÉTAPE 9 : Extraction sécurisée et robuste des identifiants et récupération groupée des stocks réels (Batch)
         List<UUID> itemIds = pageResult.getContent().stream().map(Item::getId).toList();
-        List<Object[]> quantitiesData = (magasinId != null)
-                ? stockRepository.getQuantitiesByItemIdsAndMagasinId(itemIds, magasinId)
-                : stockRepository.getTotalQuantitiesByItemIds(itemIds);
-        Map<UUID, BigDecimal> quantities = quantitiesData.stream()
-                .collect(Collectors.toMap(
-                        row -> {
-                            if (row[0] instanceof UUID) return (UUID) row[0];
-                            return UUID.fromString(row[0].toString());
-                        },
-                        row -> {
-                            if (row[1] == null) return BigDecimal.ZERO;
-                            if (row[1] instanceof BigDecimal) return (BigDecimal) row[1];
-                            if (row[1] instanceof Number) return BigDecimal.valueOf(((Number) row[1]).doubleValue());
-                            return new BigDecimal(row[1].toString());
-                        }
-                ));
- 
+        Map<UUID, BigDecimal> quantities;
+        if (itemIds.isEmpty()) {
+            quantities = Collections.emptyMap();
+        } else {
+            List<Object[]> quantitiesData = (magasinId != null)
+                    ? stockRepository.getQuantitiesByItemIdsAndMagasinId(itemIds, magasinId)
+                    : stockRepository.getTotalQuantitiesByItemIds(itemIds);
+            quantities = quantitiesData.stream()
+                    .collect(Collectors.toMap(
+                            row -> {
+                                if (row[0] instanceof UUID) return (UUID) row[0];
+                                return UUID.fromString(row[0].toString());
+                            },
+                            row -> {
+                                if (row[1] == null) return BigDecimal.ZERO;
+                                if (row[1] instanceof BigDecimal) return (BigDecimal) row[1];
+                                if (row[1] instanceof Number) return BigDecimal.valueOf(((Number) row[1]).doubleValue());
+                                return new BigDecimal(row[1].toString());
+                            }
+                    ));
+        }
+
         // ÉTAPE 10 : Récupération groupée et sécurisée des réservations actives (Batch)
-        Map<UUID, BigDecimal> reservations = ligneDemandeRepository.getReservedQuantitiesByItemIds(itemIds).stream()
-                .collect(Collectors.toMap(
-                        row -> {
-                            if (row[0] instanceof UUID) return (UUID) row[0];
-                            return UUID.fromString(row[0].toString());
-                        },
-                        row -> {
-                            if (row[1] == null) return BigDecimal.ZERO;
-                            if (row[1] instanceof BigDecimal) return (BigDecimal) row[1];
-                            if (row[1] instanceof Number) return BigDecimal.valueOf(((Number) row[1]).doubleValue());
-                            return new BigDecimal(row[1].toString());
-                        }
-                ));
+        Map<UUID, BigDecimal> reservations;
+        if (itemIds.isEmpty()) {
+            reservations = Collections.emptyMap();
+        } else {
+            reservations = ligneDemandeRepository.getReservedQuantitiesByItemIds(itemIds).stream()
+                    .collect(Collectors.toMap(
+                            row -> {
+                                if (row[0] instanceof UUID) return (UUID) row[0];
+                                return UUID.fromString(row[0].toString());
+                            },
+                            row -> {
+                                if (row[1] == null) return BigDecimal.ZERO;
+                                if (row[1] instanceof BigDecimal) return (BigDecimal) row[1];
+                                if (row[1] instanceof Number) return BigDecimal.valueOf(((Number) row[1]).doubleValue());
+                                return new BigDecimal(row[1].toString());
+                            }
+                    ));
+        }
  
         // ÉTAPE 11 : Chargement des dotations de l'unité (Plan d'Armement) pour l'utilisateur connecté
         Map<UUID, PlanArmement> plansMap = new HashMap<>();

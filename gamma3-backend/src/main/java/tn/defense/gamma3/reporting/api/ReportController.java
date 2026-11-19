@@ -37,7 +37,7 @@ public class ReportController {
 
     @GetMapping("/inventaire")
     public ResponseEntity<byte[]> getInventaireReport(@RequestParam(defaultValue = "pdf") String format) {
-        List<Stock> stocks = stockRepository.findAll();
+        List<Stock> stocks = stockRepository.findAllWithItemAndMagasin();
         List<InventaireReportDto> dtoList = stocks.stream()
                 .map(s -> InventaireReportDto.builder()
                         .nomenclature(s.getItem().getNomenclature())
