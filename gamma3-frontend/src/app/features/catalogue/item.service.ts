@@ -138,6 +138,15 @@ export class ItemService {
     return this.http.get<Item>(`${this.apiUrl}/${id}`);
   }
 
+  searchItems(search: string): Observable<PagedResult> {
+    const params = new HttpParams()
+      .set('page', '0')
+      .set('size', '20')
+      .set('search', search.trim())
+      .set('bypassPlanArmement', 'true');
+    return this.http.get<PagedResult>(this.apiUrl, { params });
+  }
+
   // ─── createItem ───────────────────────────────────────────────────────────
   // RÔLE : Crée un nouvel article dans le catalogue (bouton "Nouvel Article").
   // PARAMÈTRES : item — objet partiel décrivant l'article (nomenclature et

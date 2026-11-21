@@ -108,10 +108,21 @@ export const routes: Routes = [
     data: { roles: ['SUPER_ADMIN'] }
   },
   {
+    path: 'mes-besoins',
+    loadComponent: () => import('./features/previsions/expression-besoins-unite/expression-besoins-unite.component').then(m => m.ExpressionBesoinsUniteComponent),
+    canActivate: [authGuard]
+  },
+  {
+    path: 'commandes/achats',
+    loadComponent: () => import('./features/commande/suivi-achats/suivi-achats.component').then(m => m.SuiviAchatsComponent),
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['SUPER_ADMIN', 'ADMIN', 'DA_MANAGER'] }
+  },
+  {
     path: 'administration/previsions',
     loadComponent: () => import('./features/administration/previsions/previsions.component').then(m => m.PrevisionsComponent),
     canActivate: [authGuard, roleGuard],
-    data: { roles: ['SUPER_ADMIN', 'ADMIN'], sectionsDA: ['SEP'], daManagerAutorise: false }
+    data: { roles: ['SUPER_ADMIN', 'ADMIN', 'DA_MANAGER'], sectionsDA: ['SEP'], daManagerAutorise: true }
   },
   {
     path: 'administration/collationnement',

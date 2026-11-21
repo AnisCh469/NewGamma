@@ -1,86 +1,415 @@
-<div class="min-h-screen bg-slate-50 p-8">
+<div class="p-6 max-w-7xl mx-auto space-y-6">
 
-  <div class="mb-6 flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-    <div>
-      <h1 class="text-3xl font-extrabold text-gamma-dark tracking-tight">Prévisions</h1>
-      <p class="text-slate-500 mt-1">
-        Articles dont le stock potentiel a atteint ou franchi leur seuil d'alerte (Sa) — Procédure
-        P01 du cahier des charges.
-        <span *ngIf="aCalcule"> {{ alertes.length }} article(s) en alerte.</span>
-      </p>
-    </div>
+  <!-- En-tête -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
     <div class="flex items-center gap-3">
-      <p-button *ngIf="aCalcule && alertes.length > 0 && authService.hasSectionAccess(['SEP'], false)"
-                label="Imprimer l'État (PDF)"
-                icon="pi pi-file-pdf"
-                styleClass="p-button-danger p-button-outlined"
-                (onClick)="documentService.ouvrir('fiche-previsions')"></p-button>
-      <p-button *ngIf="authService.hasSectionAccess(['SEP'], false)" label="Calculer les prévisions" icon="pi pi-refresh"
-                styleClass="p-button-primary" [loading]="isLoading" (onClick)="calculer()"></p-button>
+      <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg">
+        <i class="pi pi-calendar"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Prévisions & Planification d'Approvisionnement (P01)</h1>
+        <p class="text-sm text-slate-500">Centralisation des besoins des unités navales, filtrage SEP, arbitrage en commission DA et préparation des achats P02.</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+        <span class="text-xs font-semibold text-slate-600">Année Budgétaire :</span>
+        <select [(ngModel)]="anneeCible" (change)="chargerTout()"
+                class="bg-transparent text-sm font-bold text-indigo-700 outline-none cursor-pointer">
+          <option *ngFor="let a of anneesDisponibles" [value]="a.value">{{ a.label }}</option>
+        </select>
+      </div>
+
+      <button (click)="chargerTout()"
+              class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition flex items-center gap-1.5">
+        <i class="pi pi-refresh"></i> Actualiser
+      </button>
+
+      <a routerLink="/commandes/achats"
+         class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-2">
+        <i class="pi pi-shopping-cart"></i> Suivi des Achats (P02)
+      </a>
     </div>
   </div>
 
-  <div *ngIf="errorMessage" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
-    <i class="pi pi-exclamation-triangle mr-2"></i>{{ errorMessage }}
+  <!-- Onglets de la procédure P01 -->
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <p-tabView [(activeIndex)]="activeTabIndex">
+
+      <!-- ONGLET 1 : Synthèse Consolidée & Alertes Mathématiques -->
+      <p-tabPanel header="1. Synthèse Consolidée & Alertes (OP3/OP4)">
+        <div class="p-4 space-y-4">
+          <div class="flex items-center justify-between text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+            <span class="flex items-center gap-1.5 font-medium">
+              <i class="pi pi-info-circle text-indigo-600"></i>
+              Ce tableau croise les <strong>besoins réels demandés par les unités</strong> avec les <strong>seuils de réapprovisionnement calculés</strong> (Point de commande Sa, consommation triennale Cmoy3, et déficit potentiel).
+            </span>
+            <span class="font-bold text-slate-700">{{ synthese.length }} ligne(s) recensée(s)</span>
+          </div>
+
+          <div *ngIf="isLoadingSynthese" class="text-center py-12">
+            <i class="pi pi-spin pi-spinner text-3xl text-indigo-600 mb-2"></i>
+            <p class="text-xs text-slate-500">Calcul et consolidation des données en cours...</p>
+          </div>
+
+          <div *ngIf="!isLoadingSynthese && synthese.length === 0" class="text-center py-12 text-slate-500 text-xs">
+            Aucun besoin ni alerte de stock détectés pour l'année {{ anneeCible }}.
+          </div>
+
+          <div *ngIf="!isLoadingSynthese && synthese.length > 0" class="overflow-x-auto border border-slate-200 rounded-xl">
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="bg-slate-50 text-slate-700 font-bold uppercase text-[10px] border-b border-slate-200">
+                <tr>
+                  <th class="p-3">Article / Réf</th>
+                  <th class="p-3 text-center">Priorité</th>
+                  <th class="p-3 text-right">Demande Unités</th>
+                  <th class="p-3 text-right">Stock Réel</th>
+                  <th class="p-3 text-right">Réservé</th>
+                  <th class="p-3 text-right">Stock Potentiel</th>
+                  <th class="p-3 text-right">Seuil Alerte (Sa)</th>
+                  <th class="p-3 text-right">Déficit Stock</th>
+                  <th class="p-3 text-right font-bold text-indigo-900 bg-indigo-50/50">Recommandation Achat</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr *ngFor="let s of synthese" class="hover:bg-slate-50/50">
+                  <td class="p-3">
+                    <div class="font-semibold text-slate-800">{{ s.designation }}</div>
+                    <div class="font-mono text-[10px] text-indigo-700">
+                      {{ s.nouveauBesoin ? ('F01 Hors-Cat : ' + (s.referenceConstructeur || 'N/A')) : s.nomenclature }}
+                    </div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <p-tag [severity]="getBadgePriorite(s.prioriteLaPlusHaute).severity" [value]="getBadgePriorite(s.prioriteLaPlusHaute).label"></p-tag>
+                  </td>
+                  <td class="p-3 text-right font-bold text-slate-800">
+                    {{ s.totalQuantiteDemandee }}
+                    <span *ngIf="s.nombreUnitesDemandeuses > 0" class="block text-[10px] text-slate-400 font-normal">
+                      ({{ s.nombreUnitesDemandeuses }} unité(s))
+                    </span>
+                  </td>
+                  <td class="p-3 text-right">{{ s.stockActuel }}</td>
+                  <td class="p-3 text-right text-amber-600">{{ s.quantiteReservee }}</td>
+                  <td class="p-3 text-right font-bold" [ngClass]="{'text-red-600': s.stockPotentiel <= 0, 'text-slate-700': s.stockPotentiel > 0}">
+                    {{ s.stockPotentiel }}
+                  </td>
+                  <td class="p-3 text-right font-mono">{{ s.seuilAlerte }}</td>
+                  <td class="p-3 text-right font-bold text-red-600">
+                    {{ s.deficitCalcule > 0 ? ('-' + s.deficitCalcule) : '0' }}
+                  </td>
+                  <td class="p-3 text-right font-bold text-indigo-700 bg-indigo-50/30 text-sm">
+                    {{ s.quantiteRecommandeeAchat }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </p-tabPanel>
+
+      <!-- ONGLET 2 : Dossiers des Unités & Filtrage SEP -->
+      <p-tabPanel header="2. Dossiers des Unités & Étude SEP (OP1/OP2)">
+        <div class="p-4 space-y-4">
+          <div class="flex items-center justify-between text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+            <span>Dossiers d'expression de besoins reçus des unités utilisatrices pour l'année <strong>{{ anneeCible }}</strong>. La SEP étudie et filtre chaque besoin.</span>
+            <span class="font-bold text-slate-700">{{ dossiers.length }} dossier(s)</span>
+          </div>
+
+          <div *ngIf="isLoadingDossiers" class="text-center py-12">
+            <i class="pi pi-spin pi-spinner text-3xl text-indigo-600 mb-2"></i>
+            <p class="text-xs text-slate-500">Chargement des dossiers d'unités...</p>
+          </div>
+
+          <div *ngIf="!isLoadingDossiers && dossiers.length === 0" class="text-center py-12 text-slate-500 text-xs">
+            Aucun dossier soumis par les unités pour l'année {{ anneeCible }}.
+          </div>
+
+          <div *ngIf="!isLoadingDossiers && dossiers.length > 0" class="space-y-4">
+            <div *ngFor="let d of dossiers" class="bg-slate-50/60 rounded-xl border border-slate-200 p-4 space-y-3">
+              <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-200/60 pb-3">
+                <div class="flex items-center gap-3">
+                  <span class="font-mono font-bold text-xs bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-lg">
+                    {{ d.numeroDossier }}
+                  </span>
+                  <div>
+                    <h3 class="text-sm font-bold text-slate-800">{{ d.uniteNom }} ({{ d.uniteCode }})</h3>
+                    <p class="text-xs text-slate-500">{{ d.objet }}</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                  <p-tag [severity]="getBadgeStatut(d.statut).severity" [value]="getBadgeStatut(d.statut).label"></p-tag>
+
+                  <button *ngIf="d.statut === 'SOUMIS' || d.statut === 'ETUDIE_SEP'"
+                          (click)="ouvrirEtudeSEP(d)"
+                          class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-semibold shadow-sm transition flex items-center gap-1.5">
+                    <i class="pi pi-search"></i> Étude & Filtrage SEP
+                  </button>
+
+                  <button *ngIf="d.statut === 'ETUDIE_SEP' || d.statut === 'SOUMIS'"
+                          (click)="ouvrirArbitrageCommission(d)"
+                          class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition flex items-center gap-1.5">
+                    <i class="pi pi-check-circle"></i> Arbitrer en Commission
+                  </button>
+
+                  <button *ngIf="d.statut === 'ARBITRE'"
+                          (click)="validerPADI(d)"
+                          class="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-semibold shadow-sm transition flex items-center gap-1.5">
+                    <i class="pi pi-verified"></i> Valider PADI
+                  </button>
+                </div>
+              </div>
+
+              <!-- Tableau des lignes du dossier -->
+              <div class="overflow-x-auto bg-white rounded-lg border border-slate-200">
+                <table class="w-full text-left text-xs text-slate-600">
+                  <thead class="bg-slate-50 text-slate-700 font-bold uppercase text-[9px] border-b border-slate-200">
+                    <tr>
+                      <th class="p-2.5">Article / Réf</th>
+                      <th class="p-2.5">Priorité</th>
+                      <th class="p-2.5 text-right">Qté Demandée</th>
+                      <th class="p-2.5 text-right">Qté Proposée SEP</th>
+                      <th class="p-2.5 text-right">Qté Retenue Commission</th>
+                      <th class="p-2.5 text-center">Mode Recommandé</th>
+                      <th class="p-2.5 text-center">Décision</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100">
+                    <tr *ngFor="let l of d.lignes">
+                      <td class="p-2.5">
+                        <div class="font-semibold text-slate-800">{{ l.nouveauBesoin ? l.designationHorsCatalogue : l.itemDesignation }}</div>
+                        <div class="font-mono text-[10px] text-indigo-700">{{ l.nouveauBesoin ? ('Hors-Catalogue: ' + l.referenceConstructeur) : l.itemNomenclature }}</div>
+                      </td>
+                      <td class="p-2.5">
+                        <p-tag [severity]="getBadgePriorite(l.priorite).severity" [value]="getBadgePriorite(l.priorite).label"></p-tag>
+                      </td>
+                      <td class="p-2.5 text-right font-bold">{{ l.quantiteDemandee }}</td>
+                      <td class="p-2.5 text-right font-semibold text-amber-700">{{ l.quantiteProposeeSEP != null ? l.quantiteProposeeSEP : '-' }}</td>
+                      <td class="p-2.5 text-right font-bold text-green-700">{{ l.quantiteRetenue != null ? l.quantiteRetenue : '-' }}</td>
+                      <td class="p-2.5 text-center font-mono text-[10px]">{{ l.modeAcquisitionRecommande || '-' }}</td>
+                      <td class="p-2.5 text-center">
+                        <span *ngIf="l.decisionCommission === 'ACCORDE'" class="text-green-600 font-bold"><i class="pi pi-check"></i> Accordé</span>
+                        <span *ngIf="l.decisionCommission === 'REJETE'" class="text-red-500 font-bold"><i class="pi pi-times"></i> Rejeté</span>
+                        <span *ngIf="l.decisionCommission === 'AJOURNE'" class="text-amber-500 font-bold"><i class="pi pi-clock"></i> Ajourné</span>
+                        <span *ngIf="!l.decisionCommission || l.decisionCommission === 'EN_ATTENTE'" class="text-slate-400">En attente</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </p-tabPanel>
+
+      <!-- ONGLET 3 : Passerelle vers la Commande & Achats P02 -->
+      <p-tabPanel header="3. Passerelle vers les Achats (P02)">
+        <div class="p-4 space-y-4">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-indigo-50/50 p-4 rounded-xl border border-indigo-200">
+            <div>
+              <h4 class="text-sm font-bold text-indigo-950 flex items-center gap-2">
+                <i class="pi pi-shopping-bag text-indigo-600"></i>
+                Lignes Arbitrées & Validées prêtes pour le lancement des Achats (P02)
+              </h4>
+              <p class="text-xs text-indigo-800 mt-0.5">
+                Sélectionnez les articles accordés par la commission pour créer automatiquement un <strong>Dossier d'Achat P02</strong> (Marché cadre, Appel d'offres ou Bon de commande).
+              </p>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-semibold text-slate-600">Mode :</span>
+                <select [(ngModel)]="modeAcquisitionSelectionne" class="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold text-indigo-700 outline-none">
+                  <option *ngFor="let m of modesAcquisition" [value]="m.value">{{ m.label }}</option>
+                </select>
+              </div>
+
+              <button (click)="transfererSelectionVersAchats()" [disabled]="isTransfering"
+                      class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-2">
+                <i class="pi" [ngClass]="isTransfering ? 'pi-spin pi-spinner' : 'pi-send'"></i>
+                <span>Créer Dossier d'Achat P02</span>
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="lignesPourAchat.length === 0" class="text-center py-12 text-slate-500 text-xs">
+            Aucune ligne arbitrée prête pour l'achat pour le moment. Arbitrez d'abord des dossiers d'unités dans l'onglet précédent.
+          </div>
+
+          <div *ngIf="lignesPourAchat.length > 0" class="overflow-x-auto border border-slate-200 rounded-xl">
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="bg-slate-50 text-slate-700 font-bold uppercase text-[10px] border-b border-slate-200">
+                <tr>
+                  <th class="p-3 text-center">Sélection</th>
+                  <th class="p-3">Dossier / Unité</th>
+                  <th class="p-3">Article / Réf</th>
+                  <th class="p-3">Priorité</th>
+                  <th class="p-3 text-right">Qté Accordée</th>
+                  <th class="p-3 text-right">Prix Estimé (DT)</th>
+                  <th class="p-3 text-center">Mode Recommandé</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <tr *ngFor="let item of lignesPourAchat" class="hover:bg-slate-50/50">
+                  <td class="p-3 text-center">
+                    <input type="checkbox" [(ngModel)]="item.checked" class="w-4 h-4 text-indigo-600 rounded cursor-pointer" />
+                  </td>
+                  <td class="p-3 font-semibold text-slate-700">
+                    <div>{{ item.uniteNom }}</div>
+                    <span class="font-mono text-[10px] text-indigo-600">{{ item.dossierNum }}</span>
+                  </td>
+                  <td class="p-3">
+                    <div class="font-semibold text-slate-800">
+                      {{ item.ligne.nouveauBesoin ? item.ligne.designationHorsCatalogue : item.ligne.itemDesignation }}
+                    </div>
+                    <div class="font-mono text-[10px] text-slate-500">
+                      {{ item.ligne.nouveauBesoin ? ('Hors-Catalogue: ' + item.ligne.referenceConstructeur) : item.ligne.itemNomenclature }}
+                    </div>
+                  </td>
+                  <td class="p-3">
+                    <p-tag [severity]="getBadgePriorite(item.ligne.priorite).severity" [value]="getBadgePriorite(item.ligne.priorite).label"></p-tag>
+                  </td>
+                  <td class="p-3 text-right font-bold text-green-700 text-sm">
+                    {{ item.ligne.quantiteRetenue != null ? item.ligne.quantiteRetenue : item.ligne.quantiteDemandee }}
+                  </td>
+                  <td class="p-3 text-right font-mono">
+                    {{ item.ligne.prixUnitaireEstime ? (item.ligne.prixUnitaireEstime | number:'1.3-3') : '0.000' }}
+                  </td>
+                  <td class="p-3 text-center font-semibold text-indigo-800">
+                    {{ item.ligne.modeAcquisitionRecommande || modeAcquisitionSelectionne }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </p-tabPanel>
+
+    </p-tabView>
   </div>
 
-  <div class="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
-    <div class="overflow-x-auto">
-    <table class="w-full text-sm">
-      <thead>
-        <tr class="bg-slate-50 border-b border-slate-100">
-          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-left">Article</th>
-          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-right">Stock actuel</th>
-          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-right">Réservé</th>
-          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-right">Stock potentiel</th>
-          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-right">Seuil d'alerte (Sa)</th>
-          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-right">Cmoy3</th>
-          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-right">Ss / Smin calculés</th>
-          <th class="py-3 px-4 text-xs font-black uppercase text-gray-500 text-right">Stock sécurité (actuel)</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let a of alertes" class="border-b border-slate-50 hover:bg-blue-50/40">
-          <td class="py-2.5 px-4">
-            <a [routerLink]="['/catalogue', a.itemId]" class="font-mono font-bold text-gamma-primary hover:underline">{{ a.nomenclature }}</a>
-            <span class="block text-xs text-slate-500">{{ a.designation }}</span>
-          </td>
-          <td class="py-2.5 px-4 text-right font-mono">{{ a.stockActuel | number:'1.0-2' }}</td>
-          <td class="py-2.5 px-4 text-right font-mono text-orange-600">{{ a.quantiteReservee | number:'1.0-2' }}</td>
-          <td class="py-2.5 px-4 text-right">
-            <p-tag [value]="(a.stockPotentiel | number:'1.0-2') + ''" [severity]="severite(a)"></p-tag>
-          </td>
-          <td class="py-2.5 px-4 text-right font-mono font-bold text-slate-700">{{ a.seuilAlerte | number:'1.0-2' }}</td>
-          <td class="py-2.5 px-4 text-right font-mono text-slate-500">{{ a.consommationMoyenneAnnuelle | number:'1.0-2' }}</td>
-          <td class="py-2.5 px-4 text-right font-mono text-slate-500">
-            <span *ngIf="a.seuilSecuriteCalcule !== null">{{ a.seuilSecuriteCalcule | number:'1.0-2' }} / {{ a.seuilMinimalCalcule | number:'1.0-2' }}</span>
-            <span *ngIf="a.seuilSecuriteCalcule === null" class="text-slate-300 italic">— (non critique)</span>
-          </td>
-          <td class="py-2.5 px-4 text-right font-mono text-slate-500">{{ a.stockSecuriteActuel | number:'1.0-2' }}</td>
-        </tr>
-        <tr *ngIf="!isLoading && aCalcule && !alertes.length">
-          <td colspan="8" class="text-center py-12 text-slate-400">
-            <i class="pi pi-check-circle text-3xl block mb-2 text-green-400"></i>Aucun article en alerte pour l'instant.
-          </td>
-        </tr>
-        <tr *ngIf="!isLoading && !aCalcule">
-          <td colspan="8" class="text-center py-12 text-slate-400">
-            <i class="pi pi-calculator text-3xl block mb-2"></i>Cliquez sur « Calculer les prévisions » pour lancer l'analyse.
-          </td>
-        </tr>
-        <tr *ngIf="isLoading">
-          <td colspan="8" class="text-center py-12 text-slate-400"><i class="pi pi-spin pi-spinner"></i></td>
-        </tr>
-      </tbody>
-    </table>
-    </div>
-  </div>
-
-  <div class="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
-    <i class="pi pi-info-circle mr-2"></i>
-    Le <strong>stock de sécurité</strong> qui bloque réellement une distribution reste une valeur
-    saisie à la main sur la fiche de l'article — le "Ss / Smin calculés" ci-dessus est la
-    référence officielle du cahier des charges, affichée à titre indicatif, jamais appliquée
-    automatiquement.
-  </div>
 </div>
+
+<!-- Modal Étude & Filtrage SEP (OP2 / OP4) -->
+<p-dialog [(visible)]="displayEtudeModal" [modal]="true" [style]="{width: '900px'}" [closable]="true"
+          header="Filtrage & Étude Technique SEP — Dossier {{ selectedDossier?.numeroDossier }}">
+  <div *ngIf="selectedDossier" class="space-y-4 pt-2">
+    <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-800">
+      <i class="pi pi-shield mr-1 font-bold"></i>
+      <strong>Section Études et Prévisions (SEP) :</strong> Ajustez les quantités proposées selon la situation du stock et consignez vos observations techniques avant passage en commission.
+    </div>
+
+    <div class="overflow-x-auto border border-slate-200 rounded-xl">
+      <table class="w-full text-left text-xs text-slate-600">
+        <thead class="bg-slate-50 text-slate-700 font-bold uppercase text-[10px] border-b border-slate-200">
+          <tr>
+            <th class="p-2.5">Article / Réf</th>
+            <th class="p-2.5 text-right">Qté Demandée</th>
+            <th class="p-2.5 text-right">Qté Proposée SEP *</th>
+            <th class="p-2.5">Avis / Justification SEP</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr *ngFor="let l of selectedDossier.lignes">
+            <td class="p-2.5">
+              <div class="font-semibold text-slate-800">{{ l.nouveauBesoin ? l.designationHorsCatalogue : l.itemDesignation }}</div>
+              <div class="font-mono text-[10px] text-slate-500">{{ l.nouveauBesoin ? ('Réf: ' + l.referenceConstructeur) : l.itemNomenclature }}</div>
+            </td>
+            <td class="p-2.5 text-right font-bold text-slate-800">{{ l.quantiteDemandee }}</td>
+            <td class="p-2.5 text-right">
+              <input type="number" [(ngModel)]="l.quantiteProposeeSEP" min="0"
+                     class="w-20 bg-slate-50 border border-slate-300 rounded-lg p-1 text-right font-bold text-amber-800" />
+            </td>
+            <td class="p-2.5">
+              <input type="text" [(ngModel)]="l.avisSEP" placeholder="Avis technique, stock tampon disponible..."
+                     class="w-full bg-slate-50 border border-slate-300 rounded-lg p-1 text-xs" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+      <button (click)="displayEtudeModal = false" class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+        Annuler
+      </button>
+      <button (click)="enregistrerEtudeSEP()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-semibold shadow-sm transition">
+        Valider l'Étude SEP
+      </button>
+    </div>
+  </ng-template>
+</p-dialog>
+
+<!-- Modal Commission d'Arbitrage DA (OP5) -->
+<p-dialog [(visible)]="displayArbitrageModal" [modal]="true" [style]="{width: '1050px'}" [closable]="true"
+          header="Commission d'Arbitrage DA (CDA / SGS / SM / SEP) — Dossier {{ selectedDossierArbitrage?.numeroDossier }}">
+  <div *ngIf="selectedDossierArbitrage" class="space-y-4 pt-2">
+    <div class="p-3 bg-indigo-50 rounded-xl border border-indigo-200 text-xs text-indigo-900">
+      <i class="pi pi-users mr-1 font-bold"></i>
+      <strong>Commission d'Arbitrage (Modèle F04/P01/DA/2011) :</strong> Statuez collégialement sur chaque besoin. Fixez la quantité finale retenue, le prix unitaire estimé et le mode d'acquisition recommandé.
+    </div>
+
+    <div class="overflow-x-auto border border-slate-200 rounded-xl">
+      <table class="w-full text-left text-xs text-slate-600">
+        <thead class="bg-slate-50 text-slate-700 font-bold uppercase text-[9px] border-b border-slate-200">
+          <tr>
+            <th class="p-2.5">Article</th>
+            <th class="p-2.5 text-right">Demandé</th>
+            <th class="p-2.5 text-right">Prop. SEP</th>
+            <th class="p-2.5 text-right">Qté Retenue *</th>
+            <th class="p-2.5 text-right">Prix Estimé (DT)</th>
+            <th class="p-2.5 text-center">Mode Achat</th>
+            <th class="p-2.5 text-center">Décision</th>
+            <th class="p-2.5">Motif</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr *ngFor="let l of selectedDossierArbitrage.lignes">
+            <td class="p-2.5">
+              <div class="font-semibold text-slate-800">{{ l.nouveauBesoin ? l.designationHorsCatalogue : l.itemDesignation }}</div>
+              <div class="font-mono text-[10px] text-slate-500">{{ l.nouveauBesoin ? l.referenceConstructeur : l.itemNomenclature }}</div>
+            </td>
+            <td class="p-2.5 text-right font-medium">{{ l.quantiteDemandee }}</td>
+            <td class="p-2.5 text-right font-semibold text-amber-700">{{ l.quantiteProposeeSEP != null ? l.quantiteProposeeSEP : '-' }}</td>
+            <td class="p-2.5 text-right">
+              <input type="number" [(ngModel)]="l.quantiteRetenue" min="0"
+                     class="w-20 bg-slate-50 border border-slate-300 rounded-lg p-1 text-right font-bold text-green-700" />
+            </td>
+            <td class="p-2.5 text-right">
+              <input type="number" [(ngModel)]="l.prixUnitaireEstime" step="0.1" min="0" placeholder="0.000"
+                     class="w-24 bg-slate-50 border border-slate-300 rounded-lg p-1 text-right text-xs" />
+            </td>
+            <td class="p-2.5 text-center">
+              <select [(ngModel)]="l.modeAcquisitionRecommande" class="bg-slate-50 border border-slate-300 rounded-lg p-1 text-[11px] font-semibold">
+                <option *ngFor="let m of modesAcquisition" [value]="m.value">{{ m.label }}</option>
+              </select>
+            </td>
+            <td class="p-2.5 text-center">
+              <select [(ngModel)]="l.decisionCommission" class="bg-slate-50 border border-slate-300 rounded-lg p-1 text-[11px] font-bold">
+                <option *ngFor="let d of decisionsCommission" [value]="d.value">{{ d.label }}</option>
+              </select>
+            </td>
+            <td class="p-2.5">
+              <input type="text" [(ngModel)]="l.motifArbitrage" placeholder="Motif arbitrage..."
+                     class="w-full bg-slate-50 border border-slate-300 rounded-lg p-1 text-xs" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+      <button (click)="displayArbitrageModal = false" class="px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+        Annuler
+      </button>
+      <button (click)="enregistrerArbitrage()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition">
+        Enregistrer les Décisions de la Commission
+      </button>
+    </div>
+  </ng-template>
+</p-dialog>

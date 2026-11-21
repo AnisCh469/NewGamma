@@ -21,6 +21,9 @@
         <!-- Navigation UNIT_USER (Simple & Directe) -->
         <ng-container *ngIf="currentUser.role === 'UNIT_USER'">
           <a routerLink="/catalogue" routerLinkActive="text-gamma-accent font-bold" [routerLinkActiveOptions]="{exact: false}" class="text-slate-300 hover:text-white px-2.5 py-1.5 rounded transition">Catalogue</a>
+          <a routerLink="/mes-besoins" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white px-2.5 py-1.5 rounded transition flex items-center gap-1.5">
+            <i class="pi pi-file-edit text-xs text-gamma-accent"></i>Expression des Besoins
+          </a>
           <a *ngIf="currentUser.fonctionUnite !== 'COMMANDANT'" routerLink="/demander-dotation" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white px-2.5 py-1.5 rounded transition">Demande d'Équipement</a>
           <a *ngIf="currentUser.fonctionUnite === 'COMMANDANT'" routerLink="/valider-demandes" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white px-2.5 py-1.5 rounded transition">Valider les Demandes</a>
           <a *ngIf="unitId" [routerLink]="['/unites', unitId]" routerLinkActive="text-gamma-accent font-bold" class="text-slate-300 hover:text-white px-2.5 py-1.5 rounded transition">Mon Plan & Suivi</a>
@@ -80,8 +83,11 @@
               <a routerLink="/analytics" (click)="closeDropdowns()" class="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-xs transition">
                 <i class="pi pi-chart-bar text-slate-400"></i>Tableau de Bord & Analyses
               </a>
-              <a *ngIf="authService.hasSectionAccess(['SEP'], false)" routerLink="/administration/previsions" (click)="closeDropdowns()" class="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-xs transition">
-                <i class="pi pi-calendar text-slate-400"></i>Prévisions d'Achat P01 (SEP)
+              <a routerLink="/administration/previsions" (click)="closeDropdowns()" class="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-xs transition">
+                <i class="pi pi-calendar text-slate-400"></i>Prévisions & Arbitrage P01
+              </a>
+              <a routerLink="/commandes/achats" (click)="closeDropdowns()" class="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-xs transition">
+                <i class="pi pi-shopping-bag text-slate-400"></i>Suivi des Achats & Marchés P02
               </a>
               <a *ngIf="authService.hasSectionAccess(['SC'], false)" routerLink="/administration/collationnement" (click)="closeDropdowns()" class="flex items-center gap-2 px-4 py-2 hover:bg-slate-800 text-xs transition">
                 <i class="pi pi-check-circle text-slate-400"></i>Collationnement Annuel P07 (SC)
@@ -288,6 +294,9 @@
           <a routerLink="/catalogue" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition text-slate-200">
             <i class="pi pi-box text-gamma-accent"></i>Catalogue Général
           </a>
+          <a routerLink="/mes-besoins" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition text-slate-200">
+            <i class="pi pi-file-edit text-gamma-accent"></i>Expression des Besoins (P01)
+          </a>
           <a *ngIf="currentUser.fonctionUnite !== 'COMMANDANT'" routerLink="/demander-dotation" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition text-slate-200">
             <i class="pi pi-shopping-cart text-gamma-accent"></i>Demande d'Équipement
           </a>
@@ -328,8 +337,11 @@
           <a routerLink="/analytics" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800 transition text-slate-200">
             <i class="pi pi-chart-bar text-slate-400"></i>Tableau de Bord & Analyses
           </a>
-          <a *ngIf="authService.hasSectionAccess(['SEP'], false)" routerLink="/administration/previsions" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800 transition text-slate-200">
-            <i class="pi pi-calendar text-slate-400"></i>Prévisions d'Achat P01 (SEP)
+          <a routerLink="/administration/previsions" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800 transition text-slate-200">
+            <i class="pi pi-calendar text-slate-400"></i>Prévisions & Arbitrage P01
+          </a>
+          <a routerLink="/commandes/achats" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800 transition text-slate-200">
+            <i class="pi pi-shopping-bag text-slate-400"></i>Suivi des Achats (P02)
           </a>
           <a *ngIf="authService.hasSectionAccess(['SC'], false)" routerLink="/administration/collationnement" (click)="closeMobileMenu()" class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-800 transition text-slate-200">
             <i class="pi pi-check-circle text-slate-400"></i>Collationnement Annuel P07 (SC)
